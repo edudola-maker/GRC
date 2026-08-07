@@ -4,7 +4,8 @@ import { useDeferredValue, useState, type ReactNode } from "react";
 
 /**
  * Socle réutilisable : recherche dynamique + panneau avancé.
- * Pattern à étendre aux autres modules (filtres + recherche + avancée).
+ * Structure en zones : outils (filtres/recherche) puis inventaire.
+ * Pattern à étendre aux autres modules.
  */
 export function InventoryBrowser({
   searchPlaceholder,
@@ -16,6 +17,8 @@ export function InventoryBrowser({
   advancedPanel,
   resultCount,
   totalCount,
+  toolsLabel = "Filtres et recherche",
+  inventoryLabel = "Inventaire",
   children,
 }: {
   searchPlaceholder: string;
@@ -27,47 +30,61 @@ export function InventoryBrowser({
   advancedPanel: ReactNode;
   resultCount: number;
   totalCount: number;
+  toolsLabel?: string;
+  inventoryLabel?: string;
   children: ReactNode;
 }) {
+  const countLabel =
+    resultCount === totalCount
+      ? `${totalCount} élément${totalCount > 1 ? "s" : ""}`
+      : `${resultCount} sur ${totalCount}`;
+
   return (
-    <div className="inventory">
-      <div className="inventory__search-row">
-        <label className="inventory__search" htmlFor="inventory-q">
-          <span className="sr-only">Recherche</span>
-          <input
-            id="inventory-q"
-            type="search"
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={searchPlaceholder}
-            autoComplete="off"
-          />
-        </label>
-        <button
-          type="button"
-          className={`btn btn--ghost inventory__advanced-toggle${advancedOpen ? " is-open" : ""}`}
-          onClick={onAdvancedToggle}
-          aria-expanded={advancedOpen}
-        >
-          Recherche avancée
-        </button>
-      </div>
+    <div className="inventory inventory-shell">
+      <section className="page-zone page-zone--tools" aria-label={toolsLabel}>
+        <p className="page-zone__label">{toolsLabel}</p>
 
-      {advancedOpen ? (
-        <div className="inventory__advanced panel panel--inset">
-          {advancedPanel}
+        <div className="inventory__search-row">
+          <label className="inventory__search" htmlFor="inventory-q">
+            <span className="sr-only">Recherche</span>
+            <input
+              id="inventory-q"
+              type="search"
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder={searchPlaceholder}
+              autoComplete="off"
+            />
+          </label>
+          <button
+            type="button"
+            className={`btn btn--ghost inventory__advanced-toggle${advancedOpen ? " is-open" : ""}`}
+            onClick={onAdvancedToggle}
+            aria-expanded={advancedOpen}
+          >
+            Recherche avancée
+          </button>
         </div>
-      ) : null}
 
-      <div className="filter-bar inventory__filters">{quickFilters}</div>
+        {advancedOpen ? (
+          <div className="inventory__advanced panel panel--inset">
+            {advancedPanel}
+          </div>
+        ) : null}
 
-      <p className="inventory__count muted">
-        {resultCount === totalCount
-          ? `${totalCount} élément${totalCount > 1 ? "s" : ""}`
-          : `${resultCount} sur ${totalCount}`}
-      </p>
+        <div className="filter-bar inventory__filters">{quickFilters}</div>
+      </section>
 
-      {children}
+      <section
+        className="page-zone page-zone--inventory"
+        aria-label={inventoryLabel}
+      >
+        <div className="page-zone__head">
+          <p className="page-zone__label">{inventoryLabel}</p>
+          <p className="inventory__count muted">{countLabel}</p>
+        </div>
+        {children}
+      </section>
     </div>
   );
 }
