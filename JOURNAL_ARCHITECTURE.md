@@ -66,6 +66,10 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Inventaire :** double en-tête de colonnes (ligne principale + ligne secondaire) une seule fois ; chaque élément reprend la même grille sans répéter les intitulés.
 
+**Filtres :** logique pure dans `inventory-filters.ts` (testable) ; pastilles « filtres actifs » + réinitialisation globale ; critères combinables sans rechargement.
+
+**Runtime démo :** préférer `next start` (prod) plutôt que `next dev` Turbopack — en environnement cloud, les scripts `crossorigin` de Turbopack peuvent recevoir un 403 (header `Origin`) et bloquer l’hydratation React (filtres inertes).
+
 Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryList`, `InventoryRow`.  
 Objectif : même logique de navigation d’un module à l’autre, sans personnalisation d’écran.
 

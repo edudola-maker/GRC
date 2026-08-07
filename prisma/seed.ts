@@ -119,7 +119,7 @@ async function main() {
   await prisma.sequenceCode.createMany({
     data: [
       { uniteId, prefixe: "PRO", dernier: 3 },
-      { uniteId, prefixe: "CNS", dernier: 1 },
+      { uniteId, prefixe: "CNS", dernier: 3 },
       { uniteId, prefixe: "RSK", dernier: 2 },
       { uniteId, prefixe: "CTL", dernier: 3 },
       { uniteId, prefixe: "DOC", dernier: 2 },
@@ -208,12 +208,54 @@ async function main() {
       objet: "Analyse du seuil de délégation",
       description: "Demande d'avis juridique court.",
       taxinomie: "JURIDIQUE",
-      tags: "LSubv, gouvernance",
+      tags: "LSubv, Gouvernance",
       demandeur: "Service Achats",
       entiteDemandeuse: "Direction des Achats",
       dateReception: reception,
       responsableId: claire.id,
       dateEcheance: addBusinessDays(reception, 5),
+      statut: "EN_COURS",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+
+  const receptionClos = daysFromNow(-20);
+  const conseilClos = await prisma.conseil.create({
+    data: {
+      uniteId,
+      code: "CNS-0002",
+      objet: "Revue du dispositif de gouvernance LSubv",
+      description: "Conseil clôturé — jeu de données pour filtres.",
+      taxinomie: "GOUVERNANCE",
+      tags: "Gouvernance, LSubv",
+      demandeur: "Direction Générale",
+      entiteDemandeuse: "Cabinet DG",
+      dateReception: receptionClos,
+      dateCloture: daysFromNow(-10),
+      dateReponse: daysFromNow(-10),
+      responsableId: alice.id,
+      dateEcheance: daysFromNow(-8),
+      statut: "CLOTURE",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+
+  const receptionRetard = daysFromNow(-15);
+  const conseilRetard = await prisma.conseil.create({
+    data: {
+      uniteId,
+      code: "CNS-0003",
+      objet: "Avis sur la clause de confidentialité",
+      description: "Conseil en retard — taxinomie juridique.",
+      taxinomie: "JURIDIQUE",
+      tags: "Contrats",
+      demandeur: "Service Juridique",
+      entiteDemandeuse: "Direction Juridique",
+      dateReception: receptionRetard,
+      responsableId: bernard.id,
+      dateEcheance: daysFromNow(-2),
       statut: "EN_COURS",
       creeParId: alice.id,
       modifieParId: alice.id,
@@ -239,6 +281,24 @@ async function main() {
         automatique: false,
         auteurId: claire.id,
         creeLe: daysFromNow(-1),
+      },
+      {
+        typeObjet: "CONSEIL",
+        objetId: conseilClos.id,
+        typeEvenement: "CREATION",
+        message: "Conseil créé — Revue gouvernance",
+        automatique: true,
+        auteurId: alice.id,
+        creeLe: receptionClos,
+      },
+      {
+        typeObjet: "CONSEIL",
+        objetId: conseilRetard.id,
+        typeEvenement: "CREATION",
+        message: "Conseil créé — Clause de confidentialité",
+        automatique: true,
+        auteurId: alice.id,
+        creeLe: receptionRetard,
       },
     ],
   });

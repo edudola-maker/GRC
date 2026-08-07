@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   ChipButton,
   InventoryBrowser,
-  filterByQuery,
   useInventorySearch,
 } from "@/components/inventory/InventoryBrowser";
 import {
@@ -13,6 +12,13 @@ import {
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
+import {
+  EMPTY_CONSEIL_ADVANCED,
+  filterConseils,
+  hasAdvancedFilters,
+  type ConseilAdvancedFilters,
+  type ConseilQuickFilter,
+} from "@/lib/inventory-filters";
 import { TAXINOMIE_LABELS, formatDateDot } from "@/lib/labels";
 
 export type ConseilInventoryItem = {
@@ -37,44 +43,13 @@ export type ConseilInventoryItem = {
   estRetard: boolean;
 };
 
-type QuickFilter = "tous" | "ouverts" | "clos" | "retard" | "archives";
-
-type Advanced = {
-  dateReceptionDu: string;
-  dateReceptionAu: string;
-  dateClotureDu: string;
-  dateClotureAu: string;
-  provenance: string;
-  responsableId: string;
-  statut: string;
-  taxinomie: string;
-  tags: string;
+const QUICK_LABELS: Record<ConseilQuickFilter, string> = {
+  tous: "Tous",
+  ouverts: "Ouverts",
+  clos: "Clôturés",
+  retard: "En retard",
+  archives: "Archivés",
 };
-
-const EMPTY_ADVANCED: Advanced = {
-  dateReceptionDu: "",
-  dateReceptionAu: "",
-  dateClotureDu: "",
-  dateClotureAu: "",
-  provenance: "",
-  responsableId: "",
-  statut: "",
-  taxinomie: "",
-  tags: "",
-};
-
-function inDateRange(
-  value: string | null,
-  du: string,
-  au: string,
-): boolean {
-  if (!du && !au) return true;
-  if (!value) return false;
-  const d = value.slice(0, 10);
-  if (du && d < du) return false;
-  if (au && d > au) return false;
-  return true;
-}
 
 export function ConseilInventory({
   items,
@@ -86,59 +61,81 @@ export function ConseilInventory({
   taxinomies: { value: string; label: string }[];
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
-  const [quick, setQuick] = useState<QuickFilter>("ouverts");
+  const [quick, setQuick] = useState<ConseilQuickFilter>("ouverts");
   const [responsableQuick, setResponsableQuick] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [advanced, setAdvanced] = useState<Advanced>(EMPTY_ADVANCED);
+  const [advanced, setAdvanced] = useState<ConseilAdvancedFilters>(
+    EMPTY_CONSEIL_ADVANCED,
+  );
 
-  const filtered = useMemo(() => {
-    let list = items;
+  const filtered = useMemo(
+    () =>
+      filterConseils(items, {
+        quick,
+        query: deferredQuery,
+        responsableQuick,
+        advanced,
+      }),
+    [items, quick, deferredQuery, responsableQuick, advanced],
+  );
 
-    if (quick === "ouverts") list = list.filter((c) => c.estOuvert && !c.archive);
-    else if (quick === "clos") list = list.filter((c) => c.estClos && !c.archive);
-    else if (quick === "retard") list = list.filter((c) => c.estRetard && !c.archive);
-    else if (quick === "archives") list = list.filter((c) => c.archive);
-    else list = list.filter((c) => !c.archive);
-
+  const activeFilterChips = useMemo(() => {
+    const chips: string[] = [];
+    if (quick !== "tous") chips.push(QUICK_LABELS[quick]);
+    if (query.trim()) chips.push(`Recherche : « ${query.trim()} »`);
     if (responsableQuick) {
-      list = list.filter((c) => c.responsableId === responsableQuick);
+      const nom =
+        responsables.find((r) => r.id === responsableQuick)?.nom ??
+        "Responsable";
+      chips.push(`Responsable : ${nom}`);
     }
-
-    list = filterByQuery(list, deferredQuery, (c) => [
-      c.code,
-      c.objet,
-      c.tags,
-      c.demandeur,
-      c.entiteDemandeuse,
-    ]);
-
-    const a = advanced;
-    if (a.provenance.trim()) {
-      const p = a.provenance.trim().toLowerCase();
-      list = list.filter(
-        (c) =>
-          (c.demandeur ?? "").toLowerCase().includes(p) ||
-          (c.entiteDemandeuse ?? "").toLowerCase().includes(p),
+    if (advanced.dateReceptionDu || advanced.dateReceptionAu) {
+      chips.push(
+        `Réception ${advanced.dateReceptionDu || "…"} → ${advanced.dateReceptionAu || "…"}`,
       );
     }
-    if (a.responsableId) {
-      list = list.filter((c) => c.responsableId === a.responsableId);
+    if (advanced.dateClotureDu || advanced.dateClotureAu) {
+      chips.push(
+        `Clôture ${advanced.dateClotureDu || "…"} → ${advanced.dateClotureAu || "…"}`,
+      );
     }
-    if (a.statut) list = list.filter((c) => c.statut === a.statut);
-    if (a.taxinomie) list = list.filter((c) => c.taxinomie === a.taxinomie);
-    if (a.tags.trim()) {
-      const t = a.tags.trim().toLowerCase();
-      list = list.filter((c) => (c.tags ?? "").toLowerCase().includes(t));
+    if (advanced.provenance.trim()) {
+      chips.push(`Provenance : ${advanced.provenance.trim()}`);
     }
-    list = list.filter((c) =>
-      inDateRange(c.dateReception, a.dateReceptionDu, a.dateReceptionAu),
-    );
-    list = list.filter((c) =>
-      inDateRange(c.dateCloture, a.dateClotureDu, a.dateClotureAu),
-    );
+    if (advanced.responsableId) {
+      const nom =
+        responsables.find((r) => r.id === advanced.responsableId)?.nom ??
+        "Responsable";
+      chips.push(`Resp. avancé : ${nom}`);
+    }
+    if (advanced.statut) {
+      const label =
+        STATUT_CONSEIL_OPTIONS.find((o) => o.value === advanced.statut)
+          ?.label ?? advanced.statut;
+      chips.push(`Statut : ${label}`);
+    }
+    if (advanced.taxinomie) {
+      const label =
+        taxinomies.find((t) => t.value === advanced.taxinomie)?.label ??
+        advanced.taxinomie;
+      chips.push(`Taxinomie : ${label}`);
+    }
+    if (advanced.tags.trim()) chips.push(`Tags : ${advanced.tags.trim()}`);
+    return chips;
+  }, [quick, query, responsableQuick, advanced, responsables, taxinomies]);
 
-    return list;
-  }, [items, quick, responsableQuick, deferredQuery, advanced]);
+  const canReset =
+    quick !== "tous" ||
+    query.trim() !== "" ||
+    responsableQuick !== "" ||
+    hasAdvancedFilters(advanced);
+
+  const resetAll = () => {
+    setQuick("tous");
+    setQuery("");
+    setResponsableQuick("");
+    setAdvanced(EMPTY_CONSEIL_ADVANCED);
+  };
 
   const provenance = (c: ConseilInventoryItem) =>
     c.entiteDemandeuse || c.demandeur || "—";
@@ -152,6 +149,9 @@ export function ConseilInventory({
       onAdvancedToggle={() => setAdvancedOpen((v) => !v)}
       resultCount={filtered.length}
       totalCount={items.filter((c) => !c.archive).length}
+      activeFilterChips={activeFilterChips}
+      onResetFilters={resetAll}
+      canResetFilters={canReset}
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -303,16 +303,16 @@ export function ConseilInventory({
               onChange={(e) =>
                 setAdvanced((s) => ({ ...s, tags: e.target.value }))
               }
-              placeholder="Ex. LSubv"
+              placeholder="Ex. Gouvernance"
             />
           </label>
-          <div className="form-actions" style={{ gridColumn: "1 / -1" }}>
+          <div className="form-actions inventory__advanced-actions">
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={() => setAdvanced(EMPTY_ADVANCED)}
+              onClick={() => setAdvanced(EMPTY_CONSEIL_ADVANCED)}
             >
-              Réinitialiser
+              Réinitialiser la recherche avancée
             </button>
           </div>
         </div>

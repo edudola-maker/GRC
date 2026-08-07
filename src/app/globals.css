@@ -1883,6 +1883,49 @@ a {
   align-items: center;
 }
 
+.inventory__active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.85rem;
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.inventory__active-filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.inventory__active-filters-label {
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: 0.25rem;
+}
+
+.inventory__active-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.inventory__advanced-actions {
+  grid-column: 1 / -1;
+}
+
 .inventory__select select {
   padding: 0.35rem 0.55rem;
   border-radius: 999px;

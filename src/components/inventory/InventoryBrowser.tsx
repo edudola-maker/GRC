@@ -1,11 +1,12 @@
 "use client";
 
 import { useDeferredValue, useState, type ReactNode } from "react";
+import { ActiveFiltersBar } from "@/components/inventory/ActiveFiltersBar";
+import { filterByQuery } from "@/lib/inventory-filters";
 
 /**
- * Socle réutilisable : recherche dynamique + panneau avancé.
+ * Socle réutilisable : recherche dynamique + panneau avancé + filtres actifs.
  * Structure en zones : outils (filtres/recherche) puis inventaire.
- * Pattern à étendre aux autres modules.
  */
 export function InventoryBrowser({
   searchPlaceholder,
@@ -19,6 +20,9 @@ export function InventoryBrowser({
   totalCount,
   toolsLabel = "Filtres et recherche",
   inventoryLabel = "Inventaire",
+  activeFilterChips = [],
+  onResetFilters,
+  canResetFilters = false,
   children,
 }: {
   searchPlaceholder: string;
@@ -32,6 +36,9 @@ export function InventoryBrowser({
   totalCount: number;
   toolsLabel?: string;
   inventoryLabel?: string;
+  activeFilterChips?: string[];
+  onResetFilters?: () => void;
+  canResetFilters?: boolean;
   children: ReactNode;
 }) {
   const countLabel =
@@ -73,6 +80,14 @@ export function InventoryBrowser({
         ) : null}
 
         <div className="filter-bar inventory__filters">{quickFilters}</div>
+
+        {onResetFilters ? (
+          <ActiveFiltersBar
+            chips={activeFilterChips}
+            onReset={onResetFilters}
+            canReset={canResetFilters}
+          />
+        ) : null}
       </section>
 
       <section
@@ -121,13 +136,4 @@ export function ChipButton({
   );
 }
 
-export function filterByQuery<T>(
-  items: T[],
-  query: string,
-  fields: (item: T) => Array<string | null | undefined>,
-): T[] {
-  if (!query) return items;
-  return items.filter((item) =>
-    fields(item).some((f) => (f ?? "").toLowerCase().includes(query)),
-  );
-}
+export { filterByQuery };
