@@ -399,3 +399,31 @@ export async function deleteTache(formData: FormData) {
   revalidateTacheViews(undefined, existing);
   redirect("/taches?ok=supprime");
 }
+
+/** Terminer rapidement une tâche depuis le backlog */
+export async function completeTacheRapide(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const retour = str(formData, "retour") || "/backlog";
+
+  if (!id) redirectWithError(retour, "Identifiant tâche manquant.");
+
+  const existing = await prisma.tache.findUnique({ where: { id } });
+  if (!existing) redirectWithError(retour, "Tâche introuvable.");
+
+  await prisma.tache.update({
+    where: { id },
+    data: {
+      statut: "TERMINE",
+      modifieParId: current.id,
+      ...validationPatchForStatut(current.id, existing.statut, "TERMINE"),
+    },
+  });
+
+  await recordHistory(id, current.id, [
+    { champ: "statut", avant: existing.statut, apres: "TERMINE" },
+  ]);
+
+  revalidateTacheViews(id, existing);
+  redirectWithOk(retour, "statut");
+}

@@ -11,26 +11,25 @@ import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
 
-const STATUTS = new Set<string>(STATUT_AUDIT_OPTIONS.map((o) => o.value));
+const STATUTS_AUDIT = new Set<string>(
+  STATUT_AUDIT_OPTIONS.map((o) => o.value),
+);
 const STATUTS_RECO = new Set<string>(STATUT_RECO_OPTIONS.map((o) => o.value));
 
 async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
 }
 
-async function assertResponsableOptional(id: string | null) {
-  if (!id) return true;
-  return Boolean(await assertResponsable(id));
-}
-
 export async function createAudit(formData: FormData) {
   const current = await getCurrentUser();
   const fallback = "/audits/nouveau";
   const titre = str(formData, "titre");
-  if (!titre) redirectWithError(fallback, "Le titre de l'audit est obligatoire.");
+  if (!titre) {
+    redirectWithError(fallback, "Le titre de l'audit est obligatoire.");
+  }
 
   const statut = str(formData, "statut") || "PLANIFIE";
-  if (!STATUTS.has(statut)) {
+  if (!STATUTS_AUDIT.has(statut)) {
     redirectWithError(fallback, "Statut invalide.");
   }
 
@@ -54,6 +53,16 @@ export async function createAudit(formData: FormData) {
     },
   });
 
+  const documentId = optStr(formData, "documentId");
+  if (documentId) {
+    const doc = await prisma.document.findUnique({ where: { id: documentId } });
+    if (doc) {
+      await prisma.auditDocument.create({
+        data: { auditId: audit.id, documentId },
+      });
+    }
+  }
+
   revalidateApp([`/audits/${audit.id}`]);
   redirectWithOk(`/audits/${audit.id}`, "cree");
 }
@@ -61,7 +70,7 @@ export async function createAudit(formData: FormData) {
 export async function updateAudit(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant manquant.");
+  if (!id) redirectWithError("/audits", "Identifiant audit manquant.");
 
   const existing = await prisma.audit.findUnique({ where: { id } });
   if (!existing) redirectWithError("/audits", "Audit introuvable.");
@@ -74,8 +83,8 @@ export async function updateAudit(formData: FormData) {
     );
   }
 
-  const statut = str(formData, "statut") || existing.statut;
-  if (!STATUTS.has(statut)) {
+  const statut = str(formData, "statut") || "PLANIFIE";
+  if (!STATUTS_AUDIT.has(statut)) {
     redirectWithError(`/audits/${id}/modifier`, "Statut invalide.");
   }
 
@@ -102,8 +111,53 @@ export async function updateAudit(formData: FormData) {
   redirectWithOk(`/audits/${id}`, "modifie");
 }
 
-export async function createRecommandation(formData: FormData) {
+export async function archiveAudit(formData: FormData) {
   const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/audits", "Identifiant audit manquant.");
+
+  const existing = await prisma.audit.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/audits", "Audit introuvable.");
+
+  await prisma.audit.update({
+    where: { id },
+    data: { archive: true, modifieParId: current.id },
+  });
+
+  revalidateApp([`/audits/${id}`]);
+  redirectWithOk(`/audits/${id}`, "archive");
+}
+
+export async function unarchiveAudit(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/audits", "Identifiant audit manquant.");
+
+  const existing = await prisma.audit.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/audits", "Audit introuvable.");
+
+  await prisma.audit.update({
+    where: { id },
+    data: { archive: false, modifieParId: current.id },
+  });
+
+  revalidateApp([`/audits/${id}`]);
+  redirectWithOk(`/audits/${id}`, "desarchive");
+}
+
+export async function deleteAudit(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/audits", "Identifiant audit manquant.");
+
+  const existing = await prisma.audit.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/audits", "Audit introuvable.");
+
+  await prisma.audit.delete({ where: { id } });
+  revalidateApp();
+  redirect("/audits?ok=supprime");
+}
+
+export async function createRecommandation(formData: FormData) {
   const auditId = str(formData, "auditId");
   if (!auditId) redirectWithError("/audits", "Identifiant audit manquant.");
 
@@ -124,10 +178,11 @@ export async function createRecommandation(formData: FormData) {
   }
 
   const responsableId = optStr(formData, "responsableId");
-  if (!(await assertResponsableOptional(responsableId))) {
+  if (responsableId && !(await assertResponsable(responsableId))) {
     redirectWithError(`/audits/${auditId}`, "Responsable introuvable.");
   }
 
+  const current = await getCurrentUser();
   const reco = await prisma.recommandation.create({
     data: {
       auditId,
@@ -136,6 +191,7 @@ export async function createRecommandation(formData: FormData) {
       responsableId,
       dateEcheance: optDate(formData, "dateEcheance"),
       statut: statut as "OUVERTE",
+      commentaires: optStr(formData, "commentaires"),
     },
   });
 
@@ -161,10 +217,76 @@ export async function createRecommandation(formData: FormData) {
   redirectWithOk(`/audits/${auditId}`, "reco");
 }
 
+export async function updateRecommandation(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/audits", "Identifiant recommandation manquant.");
+
+  const existing = await prisma.recommandation.findUnique({ where: { id } });
+  if (!existing) {
+    redirectWithError("/audits", "Recommandation introuvable.");
+  }
+
+  const titre = str(formData, "titre");
+  if (!titre) {
+    redirectWithError(
+      `/audits/${existing.auditId}`,
+      "Le titre de la recommandation est obligatoire.",
+    );
+  }
+
+  const statut = str(formData, "statut") || "OUVERTE";
+  if (!STATUTS_RECO.has(statut)) {
+    redirectWithError(
+      `/audits/${existing.auditId}`,
+      "Statut de recommandation invalide.",
+    );
+  }
+
+  const responsableId = optStr(formData, "responsableId");
+  if (responsableId && !(await assertResponsable(responsableId))) {
+    redirectWithError(
+      `/audits/${existing.auditId}`,
+      "Responsable introuvable.",
+    );
+  }
+
+  await prisma.recommandation.update({
+    where: { id },
+    data: {
+      titre,
+      description: optStr(formData, "description"),
+      responsableId,
+      dateEcheance: optDate(formData, "dateEcheance"),
+      statut: statut as "OUVERTE",
+      commentaires: optStr(formData, "commentaires"),
+    },
+  });
+
+  revalidateApp([`/audits/${existing.auditId}`]);
+  redirectWithOk(`/audits/${existing.auditId}`, "modifie");
+}
+
+export async function deleteRecommandation(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/audits", "Identifiant recommandation manquant.");
+
+  const existing = await prisma.recommandation.findUnique({ where: { id } });
+  if (!existing) {
+    redirectWithError("/audits", "Recommandation introuvable.");
+  }
+
+  const auditId = existing.auditId;
+  await prisma.recommandation.delete({ where: { id } });
+  revalidateApp([`/audits/${auditId}`]);
+  redirectWithOk(`/audits/${auditId}`, "supprime");
+}
+
 export async function createTacheDepuisAudit(formData: FormData) {
   const current = await getCurrentUser();
   const auditId = str(formData, "auditId") || str(formData, "id");
-  if (!auditId) redirectWithError("/audits", "Identifiant audit manquant.");
+  if (!auditId) {
+    redirectWithError("/audits", "Identifiant audit manquant.");
+  }
 
   const audit = await prisma.audit.findUnique({ where: { id: auditId } });
   if (!audit) redirectWithError("/audits", "Audit introuvable.");
@@ -190,7 +312,8 @@ export async function createTacheDepuisAudit(formData: FormData) {
 
 export async function createTacheDepuisReco(formData: FormData) {
   const current = await getCurrentUser();
-  const recommandationId = str(formData, "recommandationId") || str(formData, "id");
+  const recommandationId =
+    str(formData, "recommandationId") || str(formData, "id");
   if (!recommandationId) {
     redirectWithError("/audits", "Identifiant recommandation manquant.");
   }
@@ -222,43 +345,39 @@ export async function createTacheDepuisReco(formData: FormData) {
   redirectWithOk(`/taches/${tache.id}`, "tache");
 }
 
-export async function archiveAudit(formData: FormData) {
-  const current = await getCurrentUser();
-  const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant manquant.");
-  const existing = await prisma.audit.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/audits", "Audit introuvable.");
+export async function linkDocument(formData: FormData) {
+  const auditId = str(formData, "auditId");
+  const documentId = str(formData, "documentId");
+  if (!auditId) redirectWithError("/audits", "Identifiant audit manquant.");
+  if (!documentId) {
+    redirectWithError(`/audits/${auditId}`, "Sélectionnez un document.");
+  }
 
-  await prisma.audit.update({
-    where: { id },
-    data: { archive: true, modifieParId: current.id },
+  const [audit, document] = await Promise.all([
+    prisma.audit.findUnique({ where: { id: auditId } }),
+    prisma.document.findUnique({ where: { id: documentId } }),
+  ]);
+  if (!audit) redirectWithError("/audits", "Audit introuvable.");
+  if (!document) {
+    redirectWithError(`/audits/${auditId}`, "Document introuvable.");
+  }
+
+  const existing = await prisma.auditDocument.findUnique({
+    where: {
+      auditId_documentId: { auditId, documentId },
+    },
   });
-  revalidateApp([`/audits/${id}`]);
-  redirectWithOk(`/audits/${id}`, "archive");
-}
+  if (existing) {
+    redirectWithError(
+      `/audits/${auditId}`,
+      "Ce document est déjà lié à l'audit.",
+    );
+  }
 
-export async function unarchiveAudit(formData: FormData) {
-  const current = await getCurrentUser();
-  const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant manquant.");
-  const existing = await prisma.audit.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/audits", "Audit introuvable.");
-
-  await prisma.audit.update({
-    where: { id },
-    data: { archive: false, modifieParId: current.id },
+  await prisma.auditDocument.create({
+    data: { auditId, documentId },
   });
-  revalidateApp([`/audits/${id}`]);
-  redirectWithOk(`/audits/${id}`, "desarchive");
-}
 
-export async function deleteAudit(formData: FormData) {
-  const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant manquant.");
-  const existing = await prisma.audit.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/audits", "Audit introuvable.");
-
-  await prisma.audit.delete({ where: { id } });
-  revalidateApp();
-  redirect("/audits?ok=supprime");
+  revalidateApp([`/audits/${auditId}`, `/documents/${documentId}`]);
+  redirectWithOk(`/audits/${auditId}`, "lien");
 }
