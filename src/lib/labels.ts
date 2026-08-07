@@ -1,11 +1,15 @@
 /** Libellés français pour les énumérations métier */
 
 export const STATUT_PROJET_LABELS: Record<string, string> = {
-  A_FAIRE: "À faire",
+  IDEE: "Idée",
+  A_ETUDIER: "À étudier",
+  VALIDE: "Validé",
+  PLANIFIE: "Planifié",
   EN_COURS: "En cours",
-  EN_ATTENTE: "En attente",
-  TERMINE: "Terminé",
-  ANNULE: "Annulé",
+  EN_VALIDATION: "En validation",
+  DEPLOYE: "Déployé",
+  CLOTURE: "Clôturé",
+  ABANDONNE: "Abandonné",
 };
 
 export const STATUT_TACHE_LABELS: Record<string, string> = {
@@ -56,7 +60,31 @@ export const TYPE_DOCUMENT_LABELS: Record<string, string> = {
   PROCEDURE: "Procédure",
   CHARTE: "Charte",
   POLITIQUE: "Politique",
+  INSTRUCTION: "Instruction",
   MODELE: "Modèle",
+  AUTRE: "Autre",
+};
+
+export const STRATEGIE_RISQUE_LABELS: Record<string, string> = {
+  EVITER: "Éviter",
+  REDUIRE: "Réduire",
+  TRANSFERER: "Transférer",
+  ACCEPTER: "Accepter",
+};
+
+export const TYPE_CONTROLE_LABELS: Record<string, string> = {
+  MANUEL: "Manuel",
+  SEMI_AUTOMATIQUE: "Semi-automatique",
+  AUTOMATIQUE: "Automatique",
+};
+
+export const TAXINOMIE_LABELS: Record<string, string> = {
+  GOUVERNANCE: "Gouvernance",
+  RESSOURCES_HUMAINES: "Ressources humaines",
+  FINANCES: "Finances",
+  INFORMATIQUE: "Informatique",
+  JURIDIQUE: "Juridique",
+  ACHATS: "Achats",
   AUTRE: "Autre",
 };
 

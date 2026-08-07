@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
+import { ModuleHelp } from "@/components/ModuleHelp";
+import { MODULE_HELP } from "@/lib/catalog";
 import {
   FREQUENCE_REVUE_LABELS,
   STATUT_DOCUMENT_LABELS,
@@ -75,9 +77,10 @@ export default async function DocumentsPage({
     <>
       <PageHeader
         title="Documents"
-        description="Inventaire documentaire et suivi des revues planifiées."
+        description="Inventaire, métadonnées et planification des revues — le contenu reste dans Confluence."
         actions={<BtnLink href="/documents/nouveau">Nouveau document</BtnLink>}
       />
+      <ModuleHelp {...MODULE_HELP.documents} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
       {!archives ? (
@@ -137,7 +140,9 @@ export default async function DocumentsPage({
                     className={`entity-row entity-row--${urgence}`}
                   >
                     <div className="entity-row__main">
-                      <strong>{d.nom}</strong>
+                      <strong>
+                        <span className="muted">{d.code}</span> · {d.nom}
+                      </strong>
                       <span className="entity-row__meta">
                         {TYPE_DOCUMENT_LABELS[d.typeDocument]}
                         {d.version ? ` · v${d.version}` : ""}
@@ -147,6 +152,7 @@ export default async function DocumentsPage({
                         {d.frequenceRevue
                           ? ` · ${FREQUENCE_REVUE_LABELS[d.frequenceRevue]}`
                           : ""}
+                        {d.tags ? ` · ${d.tags}` : ""}
                         {" · "}
                         {d._count.tachesRevue} tâche
                         {d._count.tachesRevue > 1 ? "s" : ""}

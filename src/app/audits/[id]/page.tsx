@@ -23,6 +23,7 @@ import {
   STATUT_AUDIT_LABELS,
   STATUT_RECO_LABELS,
   STATUT_TACHE_LABELS,
+  TAXINOMIE_LABELS,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -33,6 +34,7 @@ import {
 import { toDateInputValue } from "@/lib/form";
 import { listUtilisateursActifs } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -83,12 +85,13 @@ export default async function AuditDetailPage({
   const auditClos = (AUDIT_STATUTS_CLOS as readonly string[]).includes(
     audit.statut,
   );
+  const tags = parseTags(audit.tags);
 
   return (
     <>
       <BackLink href="/audits" label="← Retour aux audits" />
       <PageHeader
-        title={audit.titre}
+        title={`${audit.code} — ${audit.titre}`}
         description={audit.perimetre ?? "Aucun périmètre renseigné."}
         actions={
           <>
@@ -137,12 +140,30 @@ export default async function AuditDetailPage({
           <h2 className="panel-title">Informations</h2>
           <dl className="kv">
             <div>
+              <dt>Code</dt>
+              <dd>{audit.code}</dd>
+            </div>
+            <div>
               <dt>Responsable</dt>
               <dd>{audit.responsable.nom}</dd>
             </div>
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_AUDIT_LABELS[audit.statut]}</dd>
+            </div>
+            <div>
+              <dt>Taxinomie</dt>
+              <dd>
+                {audit.taxinomie
+                  ? (TAXINOMIE_LABELS[audit.taxinomie] ?? audit.taxinomie)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Tags</dt>
+              <dd>
+                {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
+              </dd>
             </div>
             <div>
               <dt>Début</dt>

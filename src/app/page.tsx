@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ActionBucket } from "@/components/ActionRow";
+import { ActionBucket, ActionRow } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { getMesActions } from "@/lib/actions-view";
+import { formatDate } from "@/lib/labels";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +50,11 @@ export default async function DashboardCollaborateurPage({
   ];
 
   const visible =
-    vue === "toutes" ? buckets : buckets.filter((b) => b.id === vue);
+    vue === "toutes"
+      ? buckets
+      : vue === "terminees"
+        ? []
+        : buckets.filter((b) => b.id === vue);
 
   return (
     <>
@@ -68,10 +73,8 @@ export default async function DashboardCollaborateurPage({
         <div className="panel panel--soft">
           <h2 className="panel-title">Ma planification</h2>
           <p className="muted">
-            Vue calendrier des grandes plages de travail (semaines / mois) —
-            disponible à l&apos;étape 6 du Sprint 2. Outlook reste l&apos;outil
-            des réunions ; ici, on planifiera les blocs de travail sur audits,
-            projets et revues.
+            Calendrier des grandes plages de travail (projets, audits, conseils)
+            — prévu à l&apos;étape 6. Outlook reste l&apos;outil des réunions.
           </p>
         </div>
       </section>
@@ -86,7 +89,7 @@ export default async function DashboardCollaborateurPage({
 
         <div className="filter-bar">
           <Link href="/" className={`chip${vue === "toutes" ? " is-active" : ""}`}>
-            Toutes
+            Actives
           </Link>
           {buckets.map((b) => (
             <Link
@@ -97,13 +100,44 @@ export default async function DashboardCollaborateurPage({
               {b.title} ({b.items.length})
             </Link>
           ))}
+          <Link
+            href="/?vue=terminees"
+            className={`chip${vue === "terminees" ? " is-active" : ""}`}
+          >
+            Terminées ({actions.terminees.length})
+          </Link>
         </div>
 
-        {actions.totalOuvertes === 0 ? (
+        {vue === "terminees" ? (
+          <div className="panel">
+            <h2 className="panel-title">Historique — actions terminées</h2>
+            {actions.terminees.length === 0 ? (
+              <p className="empty">Aucune action terminée récemment.</p>
+            ) : (
+              <ul className="entity-list">
+                {actions.terminees.map((t) => (
+                  <li key={t.id}>
+                    <Link href={`/taches/${t.id}`} className="entity-row">
+                      <div className="entity-row__main">
+                        <strong>{t.titre}</strong>
+                        <span className="entity-row__meta">
+                          Clôturée le {formatDate(t.dateValidation ?? t.modifieLe)}
+                        </span>
+                      </div>
+                      <span className="entity-row__date">
+                        {formatDate(t.dateEcheance)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : actions.totalOuvertes === 0 ? (
           <div className="panel">
             <p className="empty empty--success">
-              Aucune action ouverte. Belle progression — les listes diminuent
-              quand le travail avance.
+              Aucune action ouverte. Belle progression — consultez l&apos;historique
+              pour revoir les actions terminées.
             </p>
           </div>
         ) : (
@@ -121,12 +155,6 @@ export default async function DashboardCollaborateurPage({
             ))}
           </div>
         )}
-
-        <p className="muted" style={{ marginTop: "1rem" }}>
-          Les actions viennent des objets métier (projet, conseil, audit,
-          contrôle SCI, revue documentaire). « Créer une action » reste possible
-          pour un cas ponctuel, mais ce n&apos;est pas le cœur du produit.
-        </p>
       </section>
     </>
   );

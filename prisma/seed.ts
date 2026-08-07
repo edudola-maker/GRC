@@ -23,8 +23,9 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
-  console.log("🌱 Seed squelette plateforme…");
+  console.log("🌱 Seed Sprint 2 Vague B…");
 
+  await prisma.journalEvenement.deleteMany();
   await prisma.historiqueTache.deleteMany();
   await prisma.tache.deleteMany();
   await prisma.recommandation.deleteMany();
@@ -42,6 +43,7 @@ async function main() {
   await prisma.document.deleteMany();
   await prisma.objectifAnnuel.deleteMany();
   await prisma.projet.deleteMany();
+  await prisma.sequenceCode.deleteMany();
   await prisma.utilisateur.deleteMany();
 
   const alice = await prisma.utilisateur.create({
@@ -69,10 +71,24 @@ async function main() {
     },
   });
 
+  await prisma.sequenceCode.createMany({
+    data: [
+      { prefixe: "PRO", dernier: 3 },
+      { prefixe: "CNS", dernier: 1 },
+      { prefixe: "RSK", dernier: 2 },
+      { prefixe: "CTL", dernier: 3 },
+      { prefixe: "DOC", dernier: 2 },
+      { prefixe: "AUD", dernier: 2 },
+    ],
+  });
+
   const projetMod = await prisma.projet.create({
     data: {
+      code: "PRO-0001",
       nom: "Modernisation des procédures internes",
       description: "Revue du corpus procédural.",
+      taxinomie: "GOUVERNANCE",
+      tags: "SCI, procédures",
       responsableId: alice.id,
       dateDebut: daysFromNow(-60),
       dateEcheance: daysFromNow(45),
@@ -102,14 +118,17 @@ async function main() {
     },
   });
 
-  const projetDig = await prisma.projet.create({
+  await prisma.projet.create({
     data: {
+      code: "PRO-0002",
       nom: "Digitalisation du courrier entrant",
       description: "Dématérialisation du circuit courrier.",
+      taxinomie: "INFORMATIQUE",
+      tags: "digital",
       responsableId: bernard.id,
       dateDebut: daysFromNow(-30),
       dateEcheance: daysFromNow(20),
-      statut: "EN_COURS",
+      statut: "PLANIFIE",
       priorite: "MOYENNE",
       avancement: 35,
       creeParId: bernard.id,
@@ -119,13 +138,15 @@ async function main() {
 
   await prisma.projet.create({
     data: {
-      nom: "Préparation du rapport annuel",
+      code: "PRO-0003",
+      nom: "Automatiser le reporting mensuel",
+      description: "Idée à explorer — boîte à idées.",
+      taxinomie: "FINANCES",
+      tags: "reporting, idée",
       responsableId: claire.id,
-      dateDebut: daysFromNow(-10),
-      dateEcheance: daysFromNow(90),
-      statut: "A_FAIRE",
+      statut: "IDEE",
       priorite: "BASSE",
-      avancement: 5,
+      avancement: 0,
       creeParId: claire.id,
       modifieParId: claire.id,
     },
@@ -134,8 +155,11 @@ async function main() {
   const reception = daysFromNow(-3);
   const conseil = await prisma.conseil.create({
     data: {
+      code: "CNS-0001",
       objet: "Analyse du seuil de délégation",
       description: "Demande d'avis juridique court.",
+      taxinomie: "JURIDIQUE",
+      tags: "LSubv, gouvernance",
       demandeur: "Service Achats",
       entiteDemandeuse: "Direction des Achats",
       dateReception: reception,
@@ -145,6 +169,29 @@ async function main() {
       creeParId: alice.id,
       modifieParId: alice.id,
     },
+  });
+
+  await prisma.journalEvenement.createMany({
+    data: [
+      {
+        typeObjet: "CONSEIL",
+        objetId: conseil.id,
+        typeEvenement: "CREATION",
+        message: "Conseil créé — Analyse du seuil de délégation",
+        automatique: true,
+        auteurId: alice.id,
+        creeLe: reception,
+      },
+      {
+        typeObjet: "CONSEIL",
+        objetId: conseil.id,
+        typeEvenement: "NOTE",
+        message: "Premier échange téléphonique avec le demandeur.",
+        automatique: false,
+        auteurId: claire.id,
+        creeLe: daysFromNow(-1),
+      },
+    ],
   });
 
   await prisma.tache.create({
@@ -193,28 +240,34 @@ async function main() {
 
   await prisma.tache.create({
     data: {
-      titre: "Configurer le scanner multifonction",
+      titre: "Préparer la note de cadrage (terminée)",
       responsableId: claire.id,
-      projetId: projetDig.id,
-      dateEcheance: daysFromNow(7),
-      statut: "EN_COURS",
+      projetId: projetMod.id,
+      dateEcheance: daysFromNow(-20),
+      statut: "TERMINE",
       priorite: "MOYENNE",
       categorie: "PROJET",
+      dateValidation: daysFromNow(-15),
+      valideParId: alice.id,
       creeParId: claire.id,
-      modifieParId: claire.id,
+      modifieParId: alice.id,
     },
   });
 
   const risque = await prisma.risque.create({
     data: {
+      code: "RSK-0001",
       nom: "Accès applicatifs non maîtrisés",
       description: "Droits utilisateurs trop larges.",
+      taxinomie: "INFORMATIQUE",
+      tags: "cyber, accès",
       processus: "Sécurité informatique",
       responsableId: bernard.id,
       categorie: "CYBERSECURITE",
       probabilite: 4,
       impact: 4,
       criticite: 16,
+      strategie: "REDUIRE",
       statut: "EN_TRAITEMENT",
       creeParId: bernard.id,
       modifieParId: bernard.id,
@@ -223,13 +276,17 @@ async function main() {
 
   await prisma.risque.create({
     data: {
+      code: "RSK-0002",
       nom: "Dépassement budgétaire engagements",
+      taxinomie: "FINANCES",
+      tags: "budget",
       processus: "Finances",
       responsableId: alice.id,
       categorie: "FINANCIER",
       probabilite: 3,
       impact: 5,
       criticite: 15,
+      strategie: null,
       statut: "IDENTIFIE",
       creeParId: alice.id,
       modifieParId: alice.id,
@@ -238,11 +295,16 @@ async function main() {
 
   const controle = await prisma.controleSCI.create({
     data: {
+      code: "CTL-0001",
       nom: "Revue mensuelle des accès applicatifs",
       description: "Vérification des droits.",
+      taxinomie: "INFORMATIQUE",
+      tags: "accès",
       processusConcerne: "Sécurité informatique",
       responsableId: bernard.id,
+      typeControle: "MANUEL",
       frequence: "MENSUELLE",
+      fenetreDeclenchementJours: 7,
       dateDerniereRealisation: daysFromNow(-40),
       dateProchaineEcheance: daysFromNow(-5),
       statut: "EN_RETARD",
@@ -257,10 +319,14 @@ async function main() {
 
   await prisma.controleSCI.create({
     data: {
+      code: "CTL-0002",
       nom: "Contrôle trimestriel des engagements budgétaires",
+      taxinomie: "FINANCES",
       processusConcerne: "Finances",
       responsableId: alice.id,
+      typeControle: "SEMI_AUTOMATIQUE",
       frequence: "TRIMESTRIELLE",
+      fenetreDeclenchementJours: 14,
       dateDerniereRealisation: daysFromNow(-80),
       dateProchaineEcheance: daysFromNow(4),
       statut: "A_REALISER",
@@ -271,10 +337,14 @@ async function main() {
 
   await prisma.controleSCI.create({
     data: {
+      code: "CTL-0003",
       nom: "Vérification semestrielle du registre des délégations",
+      taxinomie: "GOUVERNANCE",
       processusConcerne: "Gouvernance",
       responsableId: claire.id,
+      typeControle: "MANUEL",
       frequence: "SEMESTRIELLE",
+      fenetreDeclenchementJours: 30,
       dateDerniereRealisation: daysFromNow(-1),
       dateProchaineEcheance: daysFromNow(180),
       statut: "A_VALIDER",
@@ -285,18 +355,39 @@ async function main() {
     },
   });
 
+  // Action SCI hors fenêtre (échéance dans 180 j., fenêtre 30) — ne doit pas polluer Mes actions
+  await prisma.tache.create({
+    data: {
+      titre: "Réaliser le contrôle : Vérification semestrielle délégations",
+      responsableId: claire.id,
+      controleSCIId: (
+        await prisma.controleSCI.findFirst({ where: { code: "CTL-0003" } })
+      )!.id,
+      dateEcheance: daysFromNow(180),
+      statut: "A_FAIRE",
+      priorite: "MOYENNE",
+      categorie: "SCI",
+      creeParId: claire.id,
+      modifieParId: claire.id,
+    },
+  });
+
   const doc = await prisma.document.create({
     data: {
+      code: "DOC-0001",
       nom: "Charte des délégations de signature",
       typeDocument: "CHARTE",
+      taxinomie: "GOUVERNANCE",
+      tags: "délégations",
       version: "2.1",
       responsableId: alice.id,
       dateApprobation: daysFromNow(-200),
       dateDerniereRevue: daysFromNow(-200),
       frequenceRevue: "ANNUELLE",
       prochaineRevue: daysFromNow(-10),
+      fenetreDeclenchementJours: 30,
       statut: "A_REVOIR",
-      reference: "DIR-DEL-2025",
+      reference: "https://confluence.exemple.fr/display/GOUV/Charte-delegations",
       creeParId: alice.id,
       modifieParId: alice.id,
     },
@@ -304,14 +395,19 @@ async function main() {
 
   await prisma.document.create({
     data: {
+      code: "DOC-0002",
       nom: "Procédure de contrôle des accès",
       typeDocument: "PROCEDURE",
+      taxinomie: "INFORMATIQUE",
+      tags: "SCI, accès",
       version: "1.0",
       responsableId: bernard.id,
       dateApprobation: daysFromNow(-100),
       frequenceRevue: "ANNUELLE",
       prochaineRevue: daysFromNow(60),
+      fenetreDeclenchementJours: 30,
       statut: "EN_VIGUEUR",
+      reference: "https://confluence.exemple.fr/display/SCI/Controle-acces",
       creeParId: bernard.id,
       modifieParId: bernard.id,
     },
@@ -333,8 +429,11 @@ async function main() {
 
   const audit = await prisma.audit.create({
     data: {
+      code: "AUD-0001",
       titre: "Audit interne — processus Achats",
       perimetre: "Cycle Achats 2026",
+      taxinomie: "ACHATS",
+      tags: "audit, achats",
       responsableId: alice.id,
       dateDebut: daysFromNow(-20),
       dateFin: daysFromNow(40),
@@ -373,8 +472,10 @@ async function main() {
 
   await prisma.audit.create({
     data: {
+      code: "AUD-0002",
       titre: "Revue qualité — Paie",
       perimetre: "Processus Paie",
+      taxinomie: "RESSOURCES_HUMAINES",
       responsableId: claire.id,
       dateDebut: daysFromNow(60),
       dateFin: daysFromNow(90),
@@ -416,7 +517,7 @@ async function main() {
     ],
   });
 
-  console.log("✅ Seed terminé (utilisateurs, projets, conseils, SCI, risques, documents, audits, objectifs).");
+  console.log("✅ Seed Vague B terminé.");
 }
 
 main()

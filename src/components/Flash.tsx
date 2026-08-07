@@ -33,6 +33,8 @@ export function FlashBanner({
     preuve: "Preuve ajoutée.",
     reco: "Recommandation créée.",
     tache: "Tâche créée.",
+    note: "Note ajoutée au journal.",
+    reouvert: "Conseil rouvert.",
   };
 
   return (

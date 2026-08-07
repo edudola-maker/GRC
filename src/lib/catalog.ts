@@ -2,6 +2,16 @@
  * Catalogue centralisé — listes configurables plus tard.
  */
 
+export const TAXINOMIE_OPTIONS = [
+  { value: "GOUVERNANCE", label: "Gouvernance" },
+  { value: "RESSOURCES_HUMAINES", label: "Ressources humaines" },
+  { value: "FINANCES", label: "Finances" },
+  { value: "INFORMATIQUE", label: "Informatique" },
+  { value: "JURIDIQUE", label: "Juridique" },
+  { value: "ACHATS", label: "Achats" },
+  { value: "AUTRE", label: "Autre" },
+] as const;
+
 export const CATEGORIE_TACHE_OPTIONS = [
   { value: "CONSEIL", label: "Conseil" },
   { value: "PROJET", label: "Projet" },
@@ -13,11 +23,15 @@ export const CATEGORIE_TACHE_OPTIONS = [
 ] as const;
 
 export const STATUT_PROJET_OPTIONS = [
-  { value: "A_FAIRE", label: "À faire" },
+  { value: "IDEE", label: "Idée" },
+  { value: "A_ETUDIER", label: "À étudier" },
+  { value: "VALIDE", label: "Validé" },
+  { value: "PLANIFIE", label: "Planifié" },
   { value: "EN_COURS", label: "En cours" },
-  { value: "EN_ATTENTE", label: "En attente" },
-  { value: "TERMINE", label: "Terminé" },
-  { value: "ANNULE", label: "Annulé" },
+  { value: "EN_VALIDATION", label: "En validation" },
+  { value: "DEPLOYE", label: "Déployé" },
+  { value: "CLOTURE", label: "Clôturé" },
+  { value: "ABANDONNE", label: "Abandonné" },
 ] as const;
 
 export const STATUT_TACHE_OPTIONS = [
@@ -35,6 +49,12 @@ export const STATUT_CONTROLE_OPTIONS = [
   { value: "A_VALIDER", label: "À valider" },
   { value: "REALISE", label: "Réalisé" },
   { value: "EN_RETARD", label: "En retard" },
+] as const;
+
+export const TYPE_CONTROLE_OPTIONS = [
+  { value: "MANUEL", label: "Manuel" },
+  { value: "SEMI_AUTOMATIQUE", label: "Semi-automatique" },
+  { value: "AUTOMATIQUE", label: "Automatique" },
 ] as const;
 
 export const STATUT_CONSEIL_OPTIONS = [
@@ -55,6 +75,13 @@ export const STATUT_RISQUE_OPTIONS = [
   { value: "CLOTURE", label: "Clôturé" },
 ] as const;
 
+export const STRATEGIE_RISQUE_OPTIONS = [
+  { value: "EVITER", label: "Éviter" },
+  { value: "REDUIRE", label: "Réduire" },
+  { value: "TRANSFERER", label: "Transférer" },
+  { value: "ACCEPTER", label: "Accepter" },
+] as const;
+
 export const CATEGORIE_RISQUE_OPTIONS = [
   { value: "FINANCIER", label: "Financier" },
   { value: "OPERATIONNEL", label: "Opérationnel" },
@@ -68,6 +95,7 @@ export const TYPE_DOCUMENT_OPTIONS = [
   { value: "PROCEDURE", label: "Procédure" },
   { value: "CHARTE", label: "Charte" },
   { value: "POLITIQUE", label: "Politique" },
+  { value: "INSTRUCTION", label: "Instruction" },
   { value: "MODELE", label: "Modèle" },
   { value: "AUTRE", label: "Autre" },
 ] as const;
@@ -120,9 +148,42 @@ export const FREQUENCE_CONTROLE_OPTIONS = [
 export const ECHELLE_RISQUE = [1, 2, 3, 4, 5] as const;
 
 export const TACHE_STATUTS_CLOS = ["TERMINE", "ANNULE"] as const;
-export const PROJET_STATUTS_CLOS = ["TERMINE", "ANNULE"] as const;
+export const PROJET_STATUTS_CLOS = ["CLOTURE", "ABANDONNE"] as const;
+export const PROJET_STATUTS_ACTIFS = [
+  "VALIDE",
+  "PLANIFIE",
+  "EN_COURS",
+  "EN_VALIDATION",
+  "DEPLOYE",
+] as const;
 export const CONSEIL_STATUTS_CLOS = ["CLOTURE", "ANNULE", "REPONDU"] as const;
 export const RISQUE_STATUTS_MAITRISES = ["MAITRISE", "ACCEPTE", "CLOTURE"] as const;
 
-/** Délai cible conseils (jours ouvrés) */
 export const CONSEIL_DELAI_CIBLE_JOURS = 5;
+
+export const MODULE_HELP = {
+  projets: {
+    title: "Qu'est-ce qu'un projet ?",
+    body: "Un projet est une initiative structurée visant à produire un livrable, nécessitant plusieurs étapes, échanges ou validations, et s'inscrivant généralement sur une durée supérieure à quelques jours. Une demande ponctuelle d'analyse relève plutôt d'un Conseil. Le statut Idée sert de boîte à idées sans créer un module séparé.",
+  },
+  conseils: {
+    title: "Qu'est-ce qu'un conseil ?",
+    body: "Un conseil est une demande ponctuelle d'analyse ou d'avis. Délai cible : 5 jours ouvrés. Utilisez les tags pour retrouver facilement les sujets (ex. LSubv, gouvernance).",
+  },
+  risques: {
+    title: "Qu'est-ce qu'un risque ?",
+    body: "Un risque est évalué (probabilité × impact) puis traité : éviter, réduire, transférer ou accepter. Des contrôles SCI peuvent découler du traitement, sauf si le risque est accepté.",
+  },
+  controles: {
+    title: "Qu'est-ce qu'un contrôle SCI ?",
+    body: "Contrôle périodique du système de contrôle interne. La prochaine occurrence est calculée selon la fréquence, mais l'action n'apparaît dans le backlog qu'à l'ouverture de la fenêtre de déclenchement.",
+  },
+  documents: {
+    title: "Qu'est-ce qu'un document ?",
+    body: "Inventaire et pilotage documentaire (métadonnées, revues, liens). Le contenu détaillé reste dans Confluence — cette application n'est pas une GED.",
+  },
+  audits: {
+    title: "Qu'est-ce qu'un audit ?",
+    body: "Mission d'audit avec périmètre, équipe, recommandations et actions de suivi. Les papiers de travail avancés arriveront plus tard.",
+  },
+} as const;

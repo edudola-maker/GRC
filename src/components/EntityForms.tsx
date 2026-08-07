@@ -13,6 +13,9 @@ import {
   STATUT_PROJET_OPTIONS,
   STATUT_RISQUE_OPTIONS,
   STATUT_TACHE_OPTIONS,
+  STRATEGIE_RISQUE_OPTIONS,
+  TAXINOMIE_OPTIONS,
+  TYPE_CONTROLE_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
 } from "@/lib/catalog";
 import { SubmitButton } from "@/components/FormControls";
@@ -26,6 +29,8 @@ type ProjetValues = {
   id?: string;
   nom?: string;
   description?: string | null;
+  taxinomie?: string | null;
+  tags?: string | null;
   responsableId?: string;
   dateDebut?: Date | string | null;
   dateEcheance?: Date | string | null;
@@ -57,6 +62,8 @@ type ConseilValues = {
   id?: string;
   objet?: string;
   description?: string | null;
+  taxinomie?: string | null;
+  tags?: string | null;
   demandeur?: string | null;
   entiteDemandeuse?: string | null;
   dateReception?: Date | string | null;
@@ -72,9 +79,14 @@ type ControleValues = {
   id?: string;
   nom?: string;
   description?: string | null;
+  taxinomie?: string | null;
+  tags?: string | null;
   processusConcerne?: string;
   responsableId?: string;
+  typeControle?: string;
   frequence?: string;
+  fenetreDeclenchementJours?: number | null;
+  delaiRealisationJours?: number | null;
   dateDerniereRealisation?: Date | string | null;
   dateProchaineEcheance?: Date | string | null;
   statut?: string;
@@ -85,11 +97,14 @@ type RisqueValues = {
   id?: string;
   nom?: string;
   description?: string | null;
+  taxinomie?: string | null;
+  tags?: string | null;
   processus?: string | null;
   responsableId?: string;
   categorie?: string;
   probabilite?: number;
   impact?: number;
+  strategie?: string | null;
   statut?: string;
   commentaires?: string | null;
 };
@@ -98,12 +113,15 @@ type DocumentValues = {
   id?: string;
   nom?: string;
   typeDocument?: string;
+  taxinomie?: string | null;
+  tags?: string | null;
   version?: string | null;
   responsableId?: string | null;
   dateApprobation?: Date | string | null;
   dateDerniereRevue?: Date | string | null;
   frequenceRevue?: string | null;
   prochaineRevue?: Date | string | null;
+  fenetreDeclenchementJours?: number | null;
   statut?: string;
   description?: string | null;
   reference?: string | null;
@@ -113,6 +131,8 @@ type AuditValues = {
   id?: string;
   titre?: string;
   perimetre?: string | null;
+  taxinomie?: string | null;
+  tags?: string | null;
   responsableId?: string;
   dateDebut?: Date | string | null;
   dateFin?: Date | string | null;
@@ -177,6 +197,28 @@ export function ProjetForm({
       </Field>
 
       <div className="form-grid">
+        <Field label="Taxinomie" htmlFor="taxinomie">
+          <select
+            id="taxinomie"
+            name="taxinomie"
+            defaultValue={values?.taxinomie ?? ""}
+          >
+            <option value="">—</option>
+            {TAXINOMIE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
+          <input
+            id="tags"
+            name="tags"
+            defaultValue={values?.tags ?? ""}
+            placeholder="Ex. gouvernance, SCI"
+          />
+        </Field>
         <Field label="Responsable" htmlFor="responsableId">
           <select
             id="responsableId"
@@ -196,7 +238,7 @@ export function ProjetForm({
           <select
             id="statut"
             name="statut"
-            defaultValue={values?.statut ?? "A_FAIRE"}
+            defaultValue={values?.statut ?? "IDEE"}
           >
             {STATUT_PROJET_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -560,6 +602,17 @@ export function ConseilForm({
       </Field>
 
       <div className="form-grid">
+        <Field label="Taxinomie" htmlFor="taxinomie">
+          <select id="taxinomie" name="taxinomie" defaultValue={values?.taxinomie ?? ""}>
+            <option value="">—</option>
+            {TAXINOMIE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Tags" htmlFor="tags" hint="Ex. LSubv, gouvernance">
+          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
+        </Field>
         <Field label="Demandeur" htmlFor="demandeur">
           <input
             id="demandeur"
@@ -726,6 +779,17 @@ export function ControleSCIForm({
             ))}
           </select>
         </Field>
+        <Field label="Type de contrôle" htmlFor="typeControle">
+          <select
+            id="typeControle"
+            name="typeControle"
+            defaultValue={values?.typeControle ?? "MANUEL"}
+          >
+            {TYPE_CONTROLE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </Field>
         <Field label="Fréquence" htmlFor="frequence">
           <select
             id="frequence"
@@ -739,6 +803,48 @@ export function ControleSCIForm({
               </option>
             ))}
           </select>
+        </Field>
+        <Field
+          label="Fenêtre de déclenchement (jours)"
+          htmlFor="fenetreDeclenchementJours"
+          hint="L'action n'apparaît dans Mes actions que dans cette fenêtre avant l'échéance."
+        >
+          <input
+            id="fenetreDeclenchementJours"
+            name="fenetreDeclenchementJours"
+            type="number"
+            min={0}
+            defaultValue={values?.fenetreDeclenchementJours ?? 30}
+          />
+        </Field>
+        <Field
+          label="Délai de réalisation (jours)"
+          htmlFor="delaiRealisationJours"
+        >
+          <input
+            id="delaiRealisationJours"
+            name="delaiRealisationJours"
+            type="number"
+            min={0}
+            defaultValue={values?.delaiRealisationJours ?? ""}
+          />
+        </Field>
+        <Field label="Taxinomie" htmlFor="taxinomie">
+          <select
+            id="taxinomie"
+            name="taxinomie"
+            defaultValue={values?.taxinomie ?? ""}
+          >
+            <option value="">—</option>
+            {TAXINOMIE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
+          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
         <Field label="Statut" htmlFor="statut">
           <select
@@ -862,6 +968,25 @@ export function RisqueForm({
             ))}
           </select>
         </Field>
+        <Field label="Stratégie de traitement" htmlFor="strategie">
+          <select id="strategie" name="strategie" defaultValue={values?.strategie ?? ""}>
+            <option value="">À définir</option>
+            {STRATEGIE_RISQUE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Taxinomie" htmlFor="taxinomie">
+          <select id="taxinomie" name="taxinomie" defaultValue={values?.taxinomie ?? ""}>
+            <option value="">—</option>
+            {TAXINOMIE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Tags" htmlFor="tags">
+          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
+        </Field>
         <Field label="Statut" htmlFor="statut">
           <select
             id="statut"
@@ -972,6 +1097,17 @@ export function DocumentForm({
             ))}
           </select>
         </Field>
+        <Field label="Taxinomie" htmlFor="taxinomie">
+          <select id="taxinomie" name="taxinomie" defaultValue={values?.taxinomie ?? ""}>
+            <option value="">—</option>
+            {TAXINOMIE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Tags" htmlFor="tags">
+          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
+        </Field>
         <Field label="Version" htmlFor="version">
           <input
             id="version"
@@ -1021,12 +1157,25 @@ export function DocumentForm({
             ))}
           </select>
         </Field>
-        <Field label="Référence" htmlFor="reference">
+        <Field
+          label="Lien Confluence / URL"
+          htmlFor="reference"
+          hint="Le contenu détaillé reste dans Confluence — inventaire uniquement."
+        >
           <input
             id="reference"
             name="reference"
             defaultValue={values?.reference ?? ""}
-            placeholder="URL, chemin ou code"
+            placeholder="https://confluence…"
+          />
+        </Field>
+        <Field label="Fenêtre revue (jours)" htmlFor="fenetreDeclenchementJours">
+          <input
+            id="fenetreDeclenchementJours"
+            name="fenetreDeclenchementJours"
+            type="number"
+            min={0}
+            defaultValue={values?.fenetreDeclenchementJours ?? 30}
           />
         </Field>
         <Field label="Date d'approbation" htmlFor="dateApprobation">
@@ -1128,6 +1277,23 @@ export function AuditForm({
               </option>
             ))}
           </select>
+        </Field>
+        <Field label="Taxinomie" htmlFor="taxinomie">
+          <select
+            id="taxinomie"
+            name="taxinomie"
+            defaultValue={values?.taxinomie ?? ""}
+          >
+            <option value="">—</option>
+            {TAXINOMIE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
+          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
         <Field label="Date de début" htmlFor="dateDebut">
           <input

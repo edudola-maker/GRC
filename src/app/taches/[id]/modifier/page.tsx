@@ -22,7 +22,7 @@ export default async function ModifierTachePage({
       prisma.tache.findUnique({ where: { id } }),
       listUtilisateursActifs(),
       prisma.projet.findMany({
-        where: { archive: false, statut: { notIn: ["ANNULE"] } },
+        where: { archive: false, statut: { notIn: ["CLOTURE", "ABANDONNE"] } },
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),

@@ -15,11 +15,15 @@ datasource db {
 // ─── Énumérations ───────────────────────────────────────────
 
 enum StatutProjet {
-  A_FAIRE
+  IDEE
+  A_ETUDIER
+  VALIDE
+  PLANIFIE
   EN_COURS
-  EN_ATTENTE
-  TERMINE
-  ANNULE
+  EN_VALIDATION
+  DEPLOYE
+  CLOTURE
+  ABANDONNE
 }
 
 enum StatutTache {
@@ -70,8 +74,32 @@ enum TypeDocument {
   PROCEDURE
   CHARTE
   POLITIQUE
+  INSTRUCTION
   MODELE
   AUTRE
+}
+
+enum StrategieRisque {
+  EVITER
+  REDUIRE
+  TRANSFERER
+  ACCEPTER
+}
+
+enum TypeControle {
+  MANUEL
+  SEMI_AUTOMATIQUE
+  AUTOMATIQUE
+}
+
+enum TypeObjetMetier {
+  PROJET
+  CONSEIL
+  AUDIT
+  RISQUE
+  CONTROLE_SCI
+  DOCUMENT
+  TACHE
 }
 
 enum StatutDocument {
@@ -178,18 +206,22 @@ model Utilisateur {
   tachesValidees          Tache[]            @relation("TacheValideePar")
   controlesSoumis         ControleSCI[]      @relation("ControleSoumisPar")
   controlesValides        ControleSCI[]      @relation("ControleValidePar")
+  journalEvenements       JournalEvenement[]
 }
 
 // ─── Projet ─────────────────────────────────────────────────
 
 model Projet {
   id            String       @id @default(cuid())
+  code          String       @unique
   nom           String
   description   String?
+  taxinomie     String?
+  tags          String?
   responsableId String
   dateDebut     DateTime?
   dateEcheance  DateTime?
-  statut        StatutProjet @default(A_FAIRE)
+  statut        StatutProjet @default(IDEE)
   priorite      Priorite     @default(MOYENNE)
   avancement    Int          @default(0)
   commentaires  String?
@@ -247,8 +279,11 @@ model ProjetDocument {
 
 model Conseil {
   id                String        @id @default(cuid())
+  code              String        @unique
   objet             String
   description       String?
+  taxinomie         String?
+  tags              String?
   demandeur         String?
   entiteDemandeuse  String?
   dateReception     DateTime      @default(now())
@@ -333,11 +368,17 @@ model HistoriqueTache {
 
 model ControleSCI {
   id                      String            @id @default(cuid())
+  code                    String            @unique
   nom                     String
   description             String?
+  taxinomie               String?
+  tags                    String?
   processusConcerne       String
   responsableId           String
+  typeControle            TypeControle      @default(MANUEL)
   frequence               FrequenceControle
+  fenetreDeclenchementJours Int             @default(30)
+  delaiRealisationJours   Int?
   dateDerniereRealisation DateTime?
   dateProchaineEcheance   DateTime?
   statut                  StatutControleSCI @default(A_REALISER)
@@ -381,18 +422,22 @@ model ControleDocument {
 // ─── Risque ─────────────────────────────────────────────────
 
 model Risque {
-  id            String          @id @default(cuid())
+  id            String           @id @default(cuid())
+  code          String           @unique
   nom           String
   description   String?
+  taxinomie     String?
+  tags          String?
   processus     String?
   responsableId String
   categorie     CategorieRisque
-  probabilite   Int             @default(1) // 1–5
-  impact        Int             @default(1) // 1–5
-  criticite     Int             @default(1) // probabilite × impact
-  statut        StatutRisque    @default(IDENTIFIE)
+  probabilite   Int              @default(1) // 1–5
+  impact        Int              @default(1) // 1–5
+  criticite     Int              @default(1) // probabilite × impact
+  strategie     StrategieRisque?
+  statut        StatutRisque     @default(IDENTIFIE)
   commentaires  String?
-  archive       Boolean         @default(false)
+  archive       Boolean          @default(false)
   creeParId     String
   modifieParId  String
   creeLe        DateTime        @default(now())
@@ -421,17 +466,21 @@ model RisqueControle {
 
 model Document {
   id                String          @id @default(cuid())
+  code              String          @unique
   nom               String
   typeDocument      TypeDocument    @default(AUTRE)
+  taxinomie         String?
+  tags              String?
   version           String?
   responsableId     String?
   dateApprobation   DateTime?
   dateDerniereRevue DateTime?
   frequenceRevue    FrequenceRevue?
   prochaineRevue    DateTime?
+  fenetreDeclenchementJours Int     @default(30)
   statut            StatutDocument  @default(BROUILLON)
   description       String?
-  // Fichier / référence (hors contenu binaire)
+  // Référence externe (ex. URL Confluence) — pas une GED
   reference         String?
   nomFichier        String?
   nomStockage       String?
@@ -458,8 +507,11 @@ model Document {
 
 model Audit {
   id            String      @id @default(cuid())
+  code          String      @unique
   titre         String
   perimetre     String?
+  taxinomie     String?
+  tags          String?
   responsableId String
   dateDebut     DateTime?
   dateFin       DateTime?
@@ -536,4 +588,26 @@ model ObjectifAnnuel {
   modifieLe     DateTime  @updatedAt
 
   utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+}
+
+// Compteur pour codes stables PRO-0001, CNS-0001, …
+model SequenceCode {
+  prefixe String @id
+  dernier Int    @default(0)
+}
+
+// Journal d'activité commun (Conseils en priorité, extensible)
+model JournalEvenement {
+  id            String         @id @default(cuid())
+  typeObjet     TypeObjetMetier
+  objetId       String
+  typeEvenement String
+  message       String
+  automatique   Boolean        @default(true)
+  auteurId      String?
+  creeLe        DateTime       @default(now())
+
+  auteur Utilisateur? @relation(fields: [auteurId], references: [id], onDelete: SetNull)
+
+  @@index([typeObjet, objetId, creeLe])
 }

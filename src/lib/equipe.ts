@@ -53,7 +53,9 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
         where: {
           archive: false,
           responsableId: u.id,
-          statut: { in: ["A_FAIRE", "EN_COURS", "EN_ATTENTE"] },
+          statut: {
+            in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
+          },
         },
       }),
       prisma.conseil.count({
@@ -94,7 +96,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
         where: {
           archive: false,
           responsableId: u.id,
-          statut: { notIn: ["TERMINE", "ANNULE"] },
+          statut: { notIn: ["CLOTURE", "ABANDONNE"] },
           dateEcheance: { lt: today },
         },
       }),

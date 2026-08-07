@@ -5,17 +5,21 @@ import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import {
   FREQUENCE_CONTROLE_OPTIONS,
   STATUT_CONTROLE_OPTIONS,
+  TYPE_CONTROLE_OPTIONS,
 } from "@/lib/catalog";
+import { assertNomUnique, nextCode } from "@/lib/codes";
 import { nextControleDate } from "@/lib/dates";
-import { optDate, optStr, str } from "@/lib/form";
+import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
+import { serializeTags } from "@/lib/tags";
 
 const STATUTS = new Set<string>(STATUT_CONTROLE_OPTIONS.map((o) => o.value));
 const FREQUENCES = new Set<string>(
   FREQUENCE_CONTROLE_OPTIONS.map((o) => o.value),
 );
+const TYPES = new Set<string>(TYPE_CONTROLE_OPTIONS.map((o) => o.value));
 
 async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
@@ -69,15 +73,22 @@ export async function createControleSCI(formData: FormData) {
 
   const statut = str(formData, "statut") || "A_REALISER";
   const frequence = str(formData, "frequence") || "TRIMESTRIELLE";
-  if (!STATUTS.has(statut) || !FREQUENCES.has(frequence)) {
-    redirectWithError(fallback, "Statut ou fréquence invalide.");
+  const typeControle = str(formData, "typeControle") || "MANUEL";
+  if (!STATUTS.has(statut) || !FREQUENCES.has(frequence) || !TYPES.has(typeControle)) {
+    redirectWithError(fallback, "Statut, type ou fréquence invalide.");
   }
+
+  const nomErr = await assertNomUnique("CONTROLE_SCI", nom);
+  if (nomErr) redirectWithError(fallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
+  const fenetreDeclenchementJours =
+    optInt(formData, "fenetreDeclenchementJours") ?? 30;
+  const delaiRealisationJours = optInt(formData, "delaiRealisationJours");
   let dateDerniereRealisation = optDate(formData, "dateDerniereRealisation");
   let dateProchaineEcheance = optDate(formData, "dateProchaineEcheance");
 
@@ -91,11 +102,17 @@ export async function createControleSCI(formData: FormData) {
     );
     const controle = await prisma.controleSCI.create({
       data: {
+        code: await nextCode("CONTROLE_SCI"),
         nom,
         description: optStr(formData, "description"),
+        taxinomie: optStr(formData, "taxinomie"),
+        tags: serializeTags(optStr(formData, "tags")),
         processusConcerne,
         responsableId,
+        typeControle: typeControle as "MANUEL",
         frequence: frequence as "TRIMESTRIELLE",
+        fenetreDeclenchementJours,
+        delaiRealisationJours,
         dateDerniereRealisation: result.patch.dateDerniereRealisation,
         dateProchaineEcheance: result.patch.dateProchaineEcheance,
         statut: result.patch.statut,
@@ -118,11 +135,17 @@ export async function createControleSCI(formData: FormData) {
 
   const controle = await prisma.controleSCI.create({
     data: {
+      code: await nextCode("CONTROLE_SCI"),
       nom,
       description: optStr(formData, "description"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       processusConcerne,
       responsableId,
+      typeControle: typeControle as "MANUEL",
       frequence: frequence as "TRIMESTRIELLE",
+      fenetreDeclenchementJours,
+      delaiRealisationJours,
       dateDerniereRealisation,
       dateProchaineEcheance:
         dateProchaineEcheance ?? nextControleDate(new Date(), frequence),
@@ -178,6 +201,18 @@ export async function updateControleSCI(formData: FormData) {
     );
   }
 
+  const typeControle = str(formData, "typeControle") || existing.typeControle;
+  if (!TYPES.has(typeControle)) {
+    redirectWithError(`/controles-sci/${id}/modifier`, "Type de contrôle invalide.");
+  }
+
+  const fenetreDeclenchementJours =
+    optInt(formData, "fenetreDeclenchementJours") ??
+    existing.fenetreDeclenchementJours;
+  const delaiRealisationJours = optInt(formData, "delaiRealisationJours");
+  const taxinomie = optStr(formData, "taxinomie");
+  const tags = serializeTags(optStr(formData, "tags"));
+
   const becomingRealise =
     statut === "REALISE" && existing.statut !== "REALISE";
 
@@ -196,7 +231,12 @@ export async function updateControleSCI(formData: FormData) {
         description: optStr(formData, "description"),
         processusConcerne,
         responsableId,
+        typeControle: typeControle as "MANUEL",
         frequence: frequence as "TRIMESTRIELLE",
+        fenetreDeclenchementJours,
+        delaiRealisationJours,
+        taxinomie,
+        tags,
         commentaires: optStr(formData, "commentaires"),
         modifieParId: current.id,
         ...result.patch,
@@ -215,7 +255,12 @@ export async function updateControleSCI(formData: FormData) {
         description: optStr(formData, "description"),
         processusConcerne,
         responsableId,
+        typeControle: typeControle as "MANUEL",
         frequence: frequence as "TRIMESTRIELLE",
+        fenetreDeclenchementJours,
+        delaiRealisationJours,
+        taxinomie,
+        tags,
         dateDerniereRealisation: optDate(formData, "dateDerniereRealisation"),
         dateProchaineEcheance: optDate(formData, "dateProchaineEcheance"),
         statut: statut as "A_REALISER",
@@ -288,6 +333,7 @@ export async function ajouterPreuveControle(formData: FormData) {
 
   const document = await prisma.document.create({
     data: {
+      code: await nextCode("DOCUMENT"),
       nom,
       reference,
       typeDocument: "AUTRE",

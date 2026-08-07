@@ -80,7 +80,7 @@ export default async function ProjetDetailPage({
     <>
       <BackLink href="/projets" label="← Retour aux projets" />
       <PageHeader
-        title={projet.nom}
+        title={`${projet.code} — ${projet.nom}`}
         description={projet.description ?? "Aucune description."}
         actions={
           <>
@@ -156,6 +156,10 @@ export default async function ProjetDetailPage({
           <h2 className="panel-title">Informations</h2>
           <dl className="kv">
             <div>
+              <dt>Code</dt>
+              <dd>{projet.code}</dd>
+            </div>
+            <div>
               <dt>Responsable</dt>
               <dd>{projet.responsable.nom}</dd>
             </div>
@@ -166,6 +170,14 @@ export default async function ProjetDetailPage({
             <div>
               <dt>Priorité</dt>
               <dd>{PRIORITE_LABELS[projet.priorite]}</dd>
+            </div>
+            <div>
+              <dt>Taxinomie</dt>
+              <dd>{projet.taxinomie ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Tags</dt>
+              <dd>{projet.tags ?? "—"}</dd>
             </div>
             <div>
               <dt>Avancement</dt>

@@ -1,7 +1,8 @@
 import { ConseilForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
-import { CONSEIL_DELAI_CIBLE_JOURS } from "@/lib/catalog";
+import { CONSEIL_DELAI_CIBLE_JOURS, MODULE_HELP } from "@/lib/catalog";
 import { addBusinessDays } from "@/lib/dates";
 import { listUtilisateursActifs } from "@/lib/session";
 import { createConseil } from "../actions";
@@ -25,6 +26,7 @@ export default async function NouveauConseilPage({
         title="Nouveau conseil"
         description="Demande ponctuelle — échéance par défaut à 5 jours ouvrés."
       />
+      <ModuleHelp {...MODULE_HELP.conseils} />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
         <ConseilForm

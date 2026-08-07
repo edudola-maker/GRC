@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
+import { ModuleHelp } from "@/components/ModuleHelp";
+import { MODULE_HELP } from "@/lib/catalog";
 import { STATUT_AUDIT_LABELS, formatDate, urgenceEcheance } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 
@@ -81,6 +83,7 @@ export default async function AuditsPage({
         description="Planification des missions d'audit, recommandations et suivi des actions."
         actions={<BtnLink href="/audits/nouveau">Nouvel audit</BtnLink>}
       />
+      <ModuleHelp {...MODULE_HELP.audits} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
       {!archives ? (
@@ -134,11 +137,14 @@ export default async function AuditsPage({
                     className={`entity-row entity-row--${urgence}`}
                   >
                     <div className="entity-row__main">
-                      <strong>{a.titre}</strong>
+                      <strong>
+                        <span className="muted">{a.code}</span> · {a.titre}
+                      </strong>
                       <span className="entity-row__meta">
                         {a.responsable.nom}
                         {" · "}
                         {STATUT_AUDIT_LABELS[a.statut]}
+                        {a.tags ? ` · ${a.tags}` : ""}
                         {" · "}
                         {a._count.recommandations} reco
                         {a._count.recommandations > 1 ? "s" : ""}

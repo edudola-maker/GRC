@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
+import { ModuleHelp } from "@/components/ModuleHelp";
 import {
   PRIORITE_LABELS,
   STATUT_PROJET_LABELS,
@@ -8,7 +9,7 @@ import {
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
-import { PROJET_STATUTS_CLOS } from "@/lib/catalog";
+import { MODULE_HELP, PROJET_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -35,23 +36,27 @@ export default async function ProjetsPage({
       prisma.projet.count({
         where: {
           archive: false,
-          statut: { in: ["A_FAIRE", "EN_COURS", "EN_ATTENTE"] },
+          statut: {
+            in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
+          },
         },
       }),
       prisma.projet.count({
-        where: { archive: false, statut: "TERMINE" },
+        where: { archive: false, statut: "CLOTURE" },
       }),
       prisma.projet.count({
         where: {
           archive: false,
-          statut: { notIn: ["TERMINE", "ANNULE"] },
+          statut: { notIn: ["CLOTURE", "ABANDONNE"] },
           dateEcheance: { lt: today },
         },
       }),
       prisma.projet.aggregate({
         where: {
           archive: false,
-          statut: { in: ["A_FAIRE", "EN_COURS", "EN_ATTENTE"] },
+          statut: {
+            in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
+          },
         },
         _avg: { avancement: true },
       }),
@@ -73,9 +78,10 @@ export default async function ProjetsPage({
     <>
       <PageHeader
         title="Projets"
-        description="Suivi des projets de l'unité : statut, priorité, avancement et tâches associées."
+        description="Initiatives structurées de l'unité — du statut Idée à la clôture."
         actions={<BtnLink href="/projets/nouveau">Nouveau projet</BtnLink>}
       />
+      <ModuleHelp {...MODULE_HELP.projets} />
 
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -87,7 +93,7 @@ export default async function ProjetsPage({
           </div>
           <div className="stat">
             <strong>{termines}</strong>
-            Terminés
+            Clôturés
           </div>
           <div className="stat">
             <strong>{enRetard}</strong>
@@ -152,7 +158,7 @@ export default async function ProjetsPage({
                   >
                     <div className="entity-row__main">
                       <strong>
-                        {p.nom}
+                        <span className="muted">{p.code}</span> · {p.nom}
                         {p.archive ? (
                           <span className="tag tag--muted"> Archivé</span>
                         ) : null}
@@ -165,6 +171,7 @@ export default async function ProjetsPage({
                         {p._count.jalons > 0
                           ? ` · ${p._count.jalons} jalon${p._count.jalons > 1 ? "s" : ""}`
                           : ""}
+                        {p.tags ? ` · ${p.tags}` : ""}
                       </span>
                     </div>
                     <span className="entity-row__date">

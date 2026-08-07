@@ -16,11 +16,14 @@ import {
   CATEGORIE_RISQUE_LABELS,
   STATUT_CONTROLE_LABELS,
   STATUT_RISQUE_LABELS,
+  STRATEGIE_RISQUE_LABELS,
+  TAXINOMIE_LABELS,
   criticiteNiveau,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -61,12 +64,13 @@ export default async function RisqueDetailPage({
 
   const linkedIds = new Set(risque.controles.map((l) => l.controleSCIId));
   const niveau = criticiteNiveau(risque.criticite);
+  const tags = parseTags(risque.tags);
 
   return (
     <>
       <BackLink href="/risques" label="← Retour aux risques" />
       <PageHeader
-        title={risque.nom}
+        title={`${risque.code} — ${risque.nom}`}
         description={risque.description ?? "Aucune description."}
         actions={
           <>
@@ -105,6 +109,10 @@ export default async function RisqueDetailPage({
           <h2 className="panel-title">Informations</h2>
           <dl className="kv">
             <div>
+              <dt>Code</dt>
+              <dd>{risque.code}</dd>
+            </div>
+            <div>
               <dt>Responsable</dt>
               <dd>{risque.responsable.nom}</dd>
             </div>
@@ -115,6 +123,30 @@ export default async function RisqueDetailPage({
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_RISQUE_LABELS[risque.statut]}</dd>
+            </div>
+            <div>
+              <dt>Stratégie de traitement</dt>
+              <dd>
+                {risque.strategie
+                  ? STRATEGIE_RISQUE_LABELS[risque.strategie]
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Taxinomie</dt>
+              <dd>
+                {risque.taxinomie
+                  ? (TAXINOMIE_LABELS[risque.taxinomie] ?? risque.taxinomie)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Tags</dt>
+              <dd>
+                {tags.length
+                  ? tags.map((t) => `#${t}`).join(" ")
+                  : "—"}
+              </dd>
             </div>
             <div>
               <dt>Processus</dt>

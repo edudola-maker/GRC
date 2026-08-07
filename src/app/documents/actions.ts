@@ -7,12 +7,14 @@ import {
   STATUT_DOCUMENT_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
 } from "@/lib/catalog";
+import { assertNomUnique, nextCode } from "@/lib/codes";
 import { nextRevueDate } from "@/lib/dates";
-import { optDate, optStr, str } from "@/lib/form";
+import { optDate, optInt, optStr, str } from "@/lib/form";
 import { addDays, startOfToday } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
+import { serializeTags } from "@/lib/tags";
 
 const TYPES = new Set<string>(TYPE_DOCUMENT_OPTIONS.map((o) => o.value));
 const STATUTS = new Set<string>(STATUT_DOCUMENT_OPTIONS.map((o) => o.value));
@@ -69,16 +71,23 @@ export async function createDocument(formData: FormData) {
     frequenceRevue,
   );
 
+  const nomErr = await assertNomUnique("DOCUMENT", nom);
+  if (nomErr) redirectWithError(fallback, nomErr);
+
   const document = await prisma.document.create({
     data: {
+      code: await nextCode("DOCUMENT"),
       nom,
       typeDocument: typeDocument as "AUTRE",
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       version: optStr(formData, "version"),
       responsableId,
       dateApprobation: optDate(formData, "dateApprobation"),
       dateDerniereRevue,
       frequenceRevue: frequenceRevue as "ANNUELLE" | null,
       prochaineRevue,
+      fenetreDeclenchementJours: optInt(formData, "fenetreDeclenchementJours") ?? 30,
       statut: statut as "BROUILLON",
       description: optStr(formData, "description"),
       reference: optStr(formData, "reference"),
@@ -143,16 +152,20 @@ export async function updateDocument(formData: FormData) {
     data: {
       nom,
       typeDocument: typeDocument as "AUTRE",
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       version: optStr(formData, "version"),
       responsableId,
       dateApprobation: optDate(formData, "dateApprobation"),
       dateDerniereRevue,
       frequenceRevue: frequenceRevue as "ANNUELLE" | null,
       prochaineRevue,
+      fenetreDeclenchementJours:
+        optInt(formData, "fenetreDeclenchementJours") ??
+        existing.fenetreDeclenchementJours,
       statut: statut as "BROUILLON",
       description: optStr(formData, "description"),
       reference: optStr(formData, "reference"),
-      nomFichier: optStr(formData, "nomFichier"),
       modifieParId: current.id,
     },
   });

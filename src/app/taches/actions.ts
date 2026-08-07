@@ -136,7 +136,7 @@ function validationPatchForStatut(
     patch.valideParId = null;
     patch.dateValidation = null;
   }
-  if (nouveauStatut === "TERMINE" && ancienStatut === "A_VALIDER") {
+  if (nouveauStatut === "TERMINE") {
     patch.valideParId = currentId;
     patch.dateValidation = new Date();
   }

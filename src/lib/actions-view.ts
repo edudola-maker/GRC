@@ -27,21 +27,45 @@ export function origineAction(t: TacheAction): { label: string; href?: string } 
   return { label: "Action libre" };
 }
 
-export type BucketActions = "retard" | "aujourdhui" | "semaine" | "avenir";
+/** Exclut les actions SCI/document encore hors fenêtre de déclenchement. */
+function dansFenetreDeclenchement(t: TacheAction, today: Date): boolean {
+  if (t.controleSCI?.dateProchaineEcheance) {
+    const fenetre = t.controleSCI.fenetreDeclenchementJours ?? 30;
+    const start = addDays(new Date(t.controleSCI.dateProchaineEcheance), -fenetre);
+    start.setHours(0, 0, 0, 0);
+    return today >= start;
+  }
+  if (t.document?.prochaineRevue) {
+    const fenetre = t.document.fenetreDeclenchementJours ?? 30;
+    const start = addDays(new Date(t.document.prochaineRevue), -fenetre);
+    start.setHours(0, 0, 0, 0);
+    return today >= start;
+  }
+  return true;
+}
 
 export async function getMesActions(utilisateurId: string) {
   const today = startOfToday();
   const week = endOfWeek(today);
-  const tomorrow = addDays(today, 1);
 
-  const ouvertes = await prisma.tache.findMany({
-    where: {
-      responsableId: utilisateurId,
-      statut: { notIn: [...TACHE_STATUTS_CLOS] },
-    },
-    include: tacheActionInclude,
-    orderBy: [{ dateEcheance: "asc" }, { priorite: "desc" }],
-  });
+  const [ouvertesBrutes, terminees] = await Promise.all([
+    prisma.tache.findMany({
+      where: {
+        responsableId: utilisateurId,
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+      },
+      include: tacheActionInclude,
+      orderBy: [{ dateEcheance: "asc" }, { priorite: "desc" }],
+    }),
+    prisma.tache.findMany({
+      where: { responsableId: utilisateurId, statut: "TERMINE" },
+      include: tacheActionInclude,
+      orderBy: [{ dateValidation: "desc" }, { modifieLe: "desc" }],
+      take: 20,
+    }),
+  ]);
+
+  const ouvertes = ouvertesBrutes.filter((t) => dansFenetreDeclenchement(t, today));
 
   const retard: TacheAction[] = [];
   const aujourdhui: TacheAction[] = [];
@@ -61,17 +85,14 @@ export async function getMesActions(utilisateurId: string) {
     else avenir.push(t);
   }
 
-  // Actions à valider sans échéance proche : rattachées à "aujourd'hui" si soumises
-  const aValider = ouvertes.filter((t) => t.statut === "A_VALIDER");
-
   return {
     retard,
     aujourdhui,
     semaine,
     avenir,
-    aValider,
+    terminees,
     totalOuvertes: ouvertes.length,
-    meta: { today, week, tomorrow },
+    meta: { today, week },
   };
 }
 
@@ -108,18 +129,19 @@ export async function getActionsUnite(filters: MonitoringFilters = {}) {
     where.documentId = null;
   }
 
-  if (filters.echeance === "retard") {
-    where.dateEcheance = { lt: today };
-  } else if (filters.echeance === "proche") {
+  if (filters.echeance === "retard") where.dateEcheance = { lt: today };
+  else if (filters.echeance === "proche") {
     where.dateEcheance = { gte: today, lte: soon };
   }
 
-  const actions = await prisma.tache.findMany({
+  const actionsBrutes = await prisma.tache.findMany({
     where,
     include: tacheActionInclude,
     orderBy: [{ dateEcheance: "asc" }, { priorite: "desc" }],
-    take: 100,
+    take: 120,
   });
+
+  const actions = actionsBrutes.filter((t) => dansFenetreDeclenchement(t, today));
 
   const chargeParCollaborateur = await prisma.tache.groupBy({
     by: ["responsableId"],

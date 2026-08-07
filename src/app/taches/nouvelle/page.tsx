@@ -26,7 +26,7 @@ export default async function NouvelleTachePage({
     await Promise.all([
       listUtilisateursActifs(),
       prisma.projet.findMany({
-        where: { archive: false, statut: { notIn: ["ANNULE"] } },
+        where: { archive: false, statut: { notIn: ["CLOTURE", "ABANDONNE"] } },
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),

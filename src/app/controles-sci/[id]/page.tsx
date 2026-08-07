@@ -20,11 +20,14 @@ import {
   FREQUENCE_LABELS,
   STATUT_CONTROLE_LABELS,
   STATUT_TACHE_LABELS,
+  TAXINOMIE_LABELS,
+  TYPE_CONTROLE_LABELS,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -75,12 +78,13 @@ export default async function ControleSCIDetailPage({
     controle.dateProchaineEcheance,
     clos || controle.archive,
   );
+  const tags = parseTags(controle.tags);
 
   return (
     <>
       <BackLink href="/controles-sci" label="← Retour aux contrôles" />
       <PageHeader
-        title={controle.nom}
+        title={`${controle.code} — ${controle.nom}`}
         description={controle.description ?? "Aucune description."}
         actions={
           <>
@@ -137,6 +141,10 @@ export default async function ControleSCIDetailPage({
           <h2 className="panel-title">Informations</h2>
           <dl className="kv">
             <div>
+              <dt>Code</dt>
+              <dd>{controle.code}</dd>
+            </div>
+            <div>
               <dt>Processus</dt>
               <dd>{controle.processusConcerne}</dd>
             </div>
@@ -145,12 +153,43 @@ export default async function ControleSCIDetailPage({
               <dd>{controle.responsable.nom}</dd>
             </div>
             <div>
+              <dt>Type</dt>
+              <dd>{TYPE_CONTROLE_LABELS[controle.typeControle]}</dd>
+            </div>
+            <div>
               <dt>Fréquence</dt>
               <dd>{FREQUENCE_LABELS[controle.frequence]}</dd>
             </div>
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_CONTROLE_LABELS[controle.statut]}</dd>
+            </div>
+            <div>
+              <dt>Fenêtre de déclenchement</dt>
+              <dd>{controle.fenetreDeclenchementJours} j.</dd>
+            </div>
+            <div>
+              <dt>Délai de réalisation</dt>
+              <dd>
+                {controle.delaiRealisationJours != null
+                  ? `${controle.delaiRealisationJours} j.`
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Taxinomie</dt>
+              <dd>
+                {controle.taxinomie
+                  ? (TAXINOMIE_LABELS[controle.taxinomie] ??
+                    controle.taxinomie)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Tags</dt>
+              <dd>
+                {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
+              </dd>
             </div>
             <div>
               <dt>Dernière réalisation</dt>

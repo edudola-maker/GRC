@@ -6,15 +6,21 @@ import {
   CATEGORIE_RISQUE_OPTIONS,
   ECHELLE_RISQUE,
   STATUT_RISQUE_OPTIONS,
+  STRATEGIE_RISQUE_OPTIONS,
 } from "@/lib/catalog";
+import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
+import { serializeTags } from "@/lib/tags";
 
 const STATUTS = new Set<string>(STATUT_RISQUE_OPTIONS.map((o) => o.value));
 const CATEGORIES = new Set<string>(
   CATEGORIE_RISQUE_OPTIONS.map((o) => o.value),
+);
+const STRATEGIES = new Set<string>(
+  STRATEGIE_RISQUE_OPTIONS.map((o) => o.value),
 );
 const ECHELLE = new Set<number>(ECHELLE_RISQUE);
 
@@ -63,17 +69,28 @@ export async function createRisque(formData: FormData) {
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
+  const nomErr = await assertNomUnique("RISQUE", nom);
+  if (nomErr) redirectWithError(fallback, nomErr);
+
+  const strategie = optStr(formData, "strategie");
+  if (strategie && !STRATEGIES.has(strategie)) {
+    redirectWithError(fallback, "Stratégie de traitement invalide.");
+  }
 
   const risque = await prisma.risque.create({
     data: {
+      code: await nextCode("RISQUE"),
       nom,
       description: optStr(formData, "description"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       processus: optStr(formData, "processus"),
       responsableId,
       categorie: categorie as "OPERATIONNEL",
       probabilite,
       impact,
       criticite,
+      strategie: (strategie as "REDUIRE") ?? null,
       statut: statut as "IDENTIFIE",
       commentaires: optStr(formData, "commentaires"),
       archive: false,
@@ -124,18 +141,27 @@ export async function updateRisque(formData: FormData) {
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
+  const nomErr = await assertNomUnique("RISQUE", nom, id);
+  if (nomErr) redirectWithError(`/risques/${id}/modifier`, nomErr);
+  const strategie = optStr(formData, "strategie");
+  if (strategie && !STRATEGIES.has(strategie)) {
+    redirectWithError(`/risques/${id}/modifier`, "Stratégie invalide.");
+  }
 
   await prisma.risque.update({
     where: { id },
     data: {
       nom,
       description: optStr(formData, "description"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       processus: optStr(formData, "processus"),
       responsableId,
       categorie: categorie as "OPERATIONNEL",
       probabilite,
       impact,
       criticite,
+      strategie: (strategie as "REDUIRE") ?? null,
       statut: statut as "IDENTIFIE",
       commentaires: optStr(formData, "commentaires"),
       modifieParId: current.id,

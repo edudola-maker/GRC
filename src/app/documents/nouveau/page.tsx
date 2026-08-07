@@ -1,6 +1,8 @@
 import { DocumentForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
+import { MODULE_HELP } from "@/lib/catalog";
 import { listUtilisateursActifs } from "@/lib/session";
 import { createDocument } from "../actions";
 
@@ -19,8 +21,9 @@ export default async function NouveauDocumentPage({
       <BackLink href="/documents" label="← Retour aux documents" />
       <PageHeader
         title="Nouveau document"
-        description="Ajoutez un document à l'inventaire. La prochaine revue peut être calculée automatiquement."
+        description="Inventoriez un document et référencez sa page Confluence. Le contenu détaillé reste dans Confluence."
       />
+      <ModuleHelp {...MODULE_HELP.documents} />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
         <DocumentForm

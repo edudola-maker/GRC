@@ -1,6 +1,8 @@
 import { ProjetForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
+import { MODULE_HELP } from "@/lib/catalog";
 import { listUtilisateursActifs } from "@/lib/session";
 import { createProjet } from "../actions";
 
@@ -21,6 +23,7 @@ export default async function NouveauProjetPage({
         title="Nouveau projet"
         description="Renseignez les informations essentielles. Vous pourrez y rattacher des tâches ensuite."
       />
+      <ModuleHelp {...MODULE_HELP.projets} />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
         <ProjetForm

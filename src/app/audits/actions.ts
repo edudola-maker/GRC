@@ -6,10 +6,12 @@ import {
   STATUT_AUDIT_OPTIONS,
   STATUT_RECO_OPTIONS,
 } from "@/lib/catalog";
+import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optDate, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
+import { serializeTags } from "@/lib/tags";
 
 const STATUTS_AUDIT = new Set<string>(
   STATUT_AUDIT_OPTIONS.map((o) => o.value),
@@ -38,10 +40,16 @@ export async function createAudit(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
+  const nomErr = await assertNomUnique("AUDIT", titre);
+  if (nomErr) redirectWithError(fallback, nomErr);
+
   const audit = await prisma.audit.create({
     data: {
+      code: await nextCode("AUDIT"),
       titre,
       perimetre: optStr(formData, "perimetre"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       responsableId,
       dateDebut: optDate(formData, "dateDebut"),
       dateFin: optDate(formData, "dateFin"),
@@ -98,6 +106,8 @@ export async function updateAudit(formData: FormData) {
     data: {
       titre,
       perimetre: optStr(formData, "perimetre"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       responsableId,
       dateDebut: optDate(formData, "dateDebut"),
       dateFin: optDate(formData, "dateFin"),

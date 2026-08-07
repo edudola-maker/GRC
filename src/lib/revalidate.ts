@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 export function revalidateApp(extra: string[] = []) {
   const paths = [
     "/",
+    "/responsable",
     "/backlog",
     "/taches",
     "/projets",

@@ -6,10 +6,12 @@ import {
   PRIORITE_OPTIONS,
   STATUT_PROJET_OPTIONS,
 } from "@/lib/catalog";
+import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
+import { serializeTags } from "@/lib/tags";
 
 const STATUTS = new Set<string>(STATUT_PROJET_OPTIONS.map((o) => o.value));
 const PRIORITES = new Set<string>(PRIORITE_OPTIONS.map((o) => o.value));
@@ -39,11 +41,14 @@ export async function createProjet(formData: FormData) {
     redirectWithError("/projets/nouveau", "Le nom du projet est obligatoire.");
   }
 
-  const statut = str(formData, "statut") || "A_FAIRE";
+  const statut = str(formData, "statut") || "IDEE";
   const priorite = str(formData, "priorite") || "MOYENNE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
     redirectWithError("/projets/nouveau", "Statut ou priorité invalide.");
   }
+
+  const nomErr = await assertNomUnique("PROJET", nom);
+  if (nomErr) redirectWithError("/projets/nouveau", nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
@@ -57,12 +62,15 @@ export async function createProjet(formData: FormData) {
 
   const projet = await prisma.projet.create({
     data: {
+      code: await nextCode("PROJET"),
       nom,
       description: optStr(formData, "description"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       responsableId,
       dateDebut: optDate(formData, "dateDebut"),
       dateEcheance: optDate(formData, "dateEcheance"),
-      statut: statut as "A_FAIRE",
+      statut: statut as "IDEE",
       priorite: priorite as "MOYENNE",
       avancement,
       commentaires: optStr(formData, "commentaires"),
@@ -96,11 +104,14 @@ export async function updateProjet(formData: FormData) {
     );
   }
 
-  const statut = str(formData, "statut") || "A_FAIRE";
+  const statut = str(formData, "statut") || "IDEE";
   const priorite = str(formData, "priorite") || "MOYENNE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
     redirectWithError(`/projets/${id}/modifier`, "Statut ou priorité invalide.");
   }
+
+  const nomErr = await assertNomUnique("PROJET", nom, id);
+  if (nomErr) redirectWithError(`/projets/${id}/modifier`, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
@@ -117,10 +128,12 @@ export async function updateProjet(formData: FormData) {
     data: {
       nom,
       description: optStr(formData, "description"),
+      taxinomie: optStr(formData, "taxinomie"),
+      tags: serializeTags(optStr(formData, "tags")),
       responsableId,
       dateDebut: optDate(formData, "dateDebut"),
       dateEcheance: optDate(formData, "dateEcheance"),
-      statut: statut as "A_FAIRE",
+      statut: statut as "IDEE",
       priorite: priorite as "MOYENNE",
       avancement,
       commentaires: optStr(formData, "commentaires"),

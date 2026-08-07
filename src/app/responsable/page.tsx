@@ -17,11 +17,22 @@ import {
   STATUT_PROJET_LABELS,
   formatDate,
 } from "@/lib/labels";
+import { RAG_LABELS, ragEcheance, type RagStatut } from "@/lib/rag";
 import {
   getCurrentUser,
   isResponsable,
   listUtilisateursActifs,
 } from "@/lib/session";
+
+function RagDot({ rag }: { rag: RagStatut }) {
+  return (
+    <span
+      className={`rag-dot rag-dot--${rag}`}
+      title={RAG_LABELS[rag]}
+      aria-label={RAG_LABELS[rag]}
+    />
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -60,12 +71,17 @@ export default async function DashboardResponsablePage({
     statut?: string;
     priorite?: string;
     echeance?: string;
+    rag?: string;
   }>;
 }) {
   const user = await getCurrentUser();
   if (!isResponsable(user)) notFound();
 
   const sp = await searchParams;
+  const ragFilter =
+    sp.rag === "vert" || sp.rag === "jaune" || sp.rag === "rouge"
+      ? sp.rag
+      : null;
   const [data, users, monitoring] = await Promise.all([
     getDashboardResponsable(),
     listUtilisateursActifs(),
@@ -107,171 +123,153 @@ export default async function DashboardResponsablePage({
       <section className="section" aria-label="Vue synthétique">
         <h2 className="section__title">Vue synthétique</h2>
         <div className="kpi-domains">
-          <div className="kpi-domain">
+          <article className="kpi-domain">
             <h3>Audits</h3>
-            <div className="stats-grid stats-grid--dense">
-              <Stat label="En cours" value={s.auditsEnCours} />
-              <Stat label="Réalisés" value={s.auditsRealises} />
-            </div>
-          </div>
-          <div className="kpi-domain">
+            <p>
+              <strong>{s.auditsEnCours}</strong> en cours ·{" "}
+              <strong>{s.auditsRealises}</strong> réalisés
+            </p>
+          </article>
+          <article className="kpi-domain">
             <h3>Conseils</h3>
-            <div className="stats-grid stats-grid--dense">
-              <Stat label="Ouverts" value={s.conseilsOuverts} />
-              <Stat
-                label="Respect délai 5 j."
-                value={s.tauxRespectDelai}
-                suffix=" %"
-                tone="info"
-              />
-            </div>
-          </div>
-          <div className="kpi-domain">
+            <p>
+              <strong>{s.conseilsOuverts}</strong> ouverts · respect délai{" "}
+              <strong>{s.tauxRespectDelai ?? "—"}</strong>
+              {s.tauxRespectDelai != null ? " %" : ""}
+            </p>
+          </article>
+          <article className="kpi-domain">
             <h3>Projets</h3>
-            <div className="stats-grid stats-grid--dense">
-              <Stat label="Actifs" value={s.projetsActifs} />
-              <Stat
-                label="En retard"
-                value={s.projetsEnRetard}
-                tone="danger"
-              />
-            </div>
-          </div>
-          <div className="kpi-domain">
+            <p>
+              <strong>{s.projetsActifs}</strong> actifs ·{" "}
+              <strong>{s.projetsEnRetard}</strong> en retard
+            </p>
+          </article>
+          <article className="kpi-domain">
             <h3>Contrôles SCI</h3>
-            <div className="stats-grid stats-grid--dense">
-              <Stat label="Prévus" value={s.controlesPrevus} />
-              <Stat
-                label="Taux réalisation"
-                value={s.tauxRealisationControles}
-                suffix=" %"
-              />
-            </div>
-          </div>
-          <div className="kpi-domain">
+            <p>
+              <strong>{s.controlesPrevus}</strong> prévus · taux{" "}
+              <strong>{s.tauxRealisationControles ?? "—"}</strong>
+              {s.tauxRealisationControles != null ? " %" : ""}
+            </p>
+          </article>
+          <article className="kpi-domain">
             <h3>Risques</h3>
-            <div className="stats-grid stats-grid--dense">
-              <Stat label="Critiques" value={s.risquesCritiques} tone="danger" />
-              <Stat label="Élevés" value={s.risquesEleves} tone="warn" />
-            </div>
-          </div>
+            <p>
+              <strong>{s.risquesCritiques}</strong> critiques ·{" "}
+              <strong>{s.risquesEleves}</strong> élevés
+            </p>
+          </article>
         </div>
       </section>
 
       <section className="section" aria-label="Vue opérationnelle">
         <h2 className="section__title">Que fait actuellement l&apos;unité ?</h2>
-        <div className="panels">
-          <div className="panel">
-            <h3>Audits en cours</h3>
-            {data.operationnel.audits.length === 0 ? (
-              <p className="empty">Aucun audit en cours.</p>
-            ) : (
-              <ul className="item-list">
-                {data.operationnel.audits.map((a) => (
-                  <li key={a.id} className="item">
-                    <div>
-                      <p className="item__title">
-                        <Link href={`/audits/${a.id}`}>{a.titre}</Link>
-                      </p>
-                      <p className="item__meta">
-                        {a.responsable.nom} · {STATUT_AUDIT_LABELS[a.statut]}
-                      </p>
-                    </div>
-                    <span className="item__date">{formatDate(a.dateFin)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="panel">
-            <h3>Conseils en cours</h3>
-            {data.operationnel.conseils.length === 0 ? (
-              <p className="empty">Aucun conseil ouvert.</p>
-            ) : (
-              <ul className="item-list">
-                {data.operationnel.conseils.map((c) => (
-                  <li key={c.id} className="item">
-                    <div>
-                      <p className="item__title">
-                        <Link href={`/conseils/${c.id}`}>{c.objet}</Link>
-                      </p>
-                      <p className="item__meta">
-                        {c.responsable.nom} · {STATUT_CONSEIL_LABELS[c.statut]}
-                      </p>
-                    </div>
-                    <span className="item__date">
-                      {formatDate(c.dateEcheance)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="panel">
-            <h3>Projets actifs</h3>
-            {data.operationnel.projets.length === 0 ? (
-              <p className="empty">Aucun projet actif.</p>
-            ) : (
-              <ul className="item-list">
-                {data.operationnel.projets.map((p) => (
-                  <li key={p.id} className="item">
-                    <div>
-                      <p className="item__title">
-                        <Link href={`/projets/${p.id}`}>{p.nom}</Link>
-                      </p>
-                      <p className="item__meta">
-                        {p.responsable.nom} · {STATUT_PROJET_LABELS[p.statut]} ·{" "}
-                        {p.avancement}%
-                      </p>
-                    </div>
-                    <span className="item__date">
-                      {formatDate(p.dateEcheance)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="panel">
-            <h3>Contrôles SCI & risques</h3>
-            <ul className="item-list">
-              {data.operationnel.controles.map((c) => (
-                <li key={`c-${c.id}`} className="item">
-                  <div>
-                    <p className="item__title">
-                      <Link href={`/controles-sci/${c.id}`}>{c.nom}</Link>
-                    </p>
-                    <p className="item__meta">
-                      {c.responsable.nom} · {STATUT_CONTROLE_LABELS[c.statut]}
-                    </p>
-                  </div>
-                  <span className="item__date">
-                    {formatDate(c.dateProchaineEcheance)}
-                  </span>
-                </li>
-              ))}
-              {data.operationnel.risques.map((r) => (
-                <li key={`r-${r.id}`} className="item item--bientot">
-                  <div>
-                    <p className="item__title">
-                      <Link href={`/risques/${r.id}`}>{r.nom}</Link>
-                    </p>
-                    <p className="item__meta">
-                      {CATEGORIE_RISQUE_LABELS[r.categorie]} · criticité{" "}
-                      {r.criticite} · {r.responsable.nom}
-                    </p>
-                  </div>
-                </li>
-              ))}
-              {data.operationnel.controles.length === 0 &&
-              data.operationnel.risques.length === 0 ? (
-                <li>
-                  <p className="empty">Aucun élément à afficher.</p>
-                </li>
-              ) : null}
-            </ul>
-          </div>
+        <div className="filter-bar">
+          <Link
+            href="/responsable"
+            className={`chip${!ragFilter ? " is-active" : ""}`}
+          >
+            Tous
+          </Link>
+          <Link
+            href="/responsable?rag=vert"
+            className={`chip${ragFilter === "vert" ? " is-active" : ""}`}
+          >
+            <span className="rag-dot rag-dot--vert" /> Vert
+          </Link>
+          <Link
+            href="/responsable?rag=jaune"
+            className={`chip${ragFilter === "jaune" ? " is-active" : ""}`}
+          >
+            <span className="rag-dot rag-dot--jaune" /> Jaune
+          </Link>
+          <Link
+            href="/responsable?rag=rouge"
+            className={`chip${ragFilter === "rouge" ? " is-active" : ""}`}
+          >
+            <span className="rag-dot rag-dot--rouge" /> Rouge
+          </Link>
         </div>
+        {(() => {
+          type OpItem = {
+            key: string;
+            rag: RagStatut;
+            href: string;
+            title: string;
+            meta: string;
+            date: Date | null;
+          };
+          const items: OpItem[] = [
+            ...data.operationnel.audits.map((a) => ({
+              key: `a-${a.id}`,
+              rag: ragEcheance(a.dateFin),
+              href: `/audits/${a.id}`,
+              title: a.titre,
+              meta: `${a.responsable.nom} · Audit · ${STATUT_AUDIT_LABELS[a.statut]}`,
+              date: a.dateFin,
+            })),
+            ...data.operationnel.conseils.map((c) => ({
+              key: `c-${c.id}`,
+              rag: ragEcheance(c.dateEcheance),
+              href: `/conseils/${c.id}`,
+              title: c.objet,
+              meta: `${c.responsable.nom} · Conseil · ${STATUT_CONSEIL_LABELS[c.statut]}`,
+              date: c.dateEcheance,
+            })),
+            ...data.operationnel.projets.map((p) => ({
+              key: `p-${p.id}`,
+              rag: ragEcheance(p.dateEcheance),
+              href: `/projets/${p.id}`,
+              title: p.nom,
+              meta: `${p.responsable.nom} · Projet · ${STATUT_PROJET_LABELS[p.statut]} · ${p.avancement}%`,
+              date: p.dateEcheance,
+            })),
+            ...data.operationnel.controles.map((c) => ({
+              key: `ctl-${c.id}`,
+              rag: ragEcheance(c.dateProchaineEcheance),
+              href: `/controles-sci/${c.id}`,
+              title: c.nom,
+              meta: `${c.responsable.nom} · SCI · ${STATUT_CONTROLE_LABELS[c.statut]}`,
+              date: c.dateProchaineEcheance,
+            })),
+            ...data.operationnel.risques.map((r) => ({
+              key: `r-${r.id}`,
+              rag: (r.criticite >= 20
+                ? "rouge"
+                : r.criticite >= 12
+                  ? "jaune"
+                  : "vert") as RagStatut,
+              href: `/risques/${r.id}`,
+              title: r.nom,
+              meta: `${r.responsable.nom} · Risque · ${CATEGORIE_RISQUE_LABELS[r.categorie]} · crit. ${r.criticite}`,
+              date: null,
+            })),
+          ].filter((i) => !ragFilter || i.rag === ragFilter);
+
+          return (
+            <div className="panel">
+              {items.length === 0 ? (
+                <p className="empty">Aucun élément pour ce filtre.</p>
+              ) : (
+                <ul className="item-list">
+                  {items.map((i) => (
+                    <li key={i.key} className="item">
+                      <RagDot rag={i.rag} />
+                      <div>
+                        <p className="item__title">
+                          <Link href={i.href}>{i.title}</Link>
+                        </p>
+                        <p className="item__meta">{i.meta}</p>
+                      </div>
+                      <span className="item__date">{formatDate(i.date)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       <section className="section" aria-label="Objectifs annuels">

@@ -64,14 +64,16 @@ export async function getPilotageDashboard() {
     prisma.projet.count({
       where: {
         archive: false,
-        statut: { in: ["A_FAIRE", "EN_COURS", "EN_ATTENTE"] },
+        statut: {
+          in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
+        },
       },
     }),
-    prisma.projet.count({ where: { archive: false, statut: "TERMINE" } }),
+    prisma.projet.count({ where: { archive: false, statut: "CLOTURE" } }),
     prisma.projet.count({
       where: {
         archive: false,
-        statut: { notIn: ["TERMINE", "ANNULE"] },
+        statut: { notIn: ["CLOTURE", "ABANDONNE"] },
         dateEcheance: { lt: today },
       },
     }),

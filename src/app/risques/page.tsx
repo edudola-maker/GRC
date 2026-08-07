@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
-import { RISQUE_STATUTS_MAITRISES } from "@/lib/catalog";
+import { ModuleHelp } from "@/components/ModuleHelp";
+import { MODULE_HELP, RISQUE_STATUTS_MAITRISES } from "@/lib/catalog";
 import {
   CATEGORIE_RISQUE_LABELS,
   STATUT_RISQUE_LABELS,
+  STRATEGIE_RISQUE_LABELS,
   criticiteNiveau,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
@@ -29,10 +31,11 @@ export default async function RisquesPage({
 
   const total = risques.length;
   const critiques = risques.filter((r) => r.criticite >= 20).length;
-  const eleves = risques.filter((r) => r.criticite >= 12).length;
+  const eleves = risques.filter((r) => r.criticite >= 12 && r.criticite < 20).length;
   const maitrises = risques.filter((r) =>
     (RISQUE_STATUTS_MAITRISES as readonly string[]).includes(r.statut),
   ).length;
+  const sansStrategie = risques.filter((r) => !r.strategie && !archives).length;
 
   const matrixCounts: Record<string, number> = {};
   for (const r of risques) {
@@ -47,6 +50,7 @@ export default async function RisquesPage({
         description="Cartographie des risques — criticité = probabilité × impact."
         actions={<BtnLink href="/risques/nouveau">Nouveau risque</BtnLink>}
       />
+      <ModuleHelp {...MODULE_HELP.risques} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
       <div className="filter-bar">
@@ -78,6 +82,12 @@ export default async function RisquesPage({
           <strong>{maitrises}</strong>
           Maîtrisés
         </div>
+        {!archives ? (
+          <div className="stat">
+            <strong>{sansStrategie}</strong>
+            Sans stratégie
+          </div>
+        ) : null}
       </div>
 
       <div className="panel">
@@ -137,13 +147,18 @@ export default async function RisquesPage({
                     className={`entity-row entity-row--${niveau === "critique" || niveau === "eleve" ? "retard" : niveau === "modere" ? "bientot" : "neutre"}`}
                   >
                     <div className="entity-row__main">
-                      <strong>{r.nom}</strong>
+                      <strong>
+                        <span className="muted">{r.code}</span> · {r.nom}
+                      </strong>
                       <span className="entity-row__meta">
                         {CATEGORIE_RISQUE_LABELS[r.categorie]}
                         {" · "}
                         {r.responsable.nom}
                         {" · "}
                         {STATUT_RISQUE_LABELS[r.statut]}
+                        {r.strategie
+                          ? ` · ${STRATEGIE_RISQUE_LABELS[r.strategie]}`
+                          : " · sans stratégie"}
                         {" · "}
                         {r._count.controles} contrôle
                         {r._count.controles > 1 ? "s" : ""}

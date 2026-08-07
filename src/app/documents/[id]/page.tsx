@@ -18,12 +18,14 @@ import {
   FREQUENCE_REVUE_LABELS,
   STATUT_DOCUMENT_LABELS,
   STATUT_TACHE_LABELS,
+  TAXINOMIE_LABELS,
   TYPE_DOCUMENT_LABELS,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -56,12 +58,17 @@ export default async function DocumentDetailPage({
       document.statut === "OBSOLETE" ||
       document.statut === "ARCHIVE",
   );
+  const tags = parseTags(document.tags);
+  const confluenceUrl =
+    document.reference && /^https?:\/\//i.test(document.reference)
+      ? document.reference
+      : null;
 
   return (
     <>
       <BackLink href="/documents" label="← Retour aux documents" />
       <PageHeader
-        title={document.nom}
+        title={`${document.code} — ${document.nom}`}
         description={document.description ?? "Aucune description."}
         actions={
           <>
@@ -110,6 +117,10 @@ export default async function DocumentDetailPage({
           <h2 className="panel-title">Informations</h2>
           <dl className="kv">
             <div>
+              <dt>Code</dt>
+              <dd>{document.code}</dd>
+            </div>
+            <div>
               <dt>Type</dt>
               <dd>{TYPE_DOCUMENT_LABELS[document.typeDocument]}</dd>
             </div>
@@ -126,12 +137,43 @@ export default async function DocumentDetailPage({
               <dd>{STATUT_DOCUMENT_LABELS[document.statut]}</dd>
             </div>
             <div>
+              <dt>Taxinomie</dt>
+              <dd>
+                {document.taxinomie
+                  ? (TAXINOMIE_LABELS[document.taxinomie] ??
+                    document.taxinomie)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Tags</dt>
+              <dd>
+                {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt>Page Confluence</dt>
+              <dd>
+                {confluenceUrl ? (
+                  <a href={confluenceUrl} target="_blank" rel="noreferrer">
+                    {document.reference}
+                  </a>
+                ) : (
+                  (document.reference ?? "—")
+                )}
+              </dd>
+            </div>
+            <div>
               <dt>Fréquence de revue</dt>
               <dd>
                 {document.frequenceRevue
                   ? FREQUENCE_REVUE_LABELS[document.frequenceRevue]
                   : "—"}
               </dd>
+            </div>
+            <div>
+              <dt>Fenêtre de déclenchement</dt>
+              <dd>{document.fenetreDeclenchementJours} j.</dd>
             </div>
             <div>
               <dt>Approbation</dt>
@@ -144,14 +186,6 @@ export default async function DocumentDetailPage({
             <div>
               <dt>Prochaine revue</dt>
               <dd>{formatDate(document.prochaineRevue)}</dd>
-            </div>
-            <div>
-              <dt>Référence</dt>
-              <dd>{document.reference ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Fichier</dt>
-              <dd>{document.nomFichier ?? "—"}</dd>
             </div>
           </dl>
           <p className="detail-trace">
