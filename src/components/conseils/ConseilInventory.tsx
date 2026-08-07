@@ -9,6 +9,7 @@ import {
 } from "@/components/inventory/InventoryBrowser";
 import {
   InventoryEmpty,
+  InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
@@ -322,7 +323,7 @@ export function ConseilInventory({
           Aucun conseil ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <ul className="inventory-list">
+        <InventoryList columns={["Code", "Conseil", "Provenance", "Statut"]}>
           {filtered.map((c) => (
             <li key={c.id}>
               <InventoryRow
@@ -330,33 +331,28 @@ export function ConseilInventory({
                 urgence={c.urgence}
                 archived={c.archive}
                 primary={[
-                  { label: "Code", value: c.code, emphasis: "code" },
-                  { label: "Nom", value: c.objet, emphasis: "title" },
-                  { label: "Provenance", value: provenance(c) },
-                  {
-                    label: "Statut",
-                    value: c.statutLabel,
-                    emphasis: "status",
-                  },
+                  { value: c.code, emphasis: "code" },
+                  { value: c.objet, emphasis: "title" },
+                  { value: provenance(c) },
+                  { value: c.statutLabel, emphasis: "status" },
                 ]}
                 secondary={[
-                  { label: "Responsable", value: c.responsableNom },
+                  { value: c.responsableNom },
                   {
-                    label: "Échéance",
                     value: formatDateDot(c.dateEcheance),
+                    prefix: "Échéance",
                   },
                   {
-                    label: "Taxinomie",
                     value: c.taxinomie
                       ? (TAXINOMIE_LABELS[c.taxinomie] ?? c.taxinomie)
                       : "—",
                   },
-                  { label: "Tags", value: c.tags || "—" },
+                  { value: c.tags || "—" },
                 ]}
               />
             </li>
           ))}
-        </ul>
+        </InventoryList>
       )}
     </InventoryBrowser>
   );

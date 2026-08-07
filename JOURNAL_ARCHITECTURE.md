@@ -61,10 +61,12 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 2. **Zone KPI** (`KpiZone`) — fond distinct sobre  
 3. **Attention requise** (`AttentionZone`) — si éléments à traiter  
 4. **Filtres / recherche** (`InventoryBrowser` zone tools)  
-5. **Inventaire** labellisé (`InventoryRow` : intitulés explicites sur 2 lignes)  
+5. **Inventaire** type tableau moderne (`InventoryList` + `InventoryRow`)  
 6. Fiche détaillée (inchangée)
 
-Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryRow`.  
+**Inventaire :** en-têtes de colonnes une seule fois ; lignes = valeurs alignées ; 2ᵉ ligne méta discrète (préfixe ponctuel type `Échéance : …` si utile).
+
+Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryList`, `InventoryRow`.  
 Objectif : même logique de navigation d’un module à l’autre, sans personnalisation d’écran.
 
 ### Ajustement planification (revue Vague C)

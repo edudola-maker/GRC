@@ -9,6 +9,7 @@ import {
 } from "@/components/inventory/InventoryBrowser";
 import {
   InventoryEmpty,
+  InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 
@@ -170,7 +171,7 @@ export function RisqueInventory({
           Aucun risque ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <ul className="inventory-list">
+        <InventoryList columns={["Code", "Risque", "Catégorie", "Statut"]}>
           {filtered.map((r) => (
             <li key={r.id}>
               <InventoryRow
@@ -178,34 +179,24 @@ export function RisqueInventory({
                 urgence={r.urgence}
                 archived={r.archive}
                 primary={[
-                  { label: "Code", value: r.code, emphasis: "code" },
-                  { label: "Nom", value: r.nom, emphasis: "title" },
-                  { label: "Catégorie", value: r.categorieLabel },
-                  {
-                    label: "Statut",
-                    value: r.statutLabel,
-                    emphasis: "status",
-                  },
+                  { value: r.code, emphasis: "code" },
+                  { value: r.nom, emphasis: "title" },
+                  { value: r.categorieLabel },
+                  { value: r.statutLabel, emphasis: "status" },
                 ]}
                 secondary={[
-                  { label: "Responsable", value: r.responsableNom },
+                  { value: r.responsableNom },
                   {
-                    label: "Criticité",
                     value: `P${r.probabilite}×I${r.impact} = ${r.criticite}`,
+                    prefix: "Criticité",
                   },
-                  {
-                    label: "Stratégie",
-                    value: r.strategieLabel || "Sans stratégie",
-                  },
-                  {
-                    label: "Contrôles",
-                    value: `${r.nbControles}`,
-                  },
+                  { value: r.strategieLabel || "Sans stratégie" },
+                  { value: `${r.nbControles} contrôle${r.nbControles > 1 ? "s" : ""}` },
                 ]}
               />
             </li>
           ))}
-        </ul>
+        </InventoryList>
       )}
     </InventoryBrowser>
   );

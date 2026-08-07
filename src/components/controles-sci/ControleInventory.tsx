@@ -9,6 +9,7 @@ import {
 } from "@/components/inventory/InventoryBrowser";
 import {
   InventoryEmpty,
+  InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { formatDateDot } from "@/lib/labels";
@@ -174,7 +175,7 @@ export function ControleInventory({
           Aucun contrôle ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <ul className="inventory-list">
+        <InventoryList columns={["Code", "Contrôle", "Processus", "Statut"]}>
           {filtered.map((c) => (
             <li key={c.id}>
               <InventoryRow
@@ -182,34 +183,28 @@ export function ControleInventory({
                 urgence={c.urgence}
                 archived={c.archive}
                 primary={[
-                  { label: "Code", value: c.code, emphasis: "code" },
-                  { label: "Nom", value: c.nom, emphasis: "title" },
-                  { label: "Processus", value: c.processusConcerne },
-                  {
-                    label: "Statut",
-                    value: c.statutLabel,
-                    emphasis: "status",
-                  },
+                  { value: c.code, emphasis: "code" },
+                  { value: c.nom, emphasis: "title" },
+                  { value: c.processusConcerne },
+                  { value: c.statutLabel, emphasis: "status" },
                 ]}
                 secondary={[
-                  { label: "Responsable", value: c.responsableNom },
+                  { value: c.responsableNom },
                   {
-                    label: "Échéance",
                     value: formatDateDot(c.dateProchaineEcheance),
+                    prefix: "Échéance",
                   },
                   {
-                    label: "Type / fréquence",
                     value: `${c.typeLabel} · ${c.frequenceLabel} · fenêtre ${c.fenetreDeclenchementJours} j.`,
                   },
                   {
-                    label: "Preuves",
-                    value: `${c.nbPreuves}`,
+                    value: `${c.nbPreuves} preuve${c.nbPreuves > 1 ? "s" : ""}`,
                   },
                 ]}
               />
             </li>
           ))}
-        </ul>
+        </InventoryList>
       )}
     </InventoryBrowser>
   );

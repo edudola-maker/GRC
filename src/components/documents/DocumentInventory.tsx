@@ -9,6 +9,7 @@ import {
 } from "@/components/inventory/InventoryBrowser";
 import {
   InventoryEmpty,
+  InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { formatDateDot } from "@/lib/labels";
@@ -182,7 +183,7 @@ export function DocumentInventory({
           Aucun document ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <ul className="inventory-list">
+        <InventoryList columns={["Code", "Document", "Type", "Statut"]}>
           {filtered.map((d) => (
             <li key={d.id}>
               <InventoryRow
@@ -190,37 +191,26 @@ export function DocumentInventory({
                 urgence={d.urgence}
                 archived={d.archive}
                 primary={[
-                  { label: "Code", value: d.code, emphasis: "code" },
-                  { label: "Nom", value: d.nom, emphasis: "title" },
+                  { value: d.code, emphasis: "code" },
+                  { value: d.nom, emphasis: "title" },
                   {
-                    label: "Type",
                     value: `${d.typeLabel}${d.version ? ` · v${d.version}` : ""}`,
                   },
-                  {
-                    label: "Statut",
-                    value: d.statutLabel,
-                    emphasis: "status",
-                  },
+                  { value: d.statutLabel, emphasis: "status" },
                 ]}
                 secondary={[
-                  { label: "Responsable", value: d.responsableNom },
+                  { value: d.responsableNom },
                   {
-                    label: "Prochaine revue",
                     value: formatDateDot(d.prochaineRevue),
+                    prefix: "Revue",
                   },
-                  {
-                    label: "Fréquence",
-                    value: d.frequenceLabel || "—",
-                  },
-                  {
-                    label: "Tags",
-                    value: d.tags || "—",
-                  },
+                  { value: d.frequenceLabel || "—" },
+                  { value: d.tags || "—" },
                 ]}
               />
             </li>
           ))}
-        </ul>
+        </InventoryList>
       )}
     </InventoryBrowser>
   );

@@ -9,6 +9,7 @@ import {
 } from "@/components/inventory/InventoryBrowser";
 import {
   InventoryEmpty,
+  InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { formatDateDot } from "@/lib/labels";
@@ -171,7 +172,7 @@ export function AuditInventory({
           Aucun audit ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <ul className="inventory-list">
+        <InventoryList columns={["Code", "Audit", "Période", "Statut"]}>
           {filtered.map((a) => (
             <li key={a.id}>
               <InventoryRow
@@ -179,34 +180,28 @@ export function AuditInventory({
                 urgence={a.urgence}
                 archived={a.archive}
                 primary={[
-                  { label: "Code", value: a.code, emphasis: "code" },
-                  { label: "Nom", value: a.titre, emphasis: "title" },
+                  { value: a.code, emphasis: "code" },
+                  { value: a.titre, emphasis: "title" },
                   {
-                    label: "Période",
                     value: `${formatDateDot(a.dateDebut)} → ${formatDateDot(a.dateFin)}`,
                   },
-                  {
-                    label: "Statut",
-                    value: a.statutLabel,
-                    emphasis: "status",
-                  },
+                  { value: a.statutLabel, emphasis: "status" },
                 ]}
                 secondary={[
-                  { label: "Responsable", value: a.responsableNom },
+                  { value: a.responsableNom },
                   {
-                    label: "Échéance",
                     value: formatDateDot(a.dateFin ?? a.dateDebut),
+                    prefix: "Échéance",
                   },
                   {
-                    label: "Reco / tâches",
                     value: `${a.nbReco} reco · ${a.nbTaches} tâche${a.nbTaches > 1 ? "s" : ""}`,
                   },
-                  { label: "Tags", value: a.tags || "—" },
+                  { value: a.tags || "—" },
                 ]}
               />
             </li>
           ))}
-        </ul>
+        </InventoryList>
       )}
     </InventoryBrowser>
   );

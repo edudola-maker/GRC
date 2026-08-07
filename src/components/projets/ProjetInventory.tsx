@@ -9,6 +9,7 @@ import {
 } from "@/components/inventory/InventoryBrowser";
 import {
   InventoryEmpty,
+  InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { formatDateDot } from "@/lib/labels";
@@ -168,7 +169,7 @@ export function ProjetInventory({
           Aucun projet ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <ul className="inventory-list">
+        <InventoryList columns={["Code", "Projet", "Priorité", "Statut"]}>
           {filtered.map((p) => (
             <li key={p.id}>
               <InventoryRow
@@ -176,31 +177,26 @@ export function ProjetInventory({
                 urgence={p.urgence}
                 archived={p.archive}
                 primary={[
-                  { label: "Code", value: p.code, emphasis: "code" },
-                  { label: "Nom", value: p.nom, emphasis: "title" },
-                  { label: "Priorité", value: p.prioriteLabel },
-                  {
-                    label: "Statut",
-                    value: p.statutLabel,
-                    emphasis: "status",
-                  },
+                  { value: p.code, emphasis: "code" },
+                  { value: p.nom, emphasis: "title" },
+                  { value: p.prioriteLabel },
+                  { value: p.statutLabel, emphasis: "status" },
                 ]}
                 secondary={[
-                  { label: "Responsable", value: p.responsableNom },
+                  { value: p.responsableNom },
                   {
-                    label: "Échéance",
                     value: formatDateDot(p.dateEcheance),
+                    prefix: "Échéance",
                   },
                   {
-                    label: "Avancement",
                     value: `${p.avancement}% · ${p.nbTaches} tâche${p.nbTaches > 1 ? "s" : ""}${p.nbJalons > 0 ? ` · ${p.nbJalons} jalon${p.nbJalons > 1 ? "s" : ""}` : ""}`,
                   },
-                  { label: "Tags", value: p.tags || "—" },
+                  { value: p.tags || "—" },
                 ]}
               />
             </li>
           ))}
-        </ul>
+        </InventoryList>
       )}
     </InventoryBrowser>
   );
