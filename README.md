@@ -3,7 +3,8 @@
 Application web interne de pilotage pour une unité administrative.
 
 **Vision produit / feuille de route :** [ROADMAP.md](./ROADMAP.md)  
-**Ancrage architecture :** [ARCHITECTURE.md](./ARCHITECTURE.md)
+**Ancrage architecture :** [ARCHITECTURE.md](./ARCHITECTURE.md)  
+**Journal d’architecture (par vague) :** [JOURNAL_ARCHITECTURE.md](./JOURNAL_ARCHITECTURE.md)
 
 ## Sprint 1 — Socle utilisable au quotidien
 

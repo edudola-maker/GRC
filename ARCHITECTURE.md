@@ -3,6 +3,8 @@
 Ce fichier décrit **comment** le code actuel et les prochaines évolutions doivent rester alignés avec [ROADMAP.md](./ROADMAP.md).  
 Aucun module futur n’est implémenté ici : uniquement des règles et points d’accroche.
 
+**Décisions prises vague par vague :** [JOURNAL_ARCHITECTURE.md](./JOURNAL_ARCHITECTURE.md) (mémoire du projet — à compléter en fin de chaque vague).
+
 ---
 
 ## 1. Séparation des objets métier
