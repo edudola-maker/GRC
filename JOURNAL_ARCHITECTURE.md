@@ -51,9 +51,21 @@ Pas un inventaire exhaustif : uniquement ce qui compte pour maintenir et faire �
 
 ### Inventaire Conseils (ajustement Vague C)
 
-- Ligne compacte : `CNS-xxxx | objet | provenance | statut` (+ meta discrète).
 - Pattern **InventoryBrowser** : filtres rapides + recherche dynamique (`useDeferredValue`) + recherche avancée, sans rechargement.
-- À réutiliser ensuite sur Projets, Audits, Risques, SCI, Documents.
+
+### Design system modules (revue Vague C)
+
+Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôles SCI, Documents :
+
+1. Titre / description  
+2. **Zone KPI** (`KpiZone`) — fond distinct sobre  
+3. **Attention requise** (`AttentionZone`) — si éléments à traiter  
+4. **Filtres / recherche** (`InventoryBrowser` zone tools)  
+5. **Inventaire** labellisé (`InventoryRow` : intitulés explicites sur 2 lignes)  
+6. Fiche détaillée (inchangée)
+
+Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryRow`.  
+Objectif : même logique de navigation d’un module à l’autre, sans personnalisation d’écran.
 
 ### Ajustement planification (revue Vague C)
 

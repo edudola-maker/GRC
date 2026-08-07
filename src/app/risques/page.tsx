@@ -1,7 +1,12 @@
-import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
+import { AttentionZone } from "@/components/module/AttentionZone";
+import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import {
+  RisqueInventory,
+  type RisqueInventoryItem,
+} from "@/components/risques/RisqueInventory";
 import { MODULE_HELP, RISQUE_STATUTS_MAITRISES } from "@/lib/catalog";
 import {
   CATEGORIE_RISQUE_LABELS,
@@ -17,13 +22,12 @@ export const dynamic = "force-dynamic";
 export default async function RisquesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archives?: string; ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const archives = sp.archives === "1";
   const user = await getCurrentUser();
   const risques = await prisma.risque.findMany({
-    where: { archive: archives, uniteId: user.uniteId },
+    where: { uniteId: user.uniteId },
     include: {
       responsable: true,
       _count: { select: { controles: true } },
@@ -31,19 +35,66 @@ export default async function RisquesPage({
     orderBy: [{ criticite: "desc" }, { nom: "asc" }],
   });
 
-  const total = risques.length;
-  const critiques = risques.filter((r) => r.criticite >= 20).length;
-  const eleves = risques.filter((r) => r.criticite >= 12 && r.criticite < 20).length;
-  const maitrises = risques.filter((r) =>
+  const actifs = risques.filter((r) => !r.archive);
+  const total = actifs.length;
+  const critiques = actifs.filter((r) => r.criticite >= 20).length;
+  const eleves = actifs.filter(
+    (r) => r.criticite >= 12 && r.criticite < 20,
+  ).length;
+  const maitrises = actifs.filter((r) =>
     (RISQUE_STATUTS_MAITRISES as readonly string[]).includes(r.statut),
   ).length;
-  const sansStrategie = risques.filter((r) => !r.strategie && !archives).length;
+  const sansStrategie = actifs.filter((r) => !r.strategie).length;
 
   const matrixCounts: Record<string, number> = {};
-  for (const r of risques) {
+  for (const r of actifs) {
     const key = `${r.probabilite}-${r.impact}`;
     matrixCounts[key] = (matrixCounts[key] ?? 0) + 1;
   }
+
+  const items: RisqueInventoryItem[] = risques.map((r) => {
+    const niveau = criticiteNiveau(r.criticite);
+    const urgence =
+      niveau === "critique" || niveau === "eleve"
+        ? "retard"
+        : niveau === "modere"
+          ? "bientot"
+          : "neutre";
+    return {
+      id: r.id,
+      code: r.code,
+      nom: r.nom,
+      categorieLabel: CATEGORIE_RISQUE_LABELS[r.categorie] ?? r.categorie,
+      statut: r.statut,
+      statutLabel: STATUT_RISQUE_LABELS[r.statut] ?? r.statut,
+      strategieLabel: r.strategie
+        ? (STRATEGIE_RISQUE_LABELS[r.strategie] ?? r.strategie)
+        : null,
+      responsableId: r.responsableId,
+      responsableNom: r.responsable.nom,
+      probabilite: r.probabilite,
+      impact: r.impact,
+      criticite: r.criticite,
+      nbControles: r._count.controles,
+      archive: r.archive,
+      urgence,
+      estCritique: r.criticite >= 20,
+      estEleve: r.criticite >= 12 && r.criticite < 20,
+      sansStrategie: !r.strategie,
+    };
+  });
+
+  const attentionItems = items.filter(
+    (r) => !r.archive && (r.estCritique || r.sansStrategie),
+  );
+  const responsables = Array.from(
+    new Map(
+      items.map((r) => [
+        r.responsableId,
+        { id: r.responsableId, nom: r.responsableNom },
+      ]),
+    ).values(),
+  );
 
   return (
     <>
@@ -55,48 +106,18 @@ export default async function RisquesPage({
       <ModuleHelp {...MODULE_HELP.risques} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <div className="filter-bar">
-        <Link href="/risques" className={`chip${!archives ? " is-active" : ""}`}>
-          Actifs
-        </Link>
-        <Link
-          href="/risques?archives=1"
-          className={`chip${archives ? " is-active" : ""}`}
-        >
-          Archivés
-        </Link>
-      </div>
+      <KpiZone>
+        <KpiStat value={total} label="Total" />
+        <KpiStat value={critiques} label="Critiques" />
+        <KpiStat value={eleves} label="Élevés" />
+        <KpiStat value={maitrises} label="Maîtrisés" />
+        <KpiStat value={sansStrategie} label="Sans stratégie" />
+      </KpiZone>
 
-      <div className="stats">
-        <div className="stat">
-          <strong>{total}</strong>
-          Total
-        </div>
-        <div className="stat">
-          <strong>{critiques}</strong>
-          Critiques
-        </div>
-        <div className="stat">
-          <strong>{eleves}</strong>
-          Élevés
-        </div>
-        <div className="stat">
-          <strong>{maitrises}</strong>
-          Maîtrisés
-        </div>
-        {!archives ? (
-          <div className="stat">
-            <strong>{sansStrategie}</strong>
-            Sans stratégie
-          </div>
-        ) : null}
-      </div>
-
-      <div className="panel">
-        <h2 className="panel-title">Matrice 5×5</h2>
-        <p className="muted" style={{ marginBottom: "0.5rem" }}>
-          Lignes = impact (5→1), colonnes = probabilité (1→5). Cellule = nombre de
-          risques.
+      <section className="page-zone page-zone--panel" aria-label="Matrice des risques">
+        <p className="page-zone__label">Cartographie</p>
+        <p className="muted page-zone__intro">
+          Matrice 5×5 — lignes = impact (5→1), colonnes = probabilité (1→5).
         </p>
         <div className="matrix">
           <table className="matrix-table">
@@ -131,51 +152,22 @@ export default async function RisquesPage({
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
-      <div className="panel">
-        {risques.length === 0 ? (
-          <p className="empty">
-            Aucun risque. <Link href="/risques/nouveau">Créer le premier</Link>
-          </p>
-        ) : (
-          <ul className="entity-list">
-            {risques.map((r) => {
-              const niveau = criticiteNiveau(r.criticite);
-              return (
-                <li key={r.id}>
-                  <Link
-                    href={`/risques/${r.id}`}
-                    className={`entity-row entity-row--${niveau === "critique" || niveau === "eleve" ? "retard" : niveau === "modere" ? "bientot" : "neutre"}`}
-                  >
-                    <div className="entity-row__main">
-                      <strong>
-                        <span className="muted">{r.code}</span> · {r.nom}
-                      </strong>
-                      <span className="entity-row__meta">
-                        {CATEGORIE_RISQUE_LABELS[r.categorie]}
-                        {" · "}
-                        {r.responsable.nom}
-                        {" · "}
-                        {STATUT_RISQUE_LABELS[r.statut]}
-                        {r.strategie
-                          ? ` · ${STRATEGIE_RISQUE_LABELS[r.strategie]}`
-                          : " · sans stratégie"}
-                        {" · "}
-                        {r._count.controles} contrôle
-                        {r._count.controles > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <span className="entity-row__date">
-                      P{r.probabilite}×I{r.impact} = {r.criticite}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <AttentionZone
+        label="Attention requise"
+        items={attentionItems.map((r) => ({
+          id: r.id,
+          href: `/risques/${r.id}`,
+          code: r.code,
+          title: r.nom,
+          meta: r.estCritique
+            ? `Critique · ${r.responsableNom}`
+            : `Sans stratégie · ${r.responsableNom}`,
+        }))}
+      />
+
+      <RisqueInventory items={items} responsables={responsables} />
     </>
   );
 }

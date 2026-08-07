@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -8,8 +7,12 @@ import {
   filterByQuery,
   useInventorySearch,
 } from "@/components/inventory/InventoryBrowser";
+import {
+  InventoryEmpty,
+  InventoryRow,
+} from "@/components/inventory/InventoryRow";
 import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
-import { TAXINOMIE_LABELS } from "@/lib/labels";
+import { TAXINOMIE_LABELS, formatDateDot } from "@/lib/labels";
 
 export type ConseilInventoryItem = {
   id: string;
@@ -94,7 +97,7 @@ export function ConseilInventory({
     else if (quick === "clos") list = list.filter((c) => c.estClos && !c.archive);
     else if (quick === "retard") list = list.filter((c) => c.estRetard && !c.archive);
     else if (quick === "archives") list = list.filter((c) => c.archive);
-    else list = list.filter((c) => !c.archive); // tous (actifs)
+    else list = list.filter((c) => !c.archive);
 
     if (responsableQuick) {
       list = list.filter((c) => c.responsableId === responsableQuick);
@@ -314,54 +317,47 @@ export function ConseilInventory({
         </div>
       }
     >
-      <div className="panel">
-        {filtered.length === 0 ? (
-          <p className="empty">Aucun conseil ne correspond à votre recherche.</p>
-        ) : (
-          <ul className="inventory-list">
-            {filtered.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/conseils/${c.id}`}
-                  className={`inventory-row inventory-row--${c.urgence}${c.archive ? " is-archived" : ""}`}
-                >
-                  <div className="inventory-row__primary">
-                    <span className="inventory-row__code">{c.code}</span>
-                    <span className="inventory-row__sep" aria-hidden>
-                      |
-                    </span>
-                    <span className="inventory-row__title">{c.objet}</span>
-                    <span className="inventory-row__sep" aria-hidden>
-                      |
-                    </span>
-                    <span className="inventory-row__prov">{provenance(c)}</span>
-                    <span className="inventory-row__sep" aria-hidden>
-                      |
-                    </span>
-                    <span className="inventory-row__status">{c.statutLabel}</span>
-                  </div>
-                  <div className="inventory-row__secondary">
-                    <span>{c.responsableNom}</span>
-                    {c.dateEcheance ? (
-                      <span>
-                        Éch.{" "}
-                        {new Date(c.dateEcheance).toLocaleDateString("fr-FR")}
-                      </span>
-                    ) : null}
-                    {c.taxinomie ? (
-                      <span>
-                        {TAXINOMIE_LABELS[c.taxinomie] ?? c.taxinomie}
-                      </span>
-                    ) : null}
-                    {c.tags ? <span>{c.tags}</span> : null}
-                    {c.archive ? <span>Archivé</span> : null}
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {filtered.length === 0 ? (
+        <InventoryEmpty>
+          Aucun conseil ne correspond à votre recherche.
+        </InventoryEmpty>
+      ) : (
+        <ul className="inventory-list">
+          {filtered.map((c) => (
+            <li key={c.id}>
+              <InventoryRow
+                href={`/conseils/${c.id}`}
+                urgence={c.urgence}
+                archived={c.archive}
+                primary={[
+                  { label: "Code", value: c.code, emphasis: "code" },
+                  { label: "Nom", value: c.objet, emphasis: "title" },
+                  { label: "Provenance", value: provenance(c) },
+                  {
+                    label: "Statut",
+                    value: c.statutLabel,
+                    emphasis: "status",
+                  },
+                ]}
+                secondary={[
+                  { label: "Responsable", value: c.responsableNom },
+                  {
+                    label: "Échéance",
+                    value: formatDateDot(c.dateEcheance),
+                  },
+                  {
+                    label: "Taxinomie",
+                    value: c.taxinomie
+                      ? (TAXINOMIE_LABELS[c.taxinomie] ?? c.taxinomie)
+                      : "—",
+                  },
+                  { label: "Tags", value: c.tags || "—" },
+                ]}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </InventoryBrowser>
   );
 }

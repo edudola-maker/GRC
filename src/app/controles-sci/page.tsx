@@ -1,13 +1,18 @@
-import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
+import { AttentionZone } from "@/components/module/AttentionZone";
+import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import {
+  ControleInventory,
+  type ControleInventoryItem,
+} from "@/components/controles-sci/ControleInventory";
 import { MODULE_HELP } from "@/lib/catalog";
 import {
   FREQUENCE_LABELS,
   STATUT_CONTROLE_LABELS,
   TYPE_CONTROLE_LABELS,
-  formatDate,
+  formatDateDot,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -19,17 +24,16 @@ export const dynamic = "force-dynamic";
 export default async function ControlesSCIPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archives?: string; ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const showArchives = sp.archives === "1";
   const today = startOfToday();
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
   const [controles, prevus, realises, enRetard] = await Promise.all([
     prisma.controleSCI.findMany({
-      where: { archive: showArchives, uniteId },
+      where: { uniteId },
       include: {
         responsable: true,
         _count: { select: { preuves: true, risques: true, taches: true } },
@@ -66,6 +70,47 @@ export default async function ControlesSCIPage({
       ? Math.round((realises / (prevus + realises)) * 100)
       : null;
 
+  const items: ControleInventoryItem[] = controles.map((c) => {
+    const clos = c.statut === "REALISE" && c.frequence === "PONCTUELLE";
+    const estActif = !clos && !c.archive;
+    const estRetard = Boolean(
+      !c.archive &&
+        (c.statut === "EN_RETARD" ||
+          (c.statut !== "REALISE" &&
+            c.dateProchaineEcheance &&
+            c.dateProchaineEcheance < today)),
+    );
+    return {
+      id: c.id,
+      code: c.code,
+      nom: c.nom,
+      processusConcerne: c.processusConcerne,
+      typeLabel: TYPE_CONTROLE_LABELS[c.typeControle] ?? c.typeControle,
+      frequenceLabel: FREQUENCE_LABELS[c.frequence] ?? c.frequence,
+      statut: c.statut,
+      statutLabel: STATUT_CONTROLE_LABELS[c.statut] ?? c.statut,
+      responsableId: c.responsableId,
+      responsableNom: c.responsable.nom,
+      fenetreDeclenchementJours: c.fenetreDeclenchementJours,
+      dateProchaineEcheance: c.dateProchaineEcheance?.toISOString() ?? null,
+      nbPreuves: c._count.preuves,
+      archive: c.archive,
+      urgence: urgenceEcheance(c.dateProchaineEcheance, clos || c.archive),
+      estActif,
+      estRetard,
+    };
+  });
+
+  const enRetardItems = items.filter((c) => c.estRetard && !c.archive);
+  const responsables = Array.from(
+    new Map(
+      items.map((c) => [
+        c.responsableId,
+        { id: c.responsableId, nom: c.responsableNom },
+      ]),
+    ).values(),
+  );
+
   return (
     <>
       <PageHeader
@@ -76,102 +121,34 @@ export default async function ControlesSCIPage({
         }
       />
       <ModuleHelp {...MODULE_HELP.controles} />
-
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      {!showArchives ? (
-        <div className="stats">
-          <div className="stat">
-            <strong>{prevus}</strong>
-            Prévus
-          </div>
-          <div className="stat">
-            <strong>{realises}</strong>
-            Réalisés
-          </div>
-          <div className="stat">
-            <strong>{enRetard}</strong>
-            En retard
-          </div>
-          <div className="stat">
-            <strong>
+      <KpiZone>
+        <KpiStat value={prevus} label="Prévus" />
+        <KpiStat value={realises} label="Réalisés" />
+        <KpiStat value={enRetard} label="En retard" />
+        <KpiStat
+          value={
+            <>
               {taux ?? "—"}
               {taux != null ? "%" : ""}
-            </strong>
-            Taux de réalisation
-          </div>
-        </div>
-      ) : null}
+            </>
+          }
+          label="Taux de réalisation"
+        />
+      </KpiZone>
 
-      <div className="filter-bar">
-        <Link
-          href="/controles-sci"
-          className={`chip${!showArchives ? " is-active" : ""}`}
-        >
-          Actifs
-        </Link>
-        <Link
-          href="/controles-sci?archives=1"
-          className={`chip${showArchives ? " is-active" : ""}`}
-        >
-          Archivés
-        </Link>
-      </div>
+      <AttentionZone
+        items={enRetardItems.map((c) => ({
+          id: c.id,
+          href: `/controles-sci/${c.id}`,
+          code: c.code,
+          title: c.nom,
+          meta: `${c.responsableNom}${c.dateProchaineEcheance ? ` · éch. ${formatDateDot(c.dateProchaineEcheance)}` : ""}`,
+        }))}
+      />
 
-      <div className="panel">
-        {controles.length === 0 ? (
-          <p className="empty">
-            {showArchives ? (
-              "Aucun contrôle archivé."
-            ) : (
-              <>
-                Aucun contrôle actif.{" "}
-                <Link href="/controles-sci/nouveau">Créer le premier</Link>
-              </>
-            )}
-          </p>
-        ) : (
-          <ul className="entity-list">
-            {controles.map((c) => {
-              const clos =
-                c.statut === "REALISE" && c.frequence === "PONCTUELLE";
-              const urgence = urgenceEcheance(
-                c.dateProchaineEcheance,
-                clos || c.archive,
-              );
-              return (
-                <li key={c.id}>
-                  <Link
-                    href={`/controles-sci/${c.id}`}
-                    className={`entity-row entity-row--${urgence}`}
-                  >
-                    <div className="entity-row__main">
-                      <strong>
-                        <span className="muted">{c.code}</span> · {c.nom}
-                        {c.archive ? (
-                          <span className="tag tag--muted"> Archivé</span>
-                        ) : null}
-                      </strong>
-                      <span className="entity-row__meta">
-                        {c.processusConcerne} · {c.responsable.nom} ·{" "}
-                        {TYPE_CONTROLE_LABELS[c.typeControle]} ·{" "}
-                        {FREQUENCE_LABELS[c.frequence]} ·{" "}
-                        {STATUT_CONTROLE_LABELS[c.statut]} · fenêtre{" "}
-                        {c.fenetreDeclenchementJours} j. · {c._count.preuves}{" "}
-                        preuve
-                        {c._count.preuves > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <span className="entity-row__date">
-                      {formatDate(c.dateProchaineEcheance)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <ControleInventory items={items} responsables={responsables} />
     </>
   );
 }
