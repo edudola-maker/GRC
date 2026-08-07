@@ -22,11 +22,8 @@ export const STATUT_TACHE_LABELS: Record<string, string> = {
 };
 
 export const STATUT_CONTROLE_LABELS: Record<string, string> = {
-  A_REALISER: "À réaliser",
-  EN_COURS: "En cours",
-  A_VALIDER: "À valider",
-  REALISE: "Réalisé",
-  EN_RETARD: "En retard",
+  ACTIF: "Actif",
+  SUSPENDU: "Suspendu",
 };
 
 export const STATUT_CONSEIL_LABELS: Record<string, string> = {

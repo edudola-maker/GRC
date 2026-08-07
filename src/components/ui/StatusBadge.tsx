@@ -28,6 +28,7 @@ export function toneFromStatut(statut: string): StatusTone {
     case "CLOTUREE":
     case "TERMINE":
     case "REALISE":
+    case "ACTIF":
     case "MAITRISE":
     case "ACCEPTE":
     case "EN_VIGUEUR":
@@ -45,12 +46,14 @@ export function toneFromStatut(statut: string): StatusTone {
     case "RECU":
     case "IDENTIFIE":
     case "A_REALISER":
+    case "A_FAIRE":
     case "BROUILLON":
       return "info";
     case "EN_ATTENTE":
     case "A_REVOIR":
     case "A_ETUDIER":
     case "IDEE":
+    case "SUSPENDU":
       return "warn";
     case "EN_RETARD":
     case "ANNULE":

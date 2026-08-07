@@ -97,23 +97,23 @@ export async function getPilotageDashboard(uniteId: string) {
       where: {
         uniteId,
         archive: false,
-        statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
+        statut: "ACTIF",
       },
     }),
-    prisma.controleSCI.count({
-      where: { uniteId, archive: false, statut: "REALISE" },
+    prisma.tache.count({
+      where: {
+        uniteId,
+        categorie: "SCI",
+        controleSCIId: { not: null },
+        statut: "TERMINE",
+      },
     }),
     prisma.controleSCI.count({
       where: {
         uniteId,
         archive: false,
-        OR: [
-          { statut: "EN_RETARD" },
-          {
-            statut: { notIn: ["REALISE"] },
-            dateProchaineEcheance: { lt: today },
-          },
-        ],
+        statut: "ACTIF",
+        dateProchaineEcheance: { lt: today },
       },
     }),
     prisma.document.count({
@@ -183,12 +183,8 @@ export async function getPilotageDashboard(uniteId: string) {
       orderBy: { dateSoumission: "asc" },
       take: 6,
     }),
-    prisma.controleSCI.findMany({
-      where: { uniteId, statut: "A_VALIDER", archive: false },
-      include: { responsable: true, soumisPar: true },
-      orderBy: { dateSoumission: "asc" },
-      take: 6,
-    }),
+    // Validations sur la définition contrôle retirées (exécution = tâches).
+    Promise.resolve([] as never[]),
   ]);
 
   // Respect délai conseils (paramètre unité)

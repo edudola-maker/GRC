@@ -25,44 +25,6 @@ async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
 }
 
-function applyRealisation(
-  currentId: string,
-  uniteId: string,
-  frequence: string,
-  creerTacheSuivante: boolean,
-  nom: string,
-  responsableId: string,
-) {
-  const now = new Date();
-  const next = nextControleDate(now, frequence);
-  const isPonctuelle = frequence === "PONCTUELLE";
-  return {
-    patch: {
-      dateDerniereRealisation: now,
-      dateProchaineEcheance: next,
-      statut: (isPonctuelle ? "REALISE" : "A_REALISER") as
-        | "REALISE"
-        | "A_REALISER",
-      valideParId: currentId,
-      dateValidation: now,
-    },
-    nextTache:
-      creerTacheSuivante && !isPonctuelle && next
-        ? {
-            uniteId,
-            titre: `Réaliser le contrôle : ${nom}`,
-            responsableId,
-            dateEcheance: next,
-            statut: "A_FAIRE" as const,
-            priorite: "MOYENNE" as const,
-            categorie: "SCI" as const,
-            creeParId: currentId,
-            modifieParId: currentId,
-          }
-        : null,
-  };
-}
-
 export async function createControleSCI(formData: FormData) {
   const current = await getCurrentUser();
   const uniteId = current.uniteId;
@@ -74,7 +36,7 @@ export async function createControleSCI(formData: FormData) {
     redirectWithError(fallback, "Le processus concerné est obligatoire.");
   }
 
-  const statut = str(formData, "statut") || "A_REALISER";
+  const statut = str(formData, "statut") || "ACTIF";
   const frequence = str(formData, "frequence") || "TRIMESTRIELLE";
   const typeControle = str(formData, "typeControle") || "MANUEL";
   if (!STATUTS.has(statut) || !FREQUENCES.has(frequence) || !TYPES.has(typeControle)) {
@@ -92,51 +54,10 @@ export async function createControleSCI(formData: FormData) {
   const fenetreDeclenchementJours =
     optInt(formData, "fenetreDeclenchementJours") ?? 30;
   const delaiRealisationJours = optInt(formData, "delaiRealisationJours");
-  let dateDerniereRealisation = optDate(formData, "dateDerniereRealisation");
-  let dateProchaineEcheance = optDate(formData, "dateProchaineEcheance");
-
-  if (statut === "REALISE") {
-    const result = applyRealisation(
-      current.id,
-      uniteId,
-      frequence,
-      str(formData, "creerTacheSuivante") === "1",
-      nom,
-      responsableId,
-    );
-    const controle = await prisma.controleSCI.create({
-      data: {
-        code: await nextCode("CONTROLE_SCI", uniteId),
-        uniteId,
-        nom,
-        description: optStr(formData, "description"),
-        taxinomie: optStr(formData, "taxinomie"),
-        tags: serializeTags(optStr(formData, "tags")),
-        processusConcerne,
-        responsableId,
-        typeControle: typeControle as "MANUEL",
-        frequence: frequence as "TRIMESTRIELLE",
-        fenetreDeclenchementJours,
-        delaiRealisationJours,
-        dateDerniereRealisation: result.patch.dateDerniereRealisation,
-        dateProchaineEcheance: result.patch.dateProchaineEcheance,
-        statut: result.patch.statut,
-        commentaires: optStr(formData, "commentaires"),
-        archive: false,
-        creeParId: current.id,
-        modifieParId: current.id,
-        valideParId: result.patch.valideParId,
-        dateValidation: result.patch.dateValidation,
-      },
-    });
-    if (result.nextTache) {
-      await prisma.tache.create({
-        data: { ...result.nextTache, controleSCIId: controle.id },
-      });
-    }
-    revalidateApp([`/controles-sci/${controle.id}`]);
-    redirectWithOk(`/controles-sci/${controle.id}`, "cree");
-  }
+  const dateDerniereRealisation = optDate(formData, "dateDerniereRealisation");
+  const dateProchaineEcheance =
+    optDate(formData, "dateProchaineEcheance") ??
+    nextControleDate(new Date(), frequence);
 
   const controle = await prisma.controleSCI.create({
     data: {
@@ -153,9 +74,8 @@ export async function createControleSCI(formData: FormData) {
       fenetreDeclenchementJours,
       delaiRealisationJours,
       dateDerniereRealisation,
-      dateProchaineEcheance:
-        dateProchaineEcheance ?? nextControleDate(new Date(), frequence),
-      statut: statut as "A_REALISER",
+      dateProchaineEcheance,
+      statut: statut as "ACTIF",
       commentaires: optStr(formData, "commentaires"),
       archive: false,
       creeParId: current.id,
@@ -190,7 +110,7 @@ export async function updateControleSCI(formData: FormData) {
     );
   }
 
-  const statut = str(formData, "statut") || "A_REALISER";
+  const statut = str(formData, "statut") || "ACTIF";
   const frequence = str(formData, "frequence") || existing.frequence;
   if (!STATUTS.has(statut) || !FREQUENCES.has(frequence)) {
     redirectWithError(
@@ -219,164 +139,39 @@ export async function updateControleSCI(formData: FormData) {
   const taxinomie = optStr(formData, "taxinomie");
   const tags = serializeTags(optStr(formData, "tags"));
 
-  const becomingRealise =
-    statut === "REALISE" && existing.statut !== "REALISE";
-
-  if (becomingRealise) {
-    const result = applyRealisation(
-      current.id,
-      existing.uniteId,
-      frequence,
-      str(formData, "creerTacheSuivante") === "1",
+  await prisma.controleSCI.update({
+    where: { id },
+    data: {
       nom,
+      description: optStr(formData, "description"),
+      processusConcerne,
       responsableId,
-    );
-    await prisma.controleSCI.update({
-      where: { id },
-      data: {
-        nom,
-        description: optStr(formData, "description"),
-        processusConcerne,
-        responsableId,
-        typeControle: typeControle as "MANUEL",
-        frequence: frequence as "TRIMESTRIELLE",
-        fenetreDeclenchementJours,
-        delaiRealisationJours,
-        taxinomie,
-        tags,
-        commentaires: optStr(formData, "commentaires"),
-        modifieParId: current.id,
-        ...result.patch,
-      },
-    });
-    if (result.nextTache) {
-      await prisma.tache.create({
-        data: { ...result.nextTache, controleSCIId: id },
-      });
-    }
-  } else {
-    await prisma.controleSCI.update({
-      where: { id },
-      data: {
-        nom,
-        description: optStr(formData, "description"),
-        processusConcerne,
-        responsableId,
-        typeControle: typeControle as "MANUEL",
-        frequence: frequence as "TRIMESTRIELLE",
-        fenetreDeclenchementJours,
-        delaiRealisationJours,
-        taxinomie,
-        tags,
-        dateDerniereRealisation: optDate(formData, "dateDerniereRealisation"),
-        dateProchaineEcheance: optDate(formData, "dateProchaineEcheance"),
-        statut: statut as "A_REALISER",
-        commentaires: optStr(formData, "commentaires"),
-        modifieParId: current.id,
-      },
-    });
-  }
+      typeControle: typeControle as "MANUEL",
+      frequence: frequence as "TRIMESTRIELLE",
+      fenetreDeclenchementJours,
+      delaiRealisationJours,
+      taxinomie,
+      tags,
+      dateDerniereRealisation: optDate(formData, "dateDerniereRealisation"),
+      dateProchaineEcheance: optDate(formData, "dateProchaineEcheance"),
+      statut: statut as "ACTIF",
+      commentaires: optStr(formData, "commentaires"),
+      modifieParId: current.id,
+    },
+  });
 
   revalidateApp([`/controles-sci/${id}`, `/controles-sci/${id}/modifier`]);
   redirectWithOk(`/controles-sci/${id}`, "modifie");
 }
 
-export async function realiserControleSCI(formData: FormData) {
-  const current = await getCurrentUser();
-  const id = str(formData, "id");
-  if (!id) redirectWithError("/controles-sci", "Identifiant manquant.");
-
-  const existing = await prisma.controleSCI.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/controles-sci", "Contrôle introuvable.");
-
-  const result = applyRealisation(
-    current.id,
-    existing.uniteId,
-    existing.frequence,
-    str(formData, "creerTacheSuivante") !== "0",
-    existing.nom,
-    existing.responsableId,
-  );
-
-  await prisma.controleSCI.update({
-    where: { id },
-    data: {
-      ...result.patch,
-      modifieParId: current.id,
-    },
-  });
-
-  if (result.nextTache) {
-    await prisma.tache.create({
-      data: { ...result.nextTache, controleSCIId: id },
-    });
-  }
-
-  revalidateApp([`/controles-sci/${id}`]);
-  redirectWithOk(`/controles-sci/${id}`, "realise");
-}
-
-export async function ajouterPreuveControle(formData: FormData) {
-  const current = await getCurrentUser();
-  const uniteId = current.uniteId;
-  const controleSCIId = str(formData, "controleSCIId");
-  if (!controleSCIId) {
-    redirectWithError("/controles-sci", "Identifiant contrôle manquant.");
-  }
-
-  const existing = await prisma.controleSCI.findUnique({
-    where: { id: controleSCIId },
-  });
-  if (!existing) {
-    redirectWithError("/controles-sci", "Contrôle introuvable.");
-  }
-
-  const nom = str(formData, "nom") || `Preuve — ${existing.nom}`;
-  const reference = optStr(formData, "reference");
-  if (!reference) {
-    redirectWithError(
-      `/controles-sci/${controleSCIId}`,
-      "La référence de la preuve est obligatoire.",
-    );
-  }
-
-  const document = await prisma.document.create({
-    data: {
-      code: await nextCode("DOCUMENT", uniteId),
-      uniteId,
-      nom,
-      reference,
-      typeDocument: "AUTRE",
-      statut: "EN_VIGUEUR",
-      responsableId: existing.responsableId,
-      creeParId: current.id,
-      modifieParId: current.id,
-    },
-  });
-
-  await prisma.controleDocument.create({
-    data: {
-      controleSCIId,
-      documentId: document.id,
-      typeLien: "preuve",
-    },
-  });
-
-  revalidateApp([
-    `/controles-sci/${controleSCIId}`,
-    `/documents/${document.id}`,
-  ]);
-  redirectWithOk(`/controles-sci/${controleSCIId}`, "preuve");
-}
-
 export async function lierRisqueControle(formData: FormData) {
   const controleSCIId = str(formData, "controleSCIId");
   const risqueId = str(formData, "risqueId");
+  const retour =
+    str(formData, "retour") ||
+    (controleSCIId ? `/controles-sci/${controleSCIId}/modifier` : "/controles-sci");
   if (!controleSCIId || !risqueId) {
-    redirectWithError(
-      controleSCIId ? `/controles-sci/${controleSCIId}` : "/controles-sci",
-      "Contrôle et risque requis.",
-    );
+    redirectWithError(retour, "Contrôle et risque requis.");
   }
 
   const [controle, risque] = await Promise.all([
@@ -385,7 +180,7 @@ export async function lierRisqueControle(formData: FormData) {
   ]);
   if (!controle) redirectWithError("/controles-sci", "Contrôle introuvable.");
   if (!risque) {
-    redirectWithError(`/controles-sci/${controleSCIId}`, "Risque introuvable.");
+    redirectWithError(retour, "Risque introuvable.");
   }
 
   await prisma.risqueControle.upsert({
@@ -398,9 +193,32 @@ export async function lierRisqueControle(formData: FormData) {
 
   revalidateApp([
     `/controles-sci/${controleSCIId}`,
+    `/controles-sci/${controleSCIId}/modifier`,
     `/risques/${risqueId}`,
   ]);
-  redirectWithOk(`/controles-sci/${controleSCIId}`, "lien");
+  redirectWithOk(retour, "lien");
+}
+
+export async function delierRisqueControle(formData: FormData) {
+  const controleSCIId = str(formData, "controleSCIId");
+  const risqueId = str(formData, "risqueId");
+  const retour =
+    str(formData, "retour") ||
+    (controleSCIId ? `/controles-sci/${controleSCIId}/modifier` : "/controles-sci");
+  if (!controleSCIId || !risqueId) {
+    redirectWithError(retour, "Contrôle et risque requis.");
+  }
+
+  await prisma.risqueControle.deleteMany({
+    where: { controleSCIId, risqueId },
+  });
+
+  revalidateApp([
+    `/controles-sci/${controleSCIId}`,
+    `/controles-sci/${controleSCIId}/modifier`,
+    `/risques/${risqueId}`,
+  ]);
+  redirectWithOk(retour, "lien_supprime");
 }
 
 export async function archiveControleSCI(formData: FormData) {

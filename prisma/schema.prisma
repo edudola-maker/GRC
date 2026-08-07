@@ -35,12 +35,11 @@ enum StatutTache {
   ANNULE
 }
 
+/// Statut de la *définition* du contrôle (pas de son exécution).
+/// L'exécution opérationnelle = tâches / occurrences liées.
 enum StatutControleSCI {
-  A_REALISER
-  EN_COURS
-  A_VALIDER
-  REALISE
-  EN_RETARD
+  ACTIF
+  SUSPENDU
 }
 
 enum StatutConseil {
@@ -446,7 +445,7 @@ model ControleSCI {
   delaiRealisationJours   Int?
   dateDerniereRealisation DateTime?
   dateProchaineEcheance   DateTime?
-  statut                  StatutControleSCI @default(A_REALISER)
+  statut                  StatutControleSCI @default(ACTIF)
   commentaires            String?
   archive                 Boolean           @default(false)
 

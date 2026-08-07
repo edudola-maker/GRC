@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   CONSEIL_STATUTS_CLOS,
   RISQUE_STATUTS_MAITRISES,
+  TACHE_STATUTS_CLOS,
 } from "@/lib/catalog";
 import { getConseilDelaiCibleJours } from "@/lib/referentiels";
 import { businessDaysBetween } from "@/lib/dates";
@@ -80,23 +81,34 @@ export async function calculerIndicateur(
         },
       });
     case "controles_realises":
-      return prisma.controleSCI.count({
-        where: { uniteId, archive: false, statut: "REALISE" },
+      return prisma.tache.count({
+        where: {
+          uniteId,
+          categorie: "SCI",
+          controleSCIId: { not: null },
+          statut: "TERMINE",
+        },
       });
     case "controles_taux_pct": {
-      const [prevus, realises] = await Promise.all([
-        prisma.controleSCI.count({
+      const [ouvertes, realises] = await Promise.all([
+        prisma.tache.count({
           where: {
             uniteId,
-            archive: false,
-            statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
+            categorie: "SCI",
+            controleSCIId: { not: null },
+            statut: { notIn: [...TACHE_STATUTS_CLOS] },
           },
         }),
-        prisma.controleSCI.count({
-          where: { uniteId, archive: false, statut: "REALISE" },
+        prisma.tache.count({
+          where: {
+            uniteId,
+            categorie: "SCI",
+            controleSCIId: { not: null },
+            statut: "TERMINE",
+          },
         }),
       ]);
-      const total = prevus + realises;
+      const total = ouvertes + realises;
       return total > 0 ? Math.round((realises / total) * 100) : null;
     }
     case "risques_critiques":

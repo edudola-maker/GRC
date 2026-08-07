@@ -28,7 +28,7 @@ export type ControleInventoryItem = {
   responsableNom: string;
   fenetreDeclenchementJours: number;
   dateProchaineEcheance: string | null;
-  nbPreuves: number;
+  nbOccurrences: number;
   archive: boolean;
   urgence: "retard" | "bientot" | "a_venir" | "neutre";
   estActif: boolean;
@@ -234,7 +234,7 @@ export function ControleInventory({
             "Responsable",
             "Échéance",
             "Type / fréquence",
-            "Preuves",
+            "Occurrences",
           ]}
         >
           {filtered.map((c) => (
@@ -256,7 +256,7 @@ export function ControleInventory({
                     value: `${c.typeLabel} · ${c.frequenceLabel} · fenêtre ${c.fenetreDeclenchementJours} j.`,
                   },
                   {
-                    value: `${c.nbPreuves} preuve${c.nbPreuves > 1 ? "s" : ""}`,
+                    value: `${c.nbOccurrences} occurrence${c.nbOccurrences > 1 ? "s" : ""}`,
                   },
                 ]}
               />

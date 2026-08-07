@@ -68,13 +68,21 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Filtres :** logique pure dans `inventory-filters.ts` (testable) ; pastilles « filtres actifs » + réinitialisation globale ; critères combinables sans rechargement.
 
+**Fiches — consultation / modification :** par défaut consultation ; infos structurantes et `LienObjet` éditables uniquement sur la page Modifier (prépare droits, versioning, validation quatre yeux).
+
+**Navigation :** barre latérale structurée (Dashboards / Métier / Gouvernance / Administration à venir) ; rétractabilité envisagée plus tard.
+
 **Runtime démo :** préférer `next start` (prod) plutôt que `next dev` Turbopack — en environnement cloud, les scripts `crossorigin` de Turbopack peuvent recevoir un 403 (header `Origin`) et bloquer l’hydratation React (filtres inertes).
 
 **Risques :** matrice filtrable (catégorie, inhérent/résiduel) ; champs résiduels en base ; visualisation d’évolution inhérent→résiduel = roadmap.
 
+**Contrôles SCI :** statut de *définition* `ACTIF` | `SUSPENDU` (+ archive) ; exécution = tâches/occurrences ; pas de « Marquer réalisé » ni de box Preuves sur la définition (preuves → occurrence). Table `ControleDocument` conservée pour migration ultérieure vers preuves de tâche.
+
 **Missions d'assurance :** `Audit.typeMission` (`AUDIT` | `REVUE_PROCESSUS`) — même moteur ; programmes récurrents = roadmap.
 
-**Relations :** table générique `LienObjet` + section **Éléments associés** sur les fiches.
+**Relations :** table générique `LienObjet` + section **Éléments associés** (lecture en consultation, édition sur Modifier).
+
+**Principe Objet ↔ Tâche :** objets métier = structure / pilotage ; tâches = exécution opérationnelle.
 
 Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryList`, `InventoryRow`, `StatusBadge`, `ElementsAssocies`, `RiskMatrix`.  
 Objectif : même logique de navigation d’un module à l’autre, sans personnalisation d’écran.

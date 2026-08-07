@@ -3,22 +3,56 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type NavItem = { href: string; label: string; icon: string; responsableOnly?: boolean };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  responsableOnly?: boolean;
+};
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Mon tableau de bord", icon: "⌂" },
+type NavGroup = {
+  id: string;
+  label: string;
+  items: NavItem[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    href: "/responsable",
-    label: "Dashboard responsable",
-    icon: "◎",
-    responsableOnly: true,
+    id: "dashboards",
+    label: "Dashboards",
+    items: [
+      { href: "/", label: "Dashboard collaborateur", icon: "⌂" },
+      {
+        href: "/responsable",
+        label: "Dashboard responsable",
+        icon: "◎",
+        responsableOnly: true,
+      },
+    ],
   },
-  { href: "/projets", label: "Projets", icon: "▦" },
-  { href: "/conseils", label: "Conseils", icon: "💬" },
-  { href: "/audits", label: "Missions d'assurance", icon: "◉" },
-  { href: "/risques", label: "Risques", icon: "⚠" },
-  { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
-  { href: "/documents", label: "Documents", icon: "▤" },
+  {
+    id: "metier",
+    label: "Métier",
+    items: [
+      { href: "/projets", label: "Projets", icon: "▦" },
+      { href: "/audits", label: "Missions d'assurance", icon: "◉" },
+      { href: "/conseils", label: "Conseils", icon: "💬" },
+    ],
+  },
+  {
+    id: "gouvernance",
+    label: "Gouvernance",
+    items: [
+      { href: "/risques", label: "Risques", icon: "⚠" },
+      { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
+      { href: "/documents", label: "Documents", icon: "▤" },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Administration",
+    items: [],
+  },
 ];
 
 export function AppNav({
@@ -33,7 +67,6 @@ export function AppNav({
   demoSwitcher?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const items = NAV_ITEMS.filter((i) => !i.responsableOnly || isResponsable);
 
   return (
     <aside className="app-nav">
@@ -46,22 +79,41 @@ export function AppNav({
       </div>
 
       <nav className="app-nav__links" aria-label="Navigation principale">
-        {items.map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+        {NAV_GROUPS.map((group) => {
+          const items = group.items.filter(
+            (i) => !i.responsableOnly || isResponsable,
+          );
+          if (group.id === "admin") {
+            return (
+              <div key={group.id} className="app-nav__group">
+                <p className="app-nav__group-label">{group.label}</p>
+                <span className="app-nav__soon">À venir</span>
+              </div>
+            );
+          }
+          if (items.length === 0) return null;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`app-nav__link${active ? " is-active" : ""}`}
-            >
-              <span className="app-nav__icon" aria-hidden>
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
+            <div key={group.id} className="app-nav__group">
+              <p className="app-nav__group-label">{group.label}</p>
+              {items.map((item) => {
+                const active =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`app-nav__link${active ? " is-active" : ""}`}
+                  >
+                    <span className="app-nav__icon" aria-hidden>
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>

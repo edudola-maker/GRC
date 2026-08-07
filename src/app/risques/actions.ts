@@ -246,6 +246,9 @@ export async function setRisqueControles(formData: FormData) {
   const current = await getCurrentUser();
   const uniteId = current.uniteId;
   const risqueId = str(formData, "risqueId");
+  const retour =
+    str(formData, "retour") ||
+    (risqueId ? `/risques/${risqueId}/modifier` : "/risques");
   if (!risqueId) redirectWithError("/risques", "Identifiant risque manquant.");
 
   const existing = await prisma.risque.findUnique({ where: { id: risqueId } });
@@ -263,7 +266,7 @@ export async function setRisqueControles(formData: FormData) {
     });
     if (found.length !== controleIds.length) {
       redirectWithError(
-        `/risques/${risqueId}`,
+        retour,
         "Un ou plusieurs contrôles sont introuvables ou archivés.",
       );
     }
@@ -287,6 +290,6 @@ export async function setRisqueControles(formData: FormData) {
     }),
   ]);
 
-  revalidateApp([`/risques/${risqueId}`]);
-  redirectWithOk(`/risques/${risqueId}`, "lien");
+  revalidateApp([`/risques/${risqueId}`, `/risques/${risqueId}/modifier`]);
+  redirectWithOk(retour, "lien");
 }

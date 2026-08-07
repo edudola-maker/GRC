@@ -3,16 +3,12 @@ import { notFound } from "next/navigation";
 import {
   ConfirmActionButton,
   ConfirmDeleteButton,
-  SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveControleSCI,
-  ajouterPreuveControle,
   deleteControleSCI,
-  lierRisqueControle,
-  realiserControleSCI,
   unarchiveControleSCI,
 } from "../actions";
 import {
@@ -43,7 +39,6 @@ export default async function ControleSCIDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const uniteId = user.uniteId;
 
   const controle = await prisma.controleSCI.findUnique({
     where: { id },
@@ -51,10 +46,6 @@ export default async function ControleSCIDetailPage({
       responsable: true,
       creePar: true,
       modifiePar: true,
-      preuves: {
-        include: { document: true },
-        orderBy: { creeLe: "desc" },
-      },
       risques: {
         include: { risque: true },
         orderBy: { creeLe: "desc" },
@@ -67,21 +58,9 @@ export default async function ControleSCIDetailPage({
   });
   if (!controle) notFound();
 
-  const risquesDispo = await prisma.risque.findMany({
-    where: {
-      uniteId,
-      archive: false,
-      id: { notIn: controle.risques.map((r) => r.risqueId) },
-    },
-    orderBy: { nom: "asc" },
-    select: { id: true, nom: true },
-  });
-
-  const clos =
-    controle.statut === "REALISE" && controle.frequence === "PONCTUELLE";
   const urgence = urgenceEcheance(
     controle.dateProchaineEcheance,
-    clos || controle.archive,
+    controle.archive || controle.statut === "SUSPENDU",
   );
   const tags = parseTags(controle.tags);
 
@@ -97,15 +76,6 @@ export default async function ControleSCIDetailPage({
               <BtnLink href={`/controles-sci/${controle.id}/modifier`}>
                 Modifier
               </BtnLink>
-            ) : null}
-            {!controle.archive && controle.statut !== "REALISE" ? (
-              <ConfirmActionButton
-                action={realiserControleSCI}
-                id={controle.id}
-                label="Marquer réalisé"
-                confirmMessage="Valider la réalisation ? La prochaine échéance sera recalculée et une tâche de suivi pourra être créée."
-                variant="primary"
-              />
             ) : null}
             {controle.archive ? (
               <ConfirmActionButton
@@ -135,204 +105,144 @@ export default async function ControleSCIDetailPage({
       {controle.archive ? (
         <div className="flash flash--warn">Ce contrôle est archivé.</div>
       ) : null}
-      {urgence === "retard" ? (
+      {urgence === "retard" && controle.statut === "ACTIF" ? (
         <div className="flash flash--error">
-          Échéance dépassée : {formatDate(controle.dateProchaineEcheance)}.
+          Prochaine occurrence dépassée :{" "}
+          {formatDate(controle.dateProchaineEcheance)}.
         </div>
       ) : null}
 
-      <div className="detail-grid">
-        <div className="panel">
-          <h2 className="panel-title">Informations</h2>
-          <dl className="kv">
-            <div>
-              <dt>Code</dt>
-              <dd>{controle.code}</dd>
-            </div>
-            <div>
-              <dt>Processus</dt>
-              <dd>{controle.processusConcerne}</dd>
-            </div>
-            <div>
-              <dt>Responsable</dt>
-              <dd>{controle.responsable.nom}</dd>
-            </div>
-            <div>
-              <dt>Type</dt>
-              <dd>{TYPE_CONTROLE_LABELS[controle.typeControle]}</dd>
-            </div>
-            <div>
-              <dt>Fréquence</dt>
-              <dd>{FREQUENCE_LABELS[controle.frequence]}</dd>
-            </div>
-            <div>
-              <dt>Statut</dt>
-              <dd>{STATUT_CONTROLE_LABELS[controle.statut]}</dd>
-            </div>
-            <div>
-              <dt>Fenêtre de déclenchement</dt>
-              <dd>{controle.fenetreDeclenchementJours} j.</dd>
-            </div>
-            <div>
-              <dt>Délai de réalisation</dt>
-              <dd>
-                {controle.delaiRealisationJours != null
-                  ? `${controle.delaiRealisationJours} j.`
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Taxinomie</dt>
-              <dd>
-                {controle.taxinomie
-                  ? (TAXINOMIE_LABELS[controle.taxinomie] ??
-                    controle.taxinomie)
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Tags</dt>
-              <dd>
-                {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Dernière réalisation</dt>
-              <dd>{formatDate(controle.dateDerniereRealisation)}</dd>
-            </div>
-            <div>
-              <dt>Prochaine échéance</dt>
-              <dd>{formatDate(controle.dateProchaineEcheance)}</dd>
-            </div>
-          </dl>
-          {controle.commentaires ? (
-            <p className="detail-note">{controle.commentaires}</p>
-          ) : null}
-          <p className="detail-trace">
-            Créé par {controle.creePar.nom} · Modifié par{" "}
-            {controle.modifiePar.nom} · {formatDate(controle.modifieLe)}
-          </p>
-        </div>
-
-        <div className="stack-panels">
-          <div className="panel">
-            <h2 className="panel-title">
-              Preuves ({controle.preuves.length})
-            </h2>
-            {!controle.archive ? (
-              <form action={ajouterPreuveControle} className="inline-form">
-                <input type="hidden" name="controleSCIId" value={controle.id} />
-                <div className="inline-form__row">
-                  <label className="field" htmlFor="preuve-nom">
-                    <span className="field__label">Nom</span>
-                    <input
-                      id="preuve-nom"
-                      name="nom"
-                      placeholder="Ex. Capture d'écran"
-                    />
-                  </label>
-                  <label className="field" htmlFor="preuve-ref">
-                    <span className="field__label">Référence *</span>
-                    <input
-                      id="preuve-ref"
-                      name="reference"
-                      required
-                      placeholder="URL ou chemin"
-                    />
-                  </label>
-                  <SubmitButton>Ajouter</SubmitButton>
-                </div>
-              </form>
-            ) : null}
-            {controle.preuves.length === 0 ? (
-              <p className="empty">Aucune preuve liée.</p>
-            ) : (
-              <ul className="entity-list">
-                {controle.preuves.map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={`/documents/${p.document.id}`}
-                      className="entity-row"
-                    >
-                      <div className="entity-row__main">
-                        <strong>{p.document.nom}</strong>
-                        <span className="entity-row__meta">
-                          {p.document.reference ?? "Sans référence"}
-                        </span>
-                      </div>
-                      <span className="entity-row__date">
-                        {formatDate(p.creeLe)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+      <div className="panel">
+        <h2 className="panel-title">Informations</h2>
+        <dl className="kv">
+          <div>
+            <dt>Code</dt>
+            <dd>{controle.code}</dd>
           </div>
-
-          <div className="panel">
-            <h2 className="panel-title">
-              Risques liés ({controle.risques.length})
-            </h2>
-            {!controle.archive && risquesDispo.length > 0 ? (
-              <form action={lierRisqueControle} className="inline-form">
-                <input type="hidden" name="controleSCIId" value={controle.id} />
-                <div className="inline-form__row">
-                  <label className="field" htmlFor="risqueId">
-                    <span className="field__label">Risque</span>
-                    <select id="risqueId" name="risqueId" required>
-                      {risquesDispo.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.nom}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <SubmitButton>Lier</SubmitButton>
-                </div>
-              </form>
-            ) : null}
-            {controle.risques.length === 0 ? (
-              <p className="empty">Aucun risque associé.</p>
-            ) : (
-              <ul className="entity-list">
-                {controle.risques.map((rc) => (
-                  <li key={rc.id}>
-                    <Link
-                      href={`/risques/${rc.risque.id}`}
-                      className="entity-row"
-                    >
-                      <div className="entity-row__main">
-                        <strong>{rc.risque.nom}</strong>
-                        <span className="entity-row__meta">
-                          Criticité {rc.risque.criticite}
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div>
+            <dt>Processus</dt>
+            <dd>{controle.processusConcerne}</dd>
           </div>
-        </div>
+          <div>
+            <dt>Responsable</dt>
+            <dd>{controle.responsable.nom}</dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd>{TYPE_CONTROLE_LABELS[controle.typeControle]}</dd>
+          </div>
+          <div>
+            <dt>Fréquence</dt>
+            <dd>{FREQUENCE_LABELS[controle.frequence]}</dd>
+          </div>
+          <div>
+            <dt>Statut</dt>
+            <dd>{STATUT_CONTROLE_LABELS[controle.statut]}</dd>
+          </div>
+          <div>
+            <dt>Fenêtre de déclenchement</dt>
+            <dd>{controle.fenetreDeclenchementJours} j.</dd>
+          </div>
+          <div>
+            <dt>Délai de réalisation</dt>
+            <dd>
+              {controle.delaiRealisationJours != null
+                ? `${controle.delaiRealisationJours} j.`
+                : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt>Taxinomie</dt>
+            <dd>
+              {controle.taxinomie
+                ? (TAXINOMIE_LABELS[controle.taxinomie] ?? controle.taxinomie)
+                : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt>Tags</dt>
+            <dd>
+              {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt>Dernière réalisation</dt>
+            <dd>{formatDate(controle.dateDerniereRealisation)}</dd>
+          </div>
+          <div>
+            <dt>Prochaine échéance</dt>
+            <dd>{formatDate(controle.dateProchaineEcheance)}</dd>
+          </div>
+        </dl>
+        {controle.commentaires ? (
+          <p className="detail-note">{controle.commentaires}</p>
+        ) : null}
+        <p className="detail-trace">
+          Créé par {controle.creePar.nom} · Modifié par{" "}
+          {controle.modifiePar.nom} · {formatDate(controle.modifieLe)}
+        </p>
       </div>
 
       <div className="panel" style={{ marginTop: "1rem" }}>
+        <h2 className="panel-title">
+          Risques couverts ({controle.risques.length})
+        </h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Consultation — pour modifier les liens, utilisez Modifier.
+        </p>
+        {controle.risques.length === 0 ? (
+          <p className="empty">Aucun risque associé.</p>
+        ) : (
+          <ul className="entity-list">
+            {controle.risques.map((rc) => (
+              <li key={rc.id}>
+                <Link
+                  href={`/risques/${rc.risque.id}`}
+                  className="entity-row"
+                >
+                  <div className="entity-row__main">
+                    <strong>{rc.risque.nom}</strong>
+                    <span className="entity-row__meta">
+                      Criticité {rc.risque.criticite}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="CONTROLE_SCI"
+        id={controle.id}
+        retour={`/controles-sci/${controle.id}`}
+        editable={false}
+      />
+
+      <section className="panel panel--secondary" style={{ marginTop: "1rem" }}>
         <div className="panel-head">
-          <h2 className="panel-title">Tâches ({controle.taches.length})</h2>
-          {!controle.archive ? (
+          <h2 className="panel-title">
+            Occurrences / tâches ({controle.taches.length})
+          </h2>
+          {!controle.archive && controle.statut === "ACTIF" ? (
             <BtnLink
               href={`/taches/nouvelle?controleSCIId=${controle.id}&categorie=SCI`}
               variant="ghost"
             >
-              Ajouter une tâche
+              Nouvelle occurrence
             </BtnLink>
           ) : null}
         </div>
+        <p className="muted" style={{ marginTop: 0 }}>
+          L’exécution du contrôle se fait via ces tâches (commentaire, preuve,
+          date de réalisation).
+        </p>
         {controle.taches.length === 0 ? (
-          <p className="empty">Aucune tâche liée.</p>
+          <p className="empty">Aucune occurrence pour le moment.</p>
         ) : (
-          <ul className="entity-list">
+          <ul className="entity-list entity-list--compact">
             {controle.taches.map((t) => {
               const tClos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
                 t.statut,
@@ -361,14 +271,7 @@ export default async function ControleSCIDetailPage({
             })}
           </ul>
         )}
-      </div>
-
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="CONTROLE_SCI"
-        id={controle.id}
-        retour={`/controles-sci/${controle.id}`}
-      />
+      </section>
     </>
   );
 }

@@ -98,23 +98,23 @@ export async function getDashboardResponsable(uniteId: string) {
       where: {
         uniteId,
         archive: false,
-        statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
+        statut: "ACTIF",
       },
     }),
-    prisma.controleSCI.count({
-      where: { uniteId, archive: false, statut: "REALISE" },
+    prisma.tache.count({
+      where: {
+        uniteId,
+        categorie: "SCI",
+        controleSCIId: { not: null },
+        statut: "TERMINE",
+      },
     }),
     prisma.controleSCI.count({
       where: {
         uniteId,
         archive: false,
-        OR: [
-          { statut: "EN_RETARD" },
-          {
-            statut: { notIn: ["REALISE"] },
-            dateProchaineEcheance: { lt: today },
-          },
-        ],
+        statut: "ACTIF",
+        dateProchaineEcheance: { lt: today },
       },
     }),
     prisma.risque.count({
@@ -187,7 +187,7 @@ export async function getDashboardResponsable(uniteId: string) {
       where: {
         uniteId,
         archive: false,
-        statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
+        statut: "ACTIF",
       },
       include: { responsable: true },
       orderBy: { dateProchaineEcheance: "asc" },

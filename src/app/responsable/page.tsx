@@ -124,6 +124,7 @@ export default async function DashboardResponsablePage({
       <PageHeader
         title="Dashboard responsable"
         description={`Comment va mon unité${unite ? ` (${unite.nom})` : ""} ? Vue consolidée — les objectifs et KPI sont définis par chaque module.`}
+        badge="Vue de pilotage"
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -155,9 +156,9 @@ export default async function DashboardResponsablePage({
           <article className="kpi-domain">
             <h3>Contrôles SCI</h3>
             <p>
-              <strong>{s.controlesPrevus}</strong> prévus · taux{" "}
-              <strong>{s.tauxRealisationControles ?? "—"}</strong>
-              {s.tauxRealisationControles != null ? " %" : ""}
+              <strong>{s.controlesPrevus}</strong> actifs ·{" "}
+              <strong>{s.controlesEnRetard}</strong> échéances en retard ·{" "}
+              <strong>{s.controlesRealises}</strong> occurrences réalisées
             </p>
           </article>
           <article className="kpi-domain">
@@ -336,7 +337,7 @@ export default async function DashboardResponsablePage({
           />
           <Stat label="Projets clôturés" value={s.projetsTermines} />
           <Stat
-            label="Contrôles SCI réalisés"
+            label="Occurrences SCI réalisées"
             value={s.controlesRealises}
           />
         </div>

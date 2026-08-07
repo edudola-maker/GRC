@@ -7,7 +7,7 @@ import {
   ControleInventory,
   type ControleInventoryItem,
 } from "@/components/controles-sci/ControleInventory";
-import { MODULE_HELP } from "@/lib/catalog";
+import { MODULE_HELP, TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import {
   FREQUENCE_LABELS,
   STATUT_CONTROLE_LABELS,
@@ -31,54 +31,47 @@ export default async function ControlesSCIPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [controles, prevus, realises, enRetard] = await Promise.all([
-    prisma.controleSCI.findMany({
-      where: { uniteId },
-      include: {
-        responsable: true,
-        _count: { select: { preuves: true, risques: true, taches: true } },
-      },
-      orderBy: [{ statut: "asc" }, { dateProchaineEcheance: "asc" }],
-    }),
-    prisma.controleSCI.count({
-      where: {
-        uniteId,
-        archive: false,
-        statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
-      },
-    }),
-    prisma.controleSCI.count({
-      where: { uniteId, archive: false, statut: "REALISE" },
-    }),
-    prisma.controleSCI.count({
-      where: {
-        uniteId,
-        archive: false,
-        OR: [
-          { statut: "EN_RETARD" },
-          {
-            statut: { notIn: ["REALISE"] },
-            dateProchaineEcheance: { lt: today },
-          },
-        ],
-      },
-    }),
-  ]);
-
-  const taux =
-    prevus + realises > 0
-      ? Math.round((realises / (prevus + realises)) * 100)
-      : null;
+  const [controles, actifs, suspendus, occOuvertes, occRetard] =
+    await Promise.all([
+      prisma.controleSCI.findMany({
+        where: { uniteId },
+        include: {
+          responsable: true,
+          _count: { select: { risques: true, taches: true } },
+        },
+        orderBy: [{ statut: "asc" }, { dateProchaineEcheance: "asc" }],
+      }),
+      prisma.controleSCI.count({
+        where: { uniteId, archive: false, statut: "ACTIF" },
+      }),
+      prisma.controleSCI.count({
+        where: { uniteId, archive: false, statut: "SUSPENDU" },
+      }),
+      prisma.tache.count({
+        where: {
+          uniteId,
+          categorie: "SCI",
+          controleSCIId: { not: null },
+          statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        },
+      }),
+      prisma.tache.count({
+        where: {
+          uniteId,
+          categorie: "SCI",
+          controleSCIId: { not: null },
+          statut: { notIn: [...TACHE_STATUTS_CLOS] },
+          dateEcheance: { lt: today },
+        },
+      }),
+    ]);
 
   const items: ControleInventoryItem[] = controles.map((c) => {
-    const clos = c.statut === "REALISE" && c.frequence === "PONCTUELLE";
-    const estActif = !clos && !c.archive;
+    const estActif = !c.archive && c.statut === "ACTIF";
     const estRetard = Boolean(
-      !c.archive &&
-        (c.statut === "EN_RETARD" ||
-          (c.statut !== "REALISE" &&
-            c.dateProchaineEcheance &&
-            c.dateProchaineEcheance < today)),
+      estActif &&
+        c.dateProchaineEcheance &&
+        c.dateProchaineEcheance < today,
     );
     return {
       id: c.id,
@@ -93,9 +86,12 @@ export default async function ControlesSCIPage({
       responsableNom: c.responsable.nom,
       fenetreDeclenchementJours: c.fenetreDeclenchementJours,
       dateProchaineEcheance: c.dateProchaineEcheance?.toISOString() ?? null,
-      nbPreuves: c._count.preuves,
+      nbOccurrences: c._count.taches,
       archive: c.archive,
-      urgence: urgenceEcheance(c.dateProchaineEcheance, clos || c.archive),
+      urgence: urgenceEcheance(
+        c.dateProchaineEcheance,
+        c.archive || c.statut === "SUSPENDU",
+      ),
       estActif,
       estRetard,
     };
@@ -115,7 +111,7 @@ export default async function ControlesSCIPage({
     <>
       <PageHeader
         title="Contrôles SCI"
-        description="Registre des contrôles périodiques : fréquences, échéances, preuves et validation."
+        description="Définitions permanentes des contrôles — l’exécution se fait via les occurrences (tâches)."
         actions={
           <BtnLink href="/controles-sci/nouveau">Nouveau contrôle</BtnLink>
         }
@@ -124,18 +120,10 @@ export default async function ControlesSCIPage({
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
       <KpiZone>
-        <KpiStat value={prevus} label="Prévus" />
-        <KpiStat value={realises} label="Réalisés" />
-        <KpiStat value={enRetard} label="En retard" />
-        <KpiStat
-          value={
-            <>
-              {taux ?? "—"}
-              {taux != null ? "%" : ""}
-            </>
-          }
-          label="Taux de réalisation"
-        />
+        <KpiStat value={actifs} label="Actifs" />
+        <KpiStat value={suspendus} label="Suspendus" />
+        <KpiStat value={occOuvertes} label="Occurrences ouvertes" />
+        <KpiStat value={occRetard} label="Occurrences en retard" />
       </KpiZone>
 
       <AttentionZone

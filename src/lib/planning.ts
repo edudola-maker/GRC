@@ -241,7 +241,7 @@ export async function getPlanningCollaborateur(
           uniteId,
           archive: false,
           responsableId: utilisateurId,
-          statut: { notIn: ["REALISE"] },
+          statut: "ACTIF",
           dateProchaineEcheance: { not: null },
         },
         select: {

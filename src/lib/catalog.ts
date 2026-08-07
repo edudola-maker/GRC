@@ -48,12 +48,10 @@ export const STATUT_TACHE_OPTIONS = [
   { value: "ANNULE", label: "Annulé" },
 ] as const;
 
+/** Statut de la définition du contrôle (pas de l'occurrence / tâche). */
 export const STATUT_CONTROLE_OPTIONS = [
-  { value: "A_REALISER", label: "À réaliser" },
-  { value: "EN_COURS", label: "En cours" },
-  { value: "A_VALIDER", label: "À valider" },
-  { value: "REALISE", label: "Réalisé" },
-  { value: "EN_RETARD", label: "En retard" },
+  { value: "ACTIF", label: "Actif" },
+  { value: "SUSPENDU", label: "Suspendu" },
 ] as const;
 
 export const TYPE_CONTROLE_OPTIONS = [
@@ -186,7 +184,7 @@ export const MODULE_HELP = {
   },
   controles: {
     title: "Qu'est-ce qu'un contrôle SCI ?",
-    body: "Contrôle périodique du système de contrôle interne. La prochaine occurrence est calculée selon la fréquence, mais l'action n'apparaît dans le backlog qu'à l'ouverture de la fenêtre de déclenchement.",
+    body: "Définition permanente d'un contrôle (objectif, fréquence, responsable). L'exécution est une tâche / occurrence (T1, T2…). Le contrôle reste Actif tant qu'il est applicable ; ce sont les occurrences qui sont à faire, en cours ou réalisées.",
   },
   documents: {
     title: "Qu'est-ce qu'un document ?",

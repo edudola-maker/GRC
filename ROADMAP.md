@@ -24,12 +24,26 @@ Slogan produit : *Simple à utiliser, flexible à configurer.*
 |-------|------|
 | **Projet** | Mission / chantier de l’unité |
 | **Conseil** | Demande ponctuelle d’analyse / avis / recherche *(aujourd’hui : catégorie de tâche ; demain : objet distinct)* |
-| **Contrôle SCI** | Contrôle périodique du système de contrôle interne |
-| **Audit** | *(plus tard)* |
+| **Contrôle SCI** | Définition permanente d’un contrôle ; exécution = tâches / occurrences |
+| **Mission d'assurance** | Audit ou Revue de processus (évolution progressive du module Audits) |
 | **Document** | Inventaire documentaire + revues |
 | **Risque** | Registre des risques + matrice de criticité |
 
 ### La tâche n’est pas un métier
+
+**Principe général :** les objets métier définissent et structurent l’activité ; les tâches représentent son exécution opérationnelle.
+
+Exemples :
+
+| Objet métier | Exécution (tâche) |
+|--------------|-------------------|
+| Contrôle SCI | Occurrence de contrôle (T1, T2…) |
+| Document | Revue documentaire |
+| Mission d'assurance | Travaux de mission |
+| Projet | Actions d’avancement |
+| Conseil | Peut apparaître aussi comme tâche dans la planification |
+
+L’objectif n’est pas de transformer tous les objets en tâches, mais de conserver une distinction claire entre **ce qui existe / doit être piloté** et **ce qui doit être réalisé par un collaborateur**.
 
 Une **tâche** est une **action** découlant d’un objet métier (ou créée librement).
 
@@ -99,9 +113,11 @@ Catégories : Financier · Opérationnel · Conformité · Cybersécurité · Re
 
 ### 4. Contrôles SCI
 
+- **Définition permanente** (Actif / Suspendu / Archivé) : objectif, description, risques couverts, responsable, type, fréquence, fenêtre de déclenchement.
+- **Exécution = tâches / occurrences** (À faire, En cours, Réalisées, En retard) — pas de statut « Réalisé » sur le contrôle lui-même.
+- Preuves rattachées à l’occurrence (tâche), pas à la définition.
 - Peuvent être générés depuis les risques.
-- Conservent fréquence, historique, preuves, échéances.
-- Quand un contrôle est réalisé et validé → **prochaine occurrence créée automatiquement** selon la fréquence.
+- Quand une occurrence est clôturée → prochaine occurrence selon la fréquence (évolution prévue).
 
 ### 5. Documents
 
@@ -109,10 +125,13 @@ Inventaire : nom, type, version, responsable, date d’approbation, prochaine re
 
 - Revues planifiées (ex. annuelles).
 - Une revue due **crée automatiquement une tâche** pour le responsable.
+- Hiérarchie fiche : Informations → Éléments associés → Tâches de revue (secondaire).
 
 ### 5bis. Relations entre objets
 
 Architecture générique `LienObjet` : tout objet métier peut être lié librement à tout autre (Projets, Missions d'assurance, Conseils, Risques, Contrôles SCI, Documents, Actions). Section **Éléments associés** sur chaque fiche.
+
+**Consultation vs modification :** par défaut une fiche est en consultation ; les liens et infos structurantes se modifient uniquement après **Modifier** → Enregistrer / Annuler (prépare droits, versioning, validation).
 
 ### 5ter. Missions d'assurance (évolution d’Audits)
 
@@ -124,6 +143,10 @@ Le module Audits évolue progressivement vers **Missions d'assurance** :
 
 **Roadmap (prochains sprints) — programmes récurrents :**  
 ex. programme de revue des processus avec rotation tous les 3 ans ; chaque occurrence génère automatiquement une Mission d'assurance de type Revue de processus. À concevoir sans développer maintenant.
+
+### 5quater. Export Excel (roadmap)
+
+Fonctionnalité transversale : export Excel des inventaires (Projets, Conseils, Missions d'assurance, Risques, Contrôles SCI, Documents). Si des filtres sont actifs, pouvoir exporter la **vue filtrée** (ex. risques résiduels élevés affichés).
 
 ### 6. Indicateurs par module
 

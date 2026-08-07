@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { ConseilForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateConseil } from "../../actions";
 
@@ -17,6 +18,7 @@ export default async function ModifierConseilPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
   const [conseil, users] = await Promise.all([
     prisma.conseil.findUnique({ where: { id } }),
     listUtilisateursActifsForCurrentUnite(),
@@ -43,6 +45,13 @@ export default async function ModifierConseilPage({
           submitLabel="Enregistrer"
         />
       </div>
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="CONSEIL"
+        id={conseil.id}
+        retour={`/conseils/${conseil.id}/modifier`}
+        editable
+      />
     </>
   );
 }

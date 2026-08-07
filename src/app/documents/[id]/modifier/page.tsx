@@ -1,8 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { DocumentForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateDocument } from "../../actions";
 
@@ -17,6 +18,7 @@ export default async function ModifierDocumentPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
   const [document, users] = await Promise.all([
     prisma.document.findUnique({ where: { id } }),
     listUtilisateursActifsForCurrentUnite(),
@@ -43,6 +45,13 @@ export default async function ModifierDocumentPage({
           submitLabel="Enregistrer"
         />
       </div>
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="DOCUMENT"
+        id={document.id}
+        retour={`/documents/${document.id}/modifier`}
+        editable
+      />
     </>
   );
 }

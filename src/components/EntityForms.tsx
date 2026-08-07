@@ -854,7 +854,7 @@ export function ControleSCIForm({
           <select
             id="statut"
             name="statut"
-            defaultValue={values?.statut ?? "A_REALISER"}
+            defaultValue={values?.statut ?? "ACTIF"}
           >
             {STATUT_CONTROLE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>

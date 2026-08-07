@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
@@ -92,6 +93,13 @@ export default async function ModifierTachePage({
           submitLabel="Enregistrer"
         />
       </div>
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="TACHE"
+        id={tache.id}
+        retour={`/taches/${tache.id}/modifier`}
+        editable
+      />
     </>
   );
 }

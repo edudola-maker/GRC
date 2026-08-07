@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { ProjetForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateProjet } from "../../actions";
 
@@ -17,6 +18,7 @@ export default async function ModifierProjetPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
   const [projet, users] = await Promise.all([
     prisma.projet.findUnique({ where: { id } }),
     listUtilisateursActifsForCurrentUnite(),
@@ -41,6 +43,13 @@ export default async function ModifierProjetPage({
           submitLabel="Enregistrer"
         />
       </div>
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="PROJET"
+        id={projet.id}
+        retour={`/projets/${projet.id}/modifier`}
+        editable
+      />
     </>
   );
 }

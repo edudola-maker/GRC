@@ -3,14 +3,12 @@ import { notFound } from "next/navigation";
 import {
   ConfirmActionButton,
   ConfirmDeleteButton,
-  SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveRisque,
   deleteRisque,
-  setRisqueControles,
 } from "../actions";
 import {
   CATEGORIE_RISQUE_LABELS,
@@ -39,34 +37,25 @@ export default async function RisqueDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const uniteId = user.uniteId;
 
-  const [risque, controlesActifs] = await Promise.all([
-    prisma.risque.findUnique({
-      where: { id },
-      include: {
-        responsable: true,
-        creePar: true,
-        controles: {
-          include: {
-            controle: {
-              include: { responsable: true },
-            },
+  const risque = await prisma.risque.findUnique({
+    where: { id },
+    include: {
+      responsable: true,
+      creePar: true,
+      controles: {
+        include: {
+          controle: {
+            include: { responsable: true },
           },
-          orderBy: { creeLe: "asc" },
         },
+        orderBy: { creeLe: "asc" },
       },
-    }),
-    prisma.controleSCI.findMany({
-      where: { archive: false, uniteId },
-      include: { responsable: true },
-      orderBy: { nom: "asc" },
-    }),
-  ]);
+    },
+  });
 
   if (!risque) notFound();
 
-  const linkedIds = new Set(risque.controles.map((l) => l.controleSCIId));
   const niveau = criticiteNiveau(risque.criticite);
   const tags = parseTags(risque.tags);
 
@@ -189,14 +178,19 @@ export default async function RisqueDetailPage({
               Contrôles liés ({risque.controles.length})
             </h2>
           </div>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Consultation — pour modifier les liens, utilisez Modifier.
+          </p>
 
           {risque.controles.length === 0 ? (
             <p className="empty">Aucun contrôle lié pour l&apos;instant.</p>
           ) : (
-            <ul className="entity-list" style={{ marginBottom: "1rem" }}>
+            <ul className="entity-list">
               {risque.controles.map(({ controle: c }) => {
-                const clos = c.statut === "REALISE";
-                const urgence = urgenceEcheance(c.dateProchaineEcheance, clos);
+                const urgence = urgenceEcheance(
+                  c.dateProchaineEcheance,
+                  c.archive || c.statut === "SUSPENDU",
+                );
                 return (
                   <li key={c.id}>
                     <Link
@@ -218,55 +212,6 @@ export default async function RisqueDetailPage({
               })}
             </ul>
           )}
-
-          {!risque.archive ? (
-            <>
-              <h3 className="panel-title" style={{ fontSize: "1rem" }}>
-                Associer des contrôles SCI
-              </h3>
-              {controlesActifs.length === 0 ? (
-                <p className="empty">Aucun contrôle SCI actif disponible.</p>
-              ) : (
-                <form action={setRisqueControles} className="entity-form">
-                  <input type="hidden" name="risqueId" value={risque.id} />
-                  <ul className="check-list">
-                    {controlesActifs.map((c) => (
-                      <li key={c.id}>
-                        <label
-                          className="field"
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            name="controleIds"
-                            value={c.id}
-                            defaultChecked={linkedIds.has(c.id)}
-                          />
-                          <span className="field__label" style={{ margin: 0 }}>
-                            {c.nom}
-                            <span className="muted">
-                              {" "}
-                              · {c.responsable.nom}
-                              {c.dateProchaineEcheance
-                                ? ` · ${formatDate(c.dateProchaineEcheance)}`
-                                : ""}
-                            </span>
-                          </span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="form-actions">
-                    <SubmitButton>Enregistrer les liens</SubmitButton>
-                  </div>
-                </form>
-              )}
-            </>
-          ) : null}
         </div>
       </div>
 
@@ -275,6 +220,7 @@ export default async function RisqueDetailPage({
         type="RISQUE"
         id={risque.id}
         retour={`/risques/${risque.id}`}
+        editable={false}
       />
     </>
   );

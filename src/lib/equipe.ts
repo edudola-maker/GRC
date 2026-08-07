@@ -89,7 +89,7 @@ export async function getEquipeOverview(
           uniteId,
           archive: false,
           responsableId: u.id,
-          statut: { notIn: ["REALISE"] },
+          statut: "ACTIF",
         },
       }),
       prisma.tache.count({
@@ -123,7 +123,7 @@ export async function getEquipeOverview(
           uniteId,
           archive: false,
           responsableId: u.id,
-          statut: { notIn: ["REALISE"] },
+          statut: "ACTIF",
           dateProchaineEcheance: { lt: today },
         },
       }),
