@@ -2,12 +2,13 @@
 
 Application web interne de pilotage pour une unité administrative.
 
-## Module 1 (MVP en cours)
+## Module 1 (MVP)
 
-- **Pilotage** — tableau de bord (synthèse, à traiter, calendrier)
-- **Backlog** — (à venir)
-- **Projets** — (à venir)
-- **Contrôles SCI** — (à venir)
+- **Pilotage** — tableau de bord (données réelles SQLite)
+- **Backlog** — tâches à traiter + filtres
+- **Tâches** — CRUD complet (dont catégorie Conseil sans projet)
+- **Projets** — CRUD complet
+- **Contrôles SCI** — placeholder (prochaine étape)
 
 ## Prérequis
 
@@ -29,10 +30,11 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 ## Stack
 
 - Next.js (App Router) + TypeScript
-- Prisma + SQLite (fichier local `prisma/dev.db`)
+- Prisma + SQLite (`prisma/dev.db`)
 - Tailwind CSS
 
-## Données
+## Notes
 
-Les données de démonstration sont chargées via `npm run db:seed`.
-Les fichiers joints (preuves SCI) seront stockés hors base dans `uploads/` ; la base ne conserve que les métadonnées.
+- Les fichiers joints (preuves SCI) seront stockés hors base dans `uploads/`.
+- La vue **Équipe** et la personnalisation des listes (catégories, statuts) sont prévues dans l'architecture mais pas encore exposées.
+- Sans authentification pour l'instant : le premier utilisateur actif sert d'auteur des créations/modifications.

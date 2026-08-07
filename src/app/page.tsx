@@ -1,4 +1,6 @@
+import Link from "next/link";
 import {
+  CATEGORIE_TACHE_LABELS,
   FREQUENCE_LABELS,
   PRIORITE_LABELS,
   formatDate,
@@ -117,10 +119,12 @@ export default async function PilotagePage() {
                   <li key={t.id} className="item item--retard">
                     <span className="item__badge">Retard</span>
                     <div>
-                      <p className="item__title">{t.titre}</p>
+                      <p className="item__title">
+                        <Link href={`/taches/${t.id}`}>{t.titre}</Link>
+                      </p>
                       <p className="item__meta">
-                        {t.responsable.nom}
-                        {t.projet ? ` · ${t.projet.nom}` : ""}
+                        {CATEGORIE_TACHE_LABELS[t.categorie]} · {t.responsable.nom}
+                        {t.projet ? ` · ${t.projet.nom}` : " · Indépendante"}
                         {` · ${PRIORITE_LABELS[t.priorite]}`}
                       </p>
                     </div>
@@ -131,10 +135,12 @@ export default async function PilotagePage() {
                   <li key={t.id} className="item item--bientot">
                     <span className="item__badge">Bientôt</span>
                     <div>
-                      <p className="item__title">{t.titre}</p>
+                      <p className="item__title">
+                        <Link href={`/taches/${t.id}`}>{t.titre}</Link>
+                      </p>
                       <p className="item__meta">
-                        {t.responsable.nom}
-                        {t.projet ? ` · ${t.projet.nom}` : ""}
+                        {CATEGORIE_TACHE_LABELS[t.categorie]} · {t.responsable.nom}
+                        {t.projet ? ` · ${t.projet.nom}` : " · Indépendante"}
                       </p>
                     </div>
                     <span className="item__date">{formatDate(t.dateEcheance)}</span>
@@ -195,9 +201,12 @@ export default async function PilotagePage() {
                   <li key={`vt-${t.id}`} className="item item--validation">
                     <span className="item__badge">Tâche</span>
                     <div>
-                      <p className="item__title">{t.titre}</p>
+                      <p className="item__title">
+                        <Link href={`/taches/${t.id}`}>{t.titre}</Link>
+                      </p>
                       <p className="item__meta">
-                        Soumis par {t.soumisPar?.nom ?? "—"}
+                        {CATEGORIE_TACHE_LABELS[t.categorie]} · Soumis par{" "}
+                        {t.soumisPar?.nom ?? "—"}
                         {t.projet ? ` · ${t.projet.nom}` : ""}
                       </p>
                     </div>

@@ -40,6 +40,14 @@ export const FREQUENCE_LABELS: Record<string, string> = {
   PONCTUELLE: "Ponctuelle",
 };
 
+export const CATEGORIE_TACHE_LABELS: Record<string, string> = {
+  CONSEIL: "Conseil",
+  PROJET: "Projet",
+  ADMINISTRATIF: "Administratif",
+  SCI: "SCI",
+  AUTRE: "Autre",
+};
+
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;

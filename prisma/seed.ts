@@ -105,7 +105,7 @@ async function main() {
     },
   });
 
-  // Tâches — mélange : en retard, bientôt, à valider, ouvertes
+  // Tâches — mélange : en retard, bientôt, à valider, ouvertes, conseil
   const tacheRetard = await prisma.tache.create({
     data: {
       titre: "Finaliser la cartographie des processus",
@@ -115,6 +115,7 @@ async function main() {
       dateEcheance: daysFromNow(-5),
       statut: "EN_COURS",
       priorite: "CRITIQUE",
+      categorie: "PROJET",
       commentaires: "Retard lié à la disponibilité des contributeurs.",
       creeParId: alice.id,
       modifieParId: alice.id,
@@ -140,6 +141,7 @@ async function main() {
       dateEcheance: daysFromNow(3),
       statut: "A_VALIDER",
       priorite: "HAUTE",
+      categorie: "PROJET",
       soumisParId: bernard.id,
       dateSoumission: daysFromNow(-1),
       creeParId: bernard.id,
@@ -156,6 +158,7 @@ async function main() {
       dateEcheance: daysFromNow(7),
       statut: "EN_COURS",
       priorite: "MOYENNE",
+      categorie: "PROJET",
       creeParId: claire.id,
       modifieParId: claire.id,
     },
@@ -169,6 +172,7 @@ async function main() {
       dateEcheance: daysFromNow(14),
       statut: "A_FAIRE",
       priorite: "BASSE",
+      categorie: "ADMINISTRATIF",
       creeParId: alice.id,
       modifieParId: alice.id,
     },
@@ -183,10 +187,28 @@ async function main() {
       dateEcheance: daysFromNow(-2),
       statut: "A_VALIDER",
       priorite: "HAUTE",
+      categorie: "SCI",
       soumisParId: bernard.id,
       dateSoumission: daysFromNow(-2),
       creeParId: bernard.id,
       modifieParId: bernard.id,
+    },
+  });
+
+  // Exemple « Conseil » : tâche indépendante, sans projet
+  await prisma.tache.create({
+    data: {
+      titre: "Analyser la question du seuil de délégation",
+      description:
+        "Demande d'une unité : rechercher le cadre applicable et proposer une réponse courte.",
+      responsableId: claire.id,
+      dateEcheance: daysFromNow(2),
+      statut: "A_FAIRE",
+      priorite: "MOYENNE",
+      categorie: "CONSEIL",
+      commentaires: "Demande reçue par téléphone — estimation 2 à 3 heures.",
+      creeParId: alice.id,
+      modifieParId: alice.id,
     },
   });
 
@@ -278,7 +300,7 @@ async function main() {
   console.log("✅ Données de démonstration créées.");
   console.log(`   Utilisateurs : 3`);
   console.log(`   Projets      : 3`);
-  console.log(`   Tâches       : 5`);
+  console.log(`   Tâches       : 6 (dont 1 Conseil sans projet)`);
   console.log(`   Contrôles SCI: 4`);
   console.log(`   Documents    : 1 (métadonnées)`);
 }

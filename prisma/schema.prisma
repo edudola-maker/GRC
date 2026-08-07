@@ -53,6 +53,15 @@ enum FrequenceControle {
   PONCTUELLE
 }
 
+/// Catégories de tâche — liste fixe pour le MVP, destinée à devenir configurable.
+enum CategorieTache {
+  CONSEIL
+  PROJET
+  ADMINISTRATIF
+  SCI
+  AUTRE
+}
+
 // ─── Utilisateur ────────────────────────────────────────────
 
 model Utilisateur {
@@ -104,26 +113,30 @@ model Projet {
   creeLe        DateTime     @default(now())
   modifieLe     DateTime     @updatedAt
 
+  // Réservé aux extensions futures (champs personnalisés) — non exposé UI
+  meta Json?
+
   responsable Utilisateur @relation("ProjetResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur @relation("ProjetCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur @relation("ProjetModifiePar", fields: [modifieParId], references: [id])
   taches      Tache[]
 
-  // Extensions futures : ProjetDocument, Risque, Indicateur…
+  // Extensions futures : ProjetDocument, Risque, Indicateur, objectifs…
 }
 
 // ─── Tâche ──────────────────────────────────────────────────
 
 model Tache {
-  id            String     @id @default(cuid())
+  id            String         @id @default(cuid())
   titre         String
   description   String?
   responsableId String
-  projetId      String? // facultatif
-  dateCreation  DateTime   @default(now())
+  projetId      String? // facultatif — une tâche peut être indépendante (ex. Conseil)
+  dateCreation  DateTime       @default(now())
   dateEcheance  DateTime?
-  statut        StatutTache @default(A_FAIRE)
-  priorite      Priorite    @default(MOYENNE)
+  statut        StatutTache    @default(A_FAIRE)
+  priorite      Priorite       @default(MOYENNE)
+  categorie     CategorieTache @default(AUTRE)
   commentaires  String?
 
   // Validation (prévue dès le MVP ; workflow avancé plus tard)
@@ -138,15 +151,19 @@ model Tache {
   creeLe       DateTime @default(now())
   modifieLe    DateTime @updatedAt
 
+  // Champ JSON libre réservé aux extensions futures (champs personnalisés)
+  // Non exposé dans l'UI pour l'instant.
+  meta Json?
+
   responsable Utilisateur @relation("TacheResponsable", fields: [responsableId], references: [id])
-  projet      Projet?     @relation(fields: [projetId], references: [id])
+  projet      Projet?     @relation(fields: [projetId], references: [id], onDelete: SetNull)
   creePar     Utilisateur @relation("TacheCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur @relation("TacheModifiePar", fields: [modifieParId], references: [id])
   soumisPar   Utilisateur? @relation("TacheSoumisePar", fields: [soumisParId], references: [id])
   validePar   Utilisateur? @relation("TacheValideePar", fields: [valideParId], references: [id])
   historique  HistoriqueTache[]
 
-  // Extensions futures : lien Risque, Plan d'action…
+  // Extensions futures : lien Risque, Plan d'action, objectifs annuels (vue Équipe)…
 }
 
 model HistoriqueTache {
