@@ -172,7 +172,10 @@ export function AuditInventory({
           Aucun audit ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <InventoryList columns={["Code", "Audit", "Période", "Statut"]}>
+        <InventoryList
+          columns={["Code", "Nom", "Période", "Statut"]}
+          secondaryColumns={["Responsable", "Échéance", "Reco / tâches", "Tags"]}
+        >
           {filtered.map((a) => (
             <li key={a.id}>
               <InventoryRow
@@ -189,10 +192,7 @@ export function AuditInventory({
                 ]}
                 secondary={[
                   { value: a.responsableNom },
-                  {
-                    value: formatDateDot(a.dateFin ?? a.dateDebut),
-                    prefix: "Échéance",
-                  },
+                  { value: formatDateDot(a.dateFin ?? a.dateDebut) },
                   {
                     value: `${a.nbReco} reco · ${a.nbTaches} tâche${a.nbTaches > 1 ? "s" : ""}`,
                   },

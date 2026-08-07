@@ -169,7 +169,15 @@ export function ProjetInventory({
           Aucun projet ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <InventoryList columns={["Code", "Projet", "Priorité", "Statut"]}>
+        <InventoryList
+          columns={["Code", "Nom", "Priorité", "Statut"]}
+          secondaryColumns={[
+            "Responsable",
+            "Échéance",
+            "Avancement",
+            "Tags",
+          ]}
+        >
           {filtered.map((p) => (
             <li key={p.id}>
               <InventoryRow
@@ -184,10 +192,7 @@ export function ProjetInventory({
                 ]}
                 secondary={[
                   { value: p.responsableNom },
-                  {
-                    value: formatDateDot(p.dateEcheance),
-                    prefix: "Échéance",
-                  },
+                  { value: formatDateDot(p.dateEcheance) },
                   {
                     value: `${p.avancement}% · ${p.nbTaches} tâche${p.nbTaches > 1 ? "s" : ""}${p.nbJalons > 0 ? ` · ${p.nbJalons} jalon${p.nbJalons > 1 ? "s" : ""}` : ""}`,
                   },

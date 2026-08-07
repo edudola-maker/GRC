@@ -183,7 +183,15 @@ export function DocumentInventory({
           Aucun document ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <InventoryList columns={["Code", "Document", "Type", "Statut"]}>
+        <InventoryList
+          columns={["Code", "Nom", "Type", "Statut"]}
+          secondaryColumns={[
+            "Responsable",
+            "Prochaine revue",
+            "Fréquence",
+            "Tags",
+          ]}
+        >
           {filtered.map((d) => (
             <li key={d.id}>
               <InventoryRow
@@ -200,10 +208,7 @@ export function DocumentInventory({
                 ]}
                 secondary={[
                   { value: d.responsableNom },
-                  {
-                    value: formatDateDot(d.prochaineRevue),
-                    prefix: "Revue",
-                  },
+                  { value: formatDateDot(d.prochaineRevue) },
                   { value: d.frequenceLabel || "—" },
                   { value: d.tags || "—" },
                 ]}

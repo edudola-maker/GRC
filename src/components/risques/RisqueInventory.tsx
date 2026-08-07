@@ -171,7 +171,15 @@ export function RisqueInventory({
           Aucun risque ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <InventoryList columns={["Code", "Risque", "Catégorie", "Statut"]}>
+        <InventoryList
+          columns={["Code", "Nom", "Catégorie", "Statut"]}
+          secondaryColumns={[
+            "Responsable",
+            "Criticité",
+            "Stratégie",
+            "Contrôles",
+          ]}
+        >
           {filtered.map((r) => (
             <li key={r.id}>
               <InventoryRow
@@ -188,10 +196,11 @@ export function RisqueInventory({
                   { value: r.responsableNom },
                   {
                     value: `P${r.probabilite}×I${r.impact} = ${r.criticite}`,
-                    prefix: "Criticité",
                   },
                   { value: r.strategieLabel || "Sans stratégie" },
-                  { value: `${r.nbControles} contrôle${r.nbControles > 1 ? "s" : ""}` },
+                  {
+                    value: `${r.nbControles} contrôle${r.nbControles > 1 ? "s" : ""}`,
+                  },
                 ]}
               />
             </li>

@@ -5,16 +5,23 @@ export type InventoryCell = {
   value: ReactNode;
   /** Mise en avant visuelle du contenu */
   emphasis?: "code" | "title" | "status" | "muted";
-  /** Préfixe inline discret (ex. « Échéance ») — ligne secondaire */
-  prefix?: string;
 };
 
 /**
  * En-tête de colonnes — affiché une seule fois au-dessus de la liste.
  */
-export function InventoryColumns({ columns }: { columns: string[] }) {
+export function InventoryColumns({
+  columns,
+  variant = "primary",
+}: {
+  columns: string[];
+  variant?: "primary" | "secondary";
+}) {
   return (
-    <div className="inventory-columns" role="row">
+    <div
+      className={`inventory-columns inventory-columns--${variant}`}
+      role="row"
+    >
       {columns.map((col) => (
         <span key={col} className="inventory-columns__cell" role="columnheader">
           {col}
@@ -26,7 +33,8 @@ export function InventoryColumns({ columns }: { columns: string[] }) {
 
 /**
  * Ligne d’inventaire type tableau moderne.
- * Ligne 1 = valeurs alignées sur les colonnes ; ligne 2 = méta discrète.
+ * Ligne 1 = valeurs alignées sur les colonnes principales ;
+ * ligne 2 = méta alignée sur les colonnes secondaires.
  */
 export function InventoryRow({
   href,
@@ -77,19 +85,9 @@ function InventoryCellView({
     .filter(Boolean)
     .join(" ");
 
-  const display = cell.value || "—";
-
   return (
     <div className="inventory-cell">
-      <span className={valueClass}>
-        {cell.prefix ? (
-          <>
-            <span className="inventory-cell__prefix">{cell.prefix}</span>
-            {" : "}
-          </>
-        ) : null}
-        {display}
-      </span>
+      <span className={valueClass}>{cell.value || "—"}</span>
     </div>
   );
 }
@@ -98,17 +96,26 @@ export function InventoryEmpty({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>;
 }
 
-/** Liste avec en-tête de colonnes + lignes. */
+/**
+ * Liste avec double en-tête de colonnes (principales + secondaires) + lignes.
+ */
 export function InventoryList({
   columns,
+  secondaryColumns,
   children,
 }: {
   columns: string[];
+  secondaryColumns?: string[];
   children: ReactNode;
 }) {
   return (
     <div className="inventory-table">
-      <InventoryColumns columns={columns} />
+      <div className="inventory-columns-group" role="rowgroup">
+        <InventoryColumns columns={columns} variant="primary" />
+        {secondaryColumns && secondaryColumns.length > 0 ? (
+          <InventoryColumns columns={secondaryColumns} variant="secondary" />
+        ) : null}
+      </div>
       <ul className="inventory-list">{children}</ul>
     </div>
   );

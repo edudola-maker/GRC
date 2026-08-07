@@ -175,7 +175,15 @@ export function ControleInventory({
           Aucun contrôle ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <InventoryList columns={["Code", "Contrôle", "Processus", "Statut"]}>
+        <InventoryList
+          columns={["Code", "Nom", "Processus", "Statut"]}
+          secondaryColumns={[
+            "Responsable",
+            "Échéance",
+            "Type / fréquence",
+            "Preuves",
+          ]}
+        >
           {filtered.map((c) => (
             <li key={c.id}>
               <InventoryRow
@@ -190,10 +198,7 @@ export function ControleInventory({
                 ]}
                 secondary={[
                   { value: c.responsableNom },
-                  {
-                    value: formatDateDot(c.dateProchaineEcheance),
-                    prefix: "Échéance",
-                  },
+                  { value: formatDateDot(c.dateProchaineEcheance) },
                   {
                     value: `${c.typeLabel} · ${c.frequenceLabel} · fenêtre ${c.fenetreDeclenchementJours} j.`,
                   },

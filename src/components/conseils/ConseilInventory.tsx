@@ -323,7 +323,10 @@ export function ConseilInventory({
           Aucun conseil ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
-        <InventoryList columns={["Code", "Conseil", "Provenance", "Statut"]}>
+        <InventoryList
+          columns={["Code", "Nom", "Provenance", "Statut"]}
+          secondaryColumns={["Responsable", "Échéance", "Taxinomie", "Tags"]}
+        >
           {filtered.map((c) => (
             <li key={c.id}>
               <InventoryRow
@@ -338,10 +341,7 @@ export function ConseilInventory({
                 ]}
                 secondary={[
                   { value: c.responsableNom },
-                  {
-                    value: formatDateDot(c.dateEcheance),
-                    prefix: "Échéance",
-                  },
+                  { value: formatDateDot(c.dateEcheance) },
                   {
                     value: c.taxinomie
                       ? (TAXINOMIE_LABELS[c.taxinomie] ?? c.taxinomie)
