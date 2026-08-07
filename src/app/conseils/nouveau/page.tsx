@@ -4,7 +4,7 @@ import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { CONSEIL_DELAI_CIBLE_JOURS, MODULE_HELP } from "@/lib/catalog";
 import { addBusinessDays } from "@/lib/dates";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { createConseil } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function NouveauConseilPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifs();
+  const users = await listUtilisateursActifsForCurrentUnite();
   const today = new Date();
   const echeance = addBusinessDays(today, CONSEIL_DELAI_CIBLE_JOURS);
 

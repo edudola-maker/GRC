@@ -2,16 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
-import {
-  CONSEIL_DELAI_CIBLE_JOURS,
-  STATUT_CONSEIL_OPTIONS,
-} from "@/lib/catalog";
+import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
 import { assertNomUnique, nextCode } from "@/lib/codes";
 import { addBusinessDays } from "@/lib/dates";
 import { optDate, optStr, str } from "@/lib/form";
 import { ajouterJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { getConseilDelaiCibleJours } from "@/lib/referentiels";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -23,6 +21,7 @@ async function assertResponsable(id: string) {
 
 export async function createConseil(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const fallback = "/conseils/nouveau";
   const objet = str(formData, "objet");
   if (!objet) {
@@ -34,7 +33,7 @@ export async function createConseil(formData: FormData) {
     redirectWithError(fallback, "Statut invalide.");
   }
 
-  const nomErr = await assertNomUnique("CONSEIL", objet);
+  const nomErr = await assertNomUnique("CONSEIL", objet, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
@@ -43,13 +42,15 @@ export async function createConseil(formData: FormData) {
   }
 
   const dateReception = optDate(formData, "dateReception") ?? new Date();
+  const delaiCible = await getConseilDelaiCibleJours(uniteId);
   const dateEcheance =
     optDate(formData, "dateEcheance") ??
-    addBusinessDays(dateReception, CONSEIL_DELAI_CIBLE_JOURS);
+    addBusinessDays(dateReception, delaiCible);
 
   const conseil = await prisma.conseil.create({
     data: {
-      code: await nextCode("CONSEIL"),
+      code: await nextCode("CONSEIL", uniteId),
+      uniteId,
       objet,
       description: optStr(formData, "description"),
       taxinomie: optStr(formData, "taxinomie"),
@@ -76,11 +77,13 @@ export async function createConseil(formData: FormData) {
     message: `Conseil créé — ${objet}`,
     auteurId: current.id,
     automatique: true,
+    uniteId,
   });
 
   if (str(formData, "creerTache") === "1") {
     await prisma.tache.create({
       data: {
+        uniteId,
         titre: `Conseil : ${objet}`,
         description: optStr(formData, "description"),
         responsableId,
@@ -101,6 +104,7 @@ export async function createConseil(formData: FormData) {
 
 export async function updateConseil(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) redirectWithError("/conseils", "Identifiant conseil manquant.");
 
@@ -120,7 +124,7 @@ export async function updateConseil(formData: FormData) {
     redirectWithError(`/conseils/${id}/modifier`, "Statut invalide.");
   }
 
-  const nomErr = await assertNomUnique("CONSEIL", objet, id);
+  const nomErr = await assertNomUnique("CONSEIL", objet, uniteId, id);
   if (nomErr) redirectWithError(`/conseils/${id}/modifier`, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
@@ -130,10 +134,11 @@ export async function updateConseil(formData: FormData) {
 
   const dateReception =
     optDate(formData, "dateReception") ?? existing.dateReception;
+  const delaiCible = await getConseilDelaiCibleJours(uniteId);
   const dateEcheance =
     optDate(formData, "dateEcheance") ??
     existing.dateEcheance ??
-    addBusinessDays(dateReception, CONSEIL_DELAI_CIBLE_JOURS);
+    addBusinessDays(dateReception, delaiCible);
 
   let dateCloture = optDate(formData, "dateCloture");
   let dateReponse = optDate(formData, "dateReponse");
@@ -173,6 +178,7 @@ export async function updateConseil(formData: FormData) {
       message: `Statut : ${existing.statut} → ${statut}`,
       auteurId: current.id,
       automatique: true,
+      uniteId,
     });
   }
 
@@ -182,6 +188,7 @@ export async function updateConseil(formData: FormData) {
 
 export async function addNoteJournal(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const conseilId = str(formData, "conseilId");
   const message = str(formData, "message");
   if (!conseilId) redirectWithError("/conseils", "Conseil manquant.");
@@ -196,6 +203,7 @@ export async function addNoteJournal(formData: FormData) {
     message,
     auteurId: current.id,
     automatique: false,
+    uniteId,
   });
 
   revalidateApp([`/conseils/${conseilId}`]);
@@ -204,6 +212,7 @@ export async function addNoteJournal(formData: FormData) {
 
 export async function reopenConseil(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) redirectWithError("/conseils", "Identifiant manquant.");
 
@@ -223,6 +232,7 @@ export async function reopenConseil(formData: FormData) {
     message: "Conseil rouvert",
     auteurId: current.id,
     automatique: true,
+    uniteId,
   });
 
   revalidateApp([`/conseils/${id}`]);
@@ -263,6 +273,7 @@ export async function deleteConseil(formData: FormData) {
 
 export async function createTacheDepuisConseil(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const conseilId = str(formData, "conseilId") || str(formData, "id");
   if (!conseilId) {
     redirectWithError("/conseils", "Identifiant conseil manquant.");
@@ -272,6 +283,7 @@ export async function createTacheDepuisConseil(formData: FormData) {
 
   const tache = await prisma.tache.create({
     data: {
+      uniteId,
       titre: `Conseil : ${conseil.objet}`,
       description: conseil.description,
       responsableId: conseil.responsableId,

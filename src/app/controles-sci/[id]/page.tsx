@@ -28,6 +28,7 @@ import {
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export default async function ControleSCIDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const controle = await prisma.controleSCI.findUnique({
     where: { id },
@@ -65,6 +68,7 @@ export default async function ControleSCIDetailPage({
 
   const risquesDispo = await prisma.risque.findMany({
     where: {
+      uniteId,
       archive: false,
       id: { notIn: controle.risques.map((r) => r.risqueId) },
     },

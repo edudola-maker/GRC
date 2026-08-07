@@ -17,12 +17,14 @@ import {
   STATUT_PROJET_LABELS,
   formatDate,
 } from "@/lib/labels";
+import { getObjectifsModuleAggreges } from "@/lib/objectifs-module";
 import { RAG_LABELS, ragEcheance, type RagStatut } from "@/lib/rag";
 import {
   getCurrentUser,
   isResponsable,
-  listUtilisateursActifs,
+  listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 
 function RagDot({ rag }: { rag: RagStatut }) {
   return (
@@ -82,10 +84,10 @@ export default async function DashboardResponsablePage({
     sp.rag === "vert" || sp.rag === "jaune" || sp.rag === "rouge"
       ? sp.rag
       : null;
-  const [data, users, monitoring] = await Promise.all([
-    getDashboardResponsable(),
-    listUtilisateursActifs(),
-    getActionsUnite({
+  const [data, users, monitoring, objectifsModule, unite] = await Promise.all([
+    getDashboardResponsable(user.uniteId),
+    listUtilisateursActifsForCurrentUnite(),
+    getActionsUnite(user.uniteId, {
       collaborateurId: sp.collaborateur || undefined,
       type: sp.type || undefined,
       statut: sp.statut || undefined,
@@ -94,6 +96,11 @@ export default async function DashboardResponsablePage({
         sp.echeance === "retard" || sp.echeance === "proche"
           ? sp.echeance
           : undefined,
+    }),
+    getObjectifsModuleAggreges(user.uniteId),
+    prisma.unite.findUnique({
+      where: { id: user.uniteId },
+      select: { nom: true, code: true },
     }),
   ]);
 
@@ -116,7 +123,7 @@ export default async function DashboardResponsablePage({
     <>
       <PageHeader
         title="Dashboard responsable"
-        description="Comment va mon unité ? Vue synthétique, activité en cours et suivi des actions."
+        description={`Comment va mon unité${unite ? ` (${unite.nom})` : ""} ? Vue consolidée — les objectifs et KPI sont définis par chaque module.`}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -272,9 +279,49 @@ export default async function DashboardResponsablePage({
         })()}
       </section>
 
+      <section className="section" aria-label="Objectifs modules">
+        <h2 className="section__title">
+          Objectifs modules {data.meta.annee} — vision consolidée
+        </h2>
+        <p className="muted" style={{ marginBottom: "0.75rem" }}>
+          Chaque module définit ses cibles ; ce tableau de bord les agrège
+          uniquement.
+        </p>
+        <div className="panel">
+          {objectifsModule.length === 0 ? (
+            <p className="empty">
+              Aucun objectif module pour cette année. Ils seront gérés via
+              Administration.
+            </p>
+          ) : (
+            <ul className="objectifs-module-list">
+              {objectifsModule.map((o) => (
+                <li key={o.id}>
+                  <span className="module-tag">{o.moduleLabel}</span>
+                  <div>
+                    <strong>{o.libelle}</strong>
+                    <span className="muted" style={{ display: "block", fontSize: "0.82rem" }}>
+                      {o.source === "calcule" ? "Calculé" : "Saisi"}
+                      {o.uniteMesure ? ` · ${o.uniteMesure}` : ""}
+                    </span>
+                  </div>
+                  <span>
+                    {o.realise ?? "—"}
+                    {o.cible != null ? ` / ${o.cible}` : ""}
+                    {o.cible != null && o.cible > 0 ? (
+                      <span className="muted"> · {o.progression}%</span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
       <section className="section" aria-label="Objectifs annuels">
         <h2 className="section__title">
-          Objectifs {data.meta.annee} — où en sommes-nous ?
+          Objectifs collaborateurs {data.meta.annee}
         </h2>
         <div className="stats-grid" style={{ marginBottom: "1rem" }}>
           <Stat
@@ -295,7 +342,7 @@ export default async function DashboardResponsablePage({
         </div>
         <div className="panel">
           {data.objectifs.length === 0 ? (
-            <p className="empty">Aucun objectif annuel renseigné.</p>
+            <p className="empty">Aucun objectif annuel collaborateur renseigné.</p>
           ) : (
             <ul className="history-list">
               {data.objectifs.map((o) => (

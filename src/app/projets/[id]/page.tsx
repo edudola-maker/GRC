@@ -29,7 +29,7 @@ import {
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
-import { listUtilisateursActifs } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +42,8 @@ export default async function ProjetDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
   const [projet, users, documentsDispo] = await Promise.all([
     prisma.projet.findUnique({
       where: { id },
@@ -61,9 +63,9 @@ export default async function ProjetDetailPage({
         },
       },
     }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
     prisma.document.findMany({
-      where: { archive: false },
+      where: { archive: false, uniteId },
       orderBy: { nom: "asc" },
       select: { id: true, nom: true, typeDocument: true },
     }),

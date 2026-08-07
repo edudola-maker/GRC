@@ -162,10 +162,50 @@ enum RoleUtilisateur {
   RESPONSABLE
 }
 
+enum ModuleMetier {
+  PROJET
+  CONSEIL
+  AUDIT
+  RISQUE
+  CONTROLE_SCI
+  DOCUMENT
+}
+
+/// Types de listes gérées plus tard via Administration.
+enum TypeReferentiel {
+  TAXINOMIE
+}
+
+// ─── Unité (multi-unités, droits plus tard) ─────────────────
+
+model Unite {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nom       String
+  actif     Boolean  @default(true)
+  creeLe    DateTime @default(now())
+  modifieLe DateTime @updatedAt
+
+  utilisateurs     Utilisateur[]
+  projets          Projet[]
+  conseils         Conseil[]
+  taches           Tache[]
+  controlesSCI     ControleSCI[]
+  risques          Risque[]
+  documents        Document[]
+  audits           Audit[]
+  objectifsAnnuels ObjectifAnnuel[]
+  objectifsModule  ObjectifModule[]
+  sequences        SequenceCode[]
+  journal          JournalEvenement[]
+  parametres       ParametreFonctionnel[]
+}
+
 // ─── Utilisateur ────────────────────────────────────────────
 
 model Utilisateur {
   id         String           @id @default(cuid())
+  uniteId    String
   nom        String
   email      String           @unique
   motDePasse String
@@ -174,6 +214,7 @@ model Utilisateur {
   creeLe     DateTime         @default(now())
   modifieLe  DateTime         @updatedAt
 
+  unite                   Unite              @relation(fields: [uniteId], references: [id])
   projetsResponsable      Projet[]           @relation("ProjetResponsable")
   tachesResponsable       Tache[]            @relation("TacheResponsable")
   controlesResponsable    ControleSCI[]      @relation("ControleResponsable")
@@ -213,7 +254,8 @@ model Utilisateur {
 
 model Projet {
   id            String       @id @default(cuid())
-  code          String       @unique
+  uniteId       String
+  code          String
   nom           String
   description   String?
   taxinomie     String?
@@ -232,6 +274,7 @@ model Projet {
   modifieLe     DateTime     @updatedAt
   meta          Json?
 
+  unite       Unite           @relation(fields: [uniteId], references: [id])
   responsable Utilisateur     @relation("ProjetResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur     @relation("ProjetCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur     @relation("ProjetModifiePar", fields: [modifieParId], references: [id])
@@ -239,6 +282,9 @@ model Projet {
   membres     ProjetMembre[]
   jalons      Jalon[]
   documents   ProjetDocument[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
 }
 
 model ProjetMembre {
@@ -279,7 +325,8 @@ model ProjetDocument {
 
 model Conseil {
   id                String        @id @default(cuid())
-  code              String        @unique
+  uniteId           String
+  code              String
   objet             String
   description       String?
   taxinomie         String?
@@ -300,16 +347,21 @@ model Conseil {
   modifieLe         DateTime      @updatedAt
   meta              Json?
 
+  unite       Unite       @relation(fields: [uniteId], references: [id])
   responsable Utilisateur @relation("ConseilResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur @relation("ConseilCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur @relation("ConseilModifiePar", fields: [modifieParId], references: [id])
   taches      Tache[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
 }
 
 // ─── Tâche (action) ─────────────────────────────────────────
 
 model Tache {
   id             String         @id @default(cuid())
+  uniteId        String
   titre          String
   description    String?
   responsableId  String
@@ -337,6 +389,7 @@ model Tache {
   modifieLe    DateTime @updatedAt
   meta         Json?
 
+  unite          Unite           @relation(fields: [uniteId], references: [id])
   responsable    Utilisateur     @relation("TacheResponsable", fields: [responsableId], references: [id])
   projet         Projet?         @relation(fields: [projetId], references: [id], onDelete: SetNull)
   conseil        Conseil?        @relation(fields: [conseilId], references: [id], onDelete: SetNull)
@@ -349,6 +402,8 @@ model Tache {
   soumisPar      Utilisateur?    @relation("TacheSoumisePar", fields: [soumisParId], references: [id])
   validePar      Utilisateur?    @relation("TacheValideePar", fields: [valideParId], references: [id])
   historique     HistoriqueTache[]
+
+  @@index([uniteId, statut, dateEcheance])
 }
 
 model HistoriqueTache {
@@ -368,7 +423,8 @@ model HistoriqueTache {
 
 model ControleSCI {
   id                      String            @id @default(cuid())
-  code                    String            @unique
+  uniteId                 String
+  code                    String
   nom                     String
   description             String?
   taxinomie               String?
@@ -396,6 +452,7 @@ model ControleSCI {
   modifieLe    DateTime @updatedAt
   meta         Json?
 
+  unite       Unite              @relation(fields: [uniteId], references: [id])
   responsable Utilisateur        @relation("ControleResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur        @relation("ControleCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur        @relation("ControleModifiePar", fields: [modifieParId], references: [id])
@@ -404,6 +461,9 @@ model ControleSCI {
   preuves     ControleDocument[]
   risques     RisqueControle[]
   taches      Tache[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
 }
 
 model ControleDocument {
@@ -423,7 +483,8 @@ model ControleDocument {
 
 model Risque {
   id            String           @id @default(cuid())
-  code          String           @unique
+  uniteId       String
+  code          String
   nom           String
   description   String?
   taxinomie     String?
@@ -444,10 +505,14 @@ model Risque {
   modifieLe     DateTime        @updatedAt
   meta          Json?
 
+  unite       Unite            @relation(fields: [uniteId], references: [id])
   responsable Utilisateur      @relation("RisqueResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur      @relation("RisqueCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur      @relation("RisqueModifiePar", fields: [modifieParId], references: [id])
   controles   RisqueControle[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, criticite])
 }
 
 model RisqueControle {
@@ -466,7 +531,8 @@ model RisqueControle {
 
 model Document {
   id                String          @id @default(cuid())
-  code              String          @unique
+  uniteId           String
+  code              String
   nom               String
   typeDocument      TypeDocument    @default(AUTRE)
   taxinomie         String?
@@ -494,6 +560,7 @@ model Document {
   modifieLe         DateTime        @updatedAt
   meta              Json?
 
+  unite       Unite              @relation(fields: [uniteId], references: [id])
   responsable Utilisateur?       @relation("DocumentResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur        @relation("DocumentCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur?       @relation("DocumentModifiePar", fields: [modifieParId], references: [id])
@@ -501,13 +568,17 @@ model Document {
   projets     ProjetDocument[]
   audits      AuditDocument[]
   tachesRevue Tache[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
 }
 
 // ─── Audit ──────────────────────────────────────────────────
 
 model Audit {
   id            String      @id @default(cuid())
-  code          String      @unique
+  uniteId       String
+  code          String
   titre         String
   perimetre     String?
   taxinomie     String?
@@ -524,6 +595,7 @@ model Audit {
   modifieLe     DateTime    @updatedAt
   meta          Json?
 
+  unite           Unite            @relation(fields: [uniteId], references: [id])
   responsable     Utilisateur      @relation("AuditResponsable", fields: [responsableId], references: [id])
   creePar         Utilisateur      @relation("AuditCreePar", fields: [creeParId], references: [id])
   modifiePar      Utilisateur      @relation("AuditModifiePar", fields: [modifieParId], references: [id])
@@ -531,6 +603,9 @@ model Audit {
   taches          Tache[]
   documents       AuditDocument[]
   recommandations Recommandation[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
 }
 
 model AuditMembre {
@@ -573,10 +648,11 @@ model Recommandation {
   taches      Tache[]
 }
 
-// ─── Objectifs annuels (Équipe) ──────────────────────────────
+// ─── Objectifs annuels (collaborateur) ───────────────────────
 
 model ObjectifAnnuel {
   id            String    @id @default(cuid())
+  uniteId       String
   utilisateurId String
   annee         Int
   objectif      String
@@ -587,18 +663,82 @@ model ObjectifAnnuel {
   creeLe        DateTime  @default(now())
   modifieLe     DateTime  @updatedAt
 
+  unite       Unite       @relation(fields: [uniteId], references: [id])
   utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([uniteId, annee])
 }
 
-// Compteur pour codes stables PRO-0001, CNS-0001, …
+/// Objectifs / KPI définis par module métier — le dashboard responsable agrège.
+model ObjectifModule {
+  id               String      @id @default(cuid())
+  uniteId          String
+  module           ModuleMetier
+  annee            Int
+  libelle          String
+  /// Clé stable d'indicateur (ex. audits_realises) — calculée ou saisie.
+  indicateurCle    String
+  cibleNumerique   Float?
+  realiseNumerique Float?
+  uniteMesure      String?
+  progression      Int         @default(0)
+  dateEcheance     DateTime?
+  commentaires     String?
+  creeLe           DateTime    @default(now())
+  modifieLe        DateTime    @updatedAt
+
+  unite Unite @relation(fields: [uniteId], references: [id])
+
+  @@unique([uniteId, module, annee, indicateurCle])
+  @@index([uniteId, annee])
+}
+
+/// Listes configurables (Administration future) — taxinomies, etc.
+model ReferentielValeur {
+  id        String         @id @default(cuid())
+  type      TypeReferentiel
+  code      String
+  label     String
+  ordre     Int            @default(0)
+  actif     Boolean        @default(true)
+  creeLe    DateTime       @default(now())
+  modifieLe DateTime       @updatedAt
+
+  @@unique([type, code])
+  @@index([type, actif, ordre])
+}
+
+/// Paramètres fonctionnels par unité (délai conseil, etc.) — Administration future.
+model ParametreFonctionnel {
+  id          String   @id @default(cuid())
+  uniteId     String
+  cle         String
+  valeur      String
+  description String?
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+
+  @@unique([uniteId, cle])
+}
+
+// Compteur pour codes stables PRO-0001, CNS-0001, … (par unité)
 model SequenceCode {
-  prefixe String @id
-  dernier Int    @default(0)
+  id       String @id @default(cuid())
+  uniteId  String
+  prefixe  String
+  dernier  Int    @default(0)
+
+  unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+
+  @@unique([uniteId, prefixe])
 }
 
 // Journal d'activité commun (Conseils en priorité, extensible)
 model JournalEvenement {
   id            String         @id @default(cuid())
+  uniteId       String?
   typeObjet     TypeObjetMetier
   objetId       String
   typeEvenement String
@@ -607,7 +747,9 @@ model JournalEvenement {
   auteurId      String?
   creeLe        DateTime       @default(now())
 
+  unite  Unite?       @relation(fields: [uniteId], references: [id], onDelete: SetNull)
   auteur Utilisateur? @relation(fields: [auteurId], references: [id], onDelete: SetNull)
 
   @@index([typeObjet, objetId, creeLe])
+  @@index([uniteId, creeLe])
 }

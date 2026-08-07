@@ -24,10 +24,12 @@ const NAV_ITEMS: NavItem[] = [
 export function AppNav({
   isResponsable = false,
   userName,
+  uniteName,
   demoSwitcher,
 }: {
   isResponsable?: boolean;
   userName?: string;
+  uniteName?: string;
   demoSwitcher?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -39,7 +41,7 @@ export function AppNav({
         <span className="app-nav__mark">GRC</span>
         <div className="app-nav__brand-text">
           <strong>Pilotage</strong>
-          <span>Unité administrative</span>
+          <span>{uniteName || "Unité"}</span>
         </div>
       </div>
 
@@ -71,7 +73,7 @@ export function AppNav({
           </p>
         ) : null}
         {demoSwitcher}
-        <p className="app-nav__footnote">Sprint 2 — étape 1</p>
+        <p className="app-nav__footnote">Sprint 2 — Vague C</p>
       </div>
     </aside>
   );

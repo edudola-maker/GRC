@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { ProjetForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateProjet } from "../../actions";
 
@@ -19,7 +19,7 @@ export default async function ModifierProjetPage({
   const sp = await searchParams;
   const [projet, users] = await Promise.all([
     prisma.projet.findUnique({ where: { id } }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
 
   if (!projet) notFound();

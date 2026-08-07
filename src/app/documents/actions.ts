@@ -42,6 +42,7 @@ function resolveProchaineRevue(
 
 export async function createDocument(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const fallback = "/documents/nouveau";
   const nom = str(formData, "nom");
   if (!nom) {
@@ -71,12 +72,13 @@ export async function createDocument(formData: FormData) {
     frequenceRevue,
   );
 
-  const nomErr = await assertNomUnique("DOCUMENT", nom);
+  const nomErr = await assertNomUnique("DOCUMENT", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const document = await prisma.document.create({
     data: {
-      code: await nextCode("DOCUMENT"),
+      code: await nextCode("DOCUMENT", uniteId),
+      uniteId,
       nom,
       typeDocument: typeDocument as "AUTRE",
       taxinomie: optStr(formData, "taxinomie"),
@@ -222,6 +224,7 @@ export async function deleteDocument(formData: FormData) {
 
 export async function creerTacheRevue(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const documentId = str(formData, "documentId") || str(formData, "id");
   if (!documentId) {
     redirectWithError("/documents", "Identifiant document manquant.");
@@ -237,6 +240,7 @@ export async function creerTacheRevue(formData: FormData) {
 
   const tache = await prisma.tache.create({
     data: {
+      uniteId,
       titre: `Revue : ${document.nom}`,
       description: document.description,
       responsableId: document.responsableId ?? current.id,

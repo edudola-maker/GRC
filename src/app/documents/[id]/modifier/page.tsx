@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { DocumentForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateDocument } from "../../actions";
 
@@ -19,7 +19,7 @@ export default async function ModifierDocumentPage({
   const sp = await searchParams;
   const [document, users] = await Promise.all([
     prisma.document.findUnique({ where: { id } }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
 
   if (!document) notFound();

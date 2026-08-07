@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { AuditForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateAudit } from "../../actions";
 
@@ -19,7 +19,7 @@ export default async function ModifierAuditPage({
   const sp = await searchParams;
   const [audit, users] = await Promise.all([
     prisma.audit.findUnique({ where: { id } }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
 
   if (!audit) notFound();

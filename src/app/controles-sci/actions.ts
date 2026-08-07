@@ -27,6 +27,7 @@ async function assertResponsable(id: string) {
 
 function applyRealisation(
   currentId: string,
+  uniteId: string,
   frequence: string,
   creerTacheSuivante: boolean,
   nom: string,
@@ -48,6 +49,7 @@ function applyRealisation(
     nextTache:
       creerTacheSuivante && !isPonctuelle && next
         ? {
+            uniteId,
             titre: `Réaliser le contrôle : ${nom}`,
             responsableId,
             dateEcheance: next,
@@ -63,6 +65,7 @@ function applyRealisation(
 
 export async function createControleSCI(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const fallback = "/controles-sci/nouveau";
   const nom = str(formData, "nom");
   const processusConcerne = str(formData, "processusConcerne");
@@ -78,7 +81,7 @@ export async function createControleSCI(formData: FormData) {
     redirectWithError(fallback, "Statut, type ou fréquence invalide.");
   }
 
-  const nomErr = await assertNomUnique("CONTROLE_SCI", nom);
+  const nomErr = await assertNomUnique("CONTROLE_SCI", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
@@ -95,6 +98,7 @@ export async function createControleSCI(formData: FormData) {
   if (statut === "REALISE") {
     const result = applyRealisation(
       current.id,
+      uniteId,
       frequence,
       str(formData, "creerTacheSuivante") === "1",
       nom,
@@ -102,7 +106,8 @@ export async function createControleSCI(formData: FormData) {
     );
     const controle = await prisma.controleSCI.create({
       data: {
-        code: await nextCode("CONTROLE_SCI"),
+        code: await nextCode("CONTROLE_SCI", uniteId),
+        uniteId,
         nom,
         description: optStr(formData, "description"),
         taxinomie: optStr(formData, "taxinomie"),
@@ -135,7 +140,8 @@ export async function createControleSCI(formData: FormData) {
 
   const controle = await prisma.controleSCI.create({
     data: {
-      code: await nextCode("CONTROLE_SCI"),
+      code: await nextCode("CONTROLE_SCI", uniteId),
+      uniteId,
       nom,
       description: optStr(formData, "description"),
       taxinomie: optStr(formData, "taxinomie"),
@@ -219,6 +225,7 @@ export async function updateControleSCI(formData: FormData) {
   if (becomingRealise) {
     const result = applyRealisation(
       current.id,
+      existing.uniteId,
       frequence,
       str(formData, "creerTacheSuivante") === "1",
       nom,
@@ -284,6 +291,7 @@ export async function realiserControleSCI(formData: FormData) {
 
   const result = applyRealisation(
     current.id,
+    existing.uniteId,
     existing.frequence,
     str(formData, "creerTacheSuivante") !== "0",
     existing.nom,
@@ -310,6 +318,7 @@ export async function realiserControleSCI(formData: FormData) {
 
 export async function ajouterPreuveControle(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const controleSCIId = str(formData, "controleSCIId");
   if (!controleSCIId) {
     redirectWithError("/controles-sci", "Identifiant contrôle manquant.");
@@ -333,7 +342,8 @@ export async function ajouterPreuveControle(formData: FormData) {
 
   const document = await prisma.document.create({
     data: {
-      code: await nextCode("DOCUMENT"),
+      code: await nextCode("DOCUMENT", uniteId),
+      uniteId,
       nom,
       reference,
       typeDocument: "AUTRE",

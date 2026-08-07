@@ -40,6 +40,7 @@ async function assertResponsable(id: string) {
 
 export async function createRisque(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const fallback = "/risques/nouveau";
 
   const nom = str(formData, "nom");
@@ -69,7 +70,7 @@ export async function createRisque(formData: FormData) {
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
-  const nomErr = await assertNomUnique("RISQUE", nom);
+  const nomErr = await assertNomUnique("RISQUE", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const strategie = optStr(formData, "strategie");
@@ -79,7 +80,8 @@ export async function createRisque(formData: FormData) {
 
   const risque = await prisma.risque.create({
     data: {
-      code: await nextCode("RISQUE"),
+      code: await nextCode("RISQUE", uniteId),
+      uniteId,
       nom,
       description: optStr(formData, "description"),
       taxinomie: optStr(formData, "taxinomie"),
@@ -105,6 +107,7 @@ export async function createRisque(formData: FormData) {
 
 export async function updateRisque(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) redirectWithError("/risques", "Identifiant risque manquant.");
 
@@ -141,7 +144,7 @@ export async function updateRisque(formData: FormData) {
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
-  const nomErr = await assertNomUnique("RISQUE", nom, id);
+  const nomErr = await assertNomUnique("RISQUE", nom, uniteId, id);
   if (nomErr) redirectWithError(`/risques/${id}/modifier`, nomErr);
   const strategie = optStr(formData, "strategie");
   if (strategie && !STRATEGIES.has(strategie)) {
@@ -206,6 +209,7 @@ export async function deleteRisque(formData: FormData) {
 
 export async function setRisqueControles(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const risqueId = str(formData, "risqueId");
   if (!risqueId) redirectWithError("/risques", "Identifiant risque manquant.");
 
@@ -219,7 +223,7 @@ export async function setRisqueControles(formData: FormData) {
 
   if (controleIds.length > 0) {
     const found = await prisma.controleSCI.findMany({
-      where: { id: { in: controleIds }, archive: false },
+      where: { id: { in: controleIds }, uniteId, archive: false },
       select: { id: true },
     });
     if (found.length !== controleIds.length) {

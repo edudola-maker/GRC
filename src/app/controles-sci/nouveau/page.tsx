@@ -1,7 +1,7 @@
 import { ControleSCIForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { createControleSCI } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export default async function NouveauControleSCIPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifs();
+  const users = await listUtilisateursActifsForCurrentUnite();
 
   return (
     <>

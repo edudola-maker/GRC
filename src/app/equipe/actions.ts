@@ -4,8 +4,11 @@ import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { getCurrentUser } from "@/lib/session";
 
 export async function createObjectif(formData: FormData) {
+  const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const utilisateurId = str(formData, "utilisateurId");
   const objectif = str(formData, "objectif");
   if (!utilisateurId) redirectWithError("/equipe", "Collaborateur manquant.");
@@ -19,6 +22,7 @@ export async function createObjectif(formData: FormData) {
 
   await prisma.objectifAnnuel.create({
     data: {
+      uniteId,
       utilisateurId,
       annee,
       objectif,

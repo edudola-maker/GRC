@@ -145,6 +145,7 @@ function validationPatchForStatut(
 
 export async function createTache(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const titre = str(formData, "titre");
   const fallback = "/taches/nouvelle";
 
@@ -180,6 +181,7 @@ export async function createTache(formData: FormData) {
 
   const tache = await prisma.tache.create({
     data: {
+      uniteId,
       titre,
       description: optStr(formData, "description"),
       responsableId,

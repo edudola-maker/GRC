@@ -3,7 +3,7 @@ import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { createDocument } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export default async function NouveauDocumentPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifs();
+  const users = await listUtilisateursActifsForCurrentUnite();
 
   return (
     <>

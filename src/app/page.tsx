@@ -1,9 +1,14 @@
 import Link from "next/link";
-import { ActionBucket, ActionRow } from "@/components/ActionRow";
+import { ActionBucket } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
+import { PlanningCalendar } from "@/components/PlanningCalendar";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { getMesActions } from "@/lib/actions-view";
 import { formatDate } from "@/lib/labels";
+import {
+  getPlanningCollaborateur,
+  parsePlanningFilters,
+} from "@/lib/planning";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +16,27 @@ export const dynamic = "force-dynamic";
 export default async function DashboardCollaborateurPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; vue?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    erreur?: string;
+    vue?: string;
+    plan?: string;
+    f?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const actions = await getMesActions(user.id);
-  const retour = sp.vue ? `/?vue=${sp.vue}` : "/";
+  const weekOffset = Number.parseInt(sp.plan ?? "0", 10) || 0;
+  const planFilters = parsePlanningFilters(sp.f);
+  const [actions, planning] = await Promise.all([
+    getMesActions(user.id),
+    getPlanningCollaborateur(user.id, user.uniteId, { weekOffset }),
+  ]);
+  const retourQs = new URLSearchParams();
+  if (sp.vue) retourQs.set("vue", sp.vue);
+  if (weekOffset) retourQs.set("plan", String(weekOffset));
+  if (sp.f) retourQs.set("f", sp.f);
+  const retour = retourQs.toString() ? `/?${retourQs}` : "/";
 
   const vue = sp.vue || "toutes";
   const buckets = [
@@ -72,10 +92,20 @@ export default async function DashboardCollaborateurPage({
       <section className="section" aria-label="Ma planification">
         <div className="panel panel--soft">
           <h2 className="panel-title">Ma planification</h2>
-          <p className="muted">
-            Calendrier des grandes plages de travail (projets, audits, conseils)
-            — prévu à l&apos;étape 6. Outlook reste l&apos;outil des réunions.
+          <p className="muted" style={{ marginBottom: "0.85rem" }}>
+            Sur quoi vais-je travailler les prochaines semaines ? Vue high
+            level — projets, audits et tâches (conseils, SCI, revues…). Outlook
+            reste l&apos;outil des réunions.
           </p>
+          <PlanningCalendar
+            columns={planning.window.columns}
+            bands={planning.bands}
+            winStart={planning.window.start}
+            weeks={planning.window.weeks}
+            weekOffset={planning.window.weekOffset}
+            activeFilters={planFilters}
+            vue={sp.vue}
+          />
         </div>
       </section>
 

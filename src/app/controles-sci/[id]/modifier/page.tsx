@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { ControleSCIForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateControleSCI } from "../../actions";
 
@@ -19,7 +19,7 @@ export default async function ModifierControleSCIPage({
   const sp = await searchParams;
   const [controle, users] = await Promise.all([
     prisma.controleSCI.findUnique({ where: { id } }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
 
   if (!controle) notFound();
