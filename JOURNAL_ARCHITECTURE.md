@@ -49,6 +49,13 @@ Pas un inventaire exhaustif : uniquement ce qui compte pour maintenir et faire �
 | Objectifs uniquement dans le dashboard | Contredit « chaque module définit ses objectifs » |
 | Hardcoder taxinomies/délais en permanence | Bloquerait Administration |
 
+### Ajustement planification (revue Vague C)
+
+- **Une seule grille** (plus de sections par type).
+- Familles calendrier simplifiées : **Projet / Audit / Tâche** (Conseil, SCI, revue doc → Tâche en représentation uniquement).
+- En-têtes semaine : `S35` + plage de dates compacte ; navigation ±4 sem. sans borne année civile.
+- Trois couleurs seulement, filtres afficher/masquer.
+
 ### Préparé pour la suite
 
 1. Module **Administration** (CRUD unités, users, rôles, référentiels, paramètres, objectifs).
