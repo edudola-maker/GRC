@@ -36,6 +36,13 @@ export type ControleInventoryItem = {
 
 type QuickFilter = "tous" | "actifs" | "retard" | "archives";
 
+const QUICK_LABELS: Record<QuickFilter, string> = {
+  tous: "Tous",
+  actifs: "Actifs",
+  retard: "En retard",
+  archives: "Archivés",
+};
+
 export function ControleInventory({
   items,
   responsables,
@@ -83,6 +90,48 @@ export function ControleInventory({
     return [...map.entries()].map(([value, label]) => ({ value, label }));
   }, [items]);
 
+  const activeFilterChips = useMemo(() => {
+    const chips: string[] = [];
+    if (quick !== "tous") chips.push(QUICK_LABELS[quick]);
+    if (query.trim()) chips.push(`Recherche : « ${query.trim()} »`);
+    if (responsableQuick) {
+      const nom =
+        responsables.find((r) => r.id === responsableQuick)?.nom ??
+        "Responsable";
+      chips.push(`Responsable : ${nom}`);
+    }
+    if (statut) {
+      const label =
+        statutOptions.find((o) => o.value === statut)?.label ?? statut;
+      chips.push(`Statut : ${label}`);
+    }
+    if (processus.trim()) chips.push(`Processus : ${processus.trim()}`);
+    return chips;
+  }, [
+    quick,
+    query,
+    responsableQuick,
+    statut,
+    processus,
+    responsables,
+    statutOptions,
+  ]);
+
+  const canReset =
+    quick !== "tous" ||
+    query.trim() !== "" ||
+    responsableQuick !== "" ||
+    statut !== "" ||
+    processus.trim() !== "";
+
+  const resetAll = () => {
+    setQuick("tous");
+    setQuery("");
+    setResponsableQuick("");
+    setStatut("");
+    setProcessus("");
+  };
+
   return (
     <InventoryBrowser
       searchPlaceholder="Rechercher un contrôle (code, nom, processus…)"
@@ -92,6 +141,9 @@ export function ControleInventory({
       onAdvancedToggle={() => setAdvancedOpen((v) => !v)}
       resultCount={filtered.length}
       totalCount={items.filter((c) => !c.archive).length}
+      activeFilterChips={activeFilterChips}
+      onResetFilters={resetAll}
+      canResetFilters={canReset}
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -155,7 +207,7 @@ export function ControleInventory({
               onChange={(e) => setProcessus(e.target.value)}
             />
           </label>
-          <div className="form-actions" style={{ gridColumn: "1 / -1" }}>
+          <div className="form-actions inventory__advanced-actions">
             <button
               type="button"
               className="btn btn--ghost"
@@ -164,7 +216,7 @@ export function ControleInventory({
                 setProcessus("");
               }}
             >
-              Réinitialiser
+              Réinitialiser la recherche avancée
             </button>
           </div>
         </div>

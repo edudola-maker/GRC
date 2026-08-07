@@ -35,6 +35,13 @@ export type AuditInventoryItem = {
 
 type QuickFilter = "tous" | "actifs" | "retard" | "archives";
 
+const QUICK_LABELS: Record<QuickFilter, string> = {
+  tous: "Tous",
+  actifs: "Actifs",
+  retard: "En retard",
+  archives: "Archivés",
+};
+
 export function AuditInventory({
   items,
   responsables,
@@ -80,6 +87,40 @@ export function AuditInventory({
     return [...map.entries()].map(([value, label]) => ({ value, label }));
   }, [items]);
 
+  const activeFilterChips = useMemo(() => {
+    const chips: string[] = [];
+    if (quick !== "tous") chips.push(QUICK_LABELS[quick]);
+    if (query.trim()) chips.push(`Recherche : « ${query.trim()} »`);
+    if (responsableQuick) {
+      const nom =
+        responsables.find((r) => r.id === responsableQuick)?.nom ??
+        "Responsable";
+      chips.push(`Responsable : ${nom}`);
+    }
+    if (statut) {
+      const label =
+        statutOptions.find((o) => o.value === statut)?.label ?? statut;
+      chips.push(`Statut : ${label}`);
+    }
+    if (tags.trim()) chips.push(`Tags : ${tags.trim()}`);
+    return chips;
+  }, [quick, query, responsableQuick, statut, tags, responsables, statutOptions]);
+
+  const canReset =
+    quick !== "tous" ||
+    query.trim() !== "" ||
+    responsableQuick !== "" ||
+    statut !== "" ||
+    tags.trim() !== "";
+
+  const resetAll = () => {
+    setQuick("tous");
+    setQuery("");
+    setResponsableQuick("");
+    setStatut("");
+    setTags("");
+  };
+
   return (
     <InventoryBrowser
       searchPlaceholder="Rechercher un audit (code, titre, tags…)"
@@ -89,6 +130,9 @@ export function AuditInventory({
       onAdvancedToggle={() => setAdvancedOpen((v) => !v)}
       resultCount={filtered.length}
       totalCount={items.filter((a) => !a.archive).length}
+      activeFilterChips={activeFilterChips}
+      onResetFilters={resetAll}
+      canResetFilters={canReset}
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -152,7 +196,7 @@ export function AuditInventory({
               onChange={(e) => setTags(e.target.value)}
             />
           </label>
-          <div className="form-actions" style={{ gridColumn: "1 / -1" }}>
+          <div className="form-actions inventory__advanced-actions">
             <button
               type="button"
               className="btn btn--ghost"
@@ -161,7 +205,7 @@ export function AuditInventory({
                 setTags("");
               }}
             >
-              Réinitialiser
+              Réinitialiser la recherche avancée
             </button>
           </div>
         </div>
