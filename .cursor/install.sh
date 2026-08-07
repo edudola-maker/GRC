@@ -4,8 +4,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Install locked dependencies (includes the better-sqlite3 native addon).
-npm ci
+# Install dependencies (includes the better-sqlite3 native addon).
+# `npm install` is used rather than `npm ci` because the committed
+# package-lock.json is out of sync with package.json; install reconciles it.
+npm install
 
 # Provide a local env file if one does not already exist.
 [ -f .env ] || cp .env.example .env
