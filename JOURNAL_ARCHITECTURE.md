@@ -7,6 +7,57 @@ Pas un inventaire exhaustif : uniquement ce qui compte pour maintenir et faire �
 
 ---
 
+## Sprint 2 — Vague C (planification + multi-unités + objectifs modules)
+
+**Branche / PR :** `cursor/sprint2-vague-c-planification-72a6`  
+**Contexte :** Vague B validée ; calendrier, Unité, ObjectifModule, préparation Administration.
+
+### Décisions principales
+
+| Décision | Choix retenu |
+|----------|----------------|
+| Planification | Vue simple à plages colorées (16 semaines) lue depuis les dates métier — pas de table Planning dédiée |
+| Multi-unités | Modèle `Unite` + `uniteId` sur Utilisateur, objets métier, Tâche, ObjectifAnnuel, SequenceCode, Journal |
+| Codes | Unicité **par unité** (`@@unique([uniteId, code])`) ; séquences par unité |
+| Objectifs modules | `ObjectifModule` (cible par module/année/indicateur) ; dashboard responsable = **agrégateur lecture seule** |
+| Objectifs collaborateurs | `ObjectifAnnuel` conservé (personnel) — distinct des objectifs module |
+| Référentiels | `ReferentielValeur` (taxinomies) + `ParametreFonctionnel` (ex. délai conseil) par unité |
+| Administration | **Non développée** ; modèle prêt (unités, collaborateurs, rôles, taxinomies, paramètres, objectifs) |
+| Périmètre données | Listes / KPI / monitoring filtrés par `uniteId` de l’utilisateur courant (pas encore de droits croisés) |
+
+### Pourquoi ces choix
+
+- **Pas de table Planning** : une seule saisie (dates sur Projet/Audit/Conseil/…) ; le calendrier n’est qu’une vue.
+- **Unité dès maintenant** : éviter un refactor massif plus tard ; les permissions viendront ensuite.
+- **ObjectifModule vs ObjectifAnnuel** : sépare KPI d’unité (modules) et objectifs individuels.
+- **Référentiels en base** : l’Administration pourra éditer sans redeployer du code ; `catalog.ts` reste filet de secours pour les enums structurels.
+
+### Impacts futurs
+
+- Tout create/list doit porter ou filtrer `uniteId`.
+- L’Administration gérera `Unite`, `ReferentielValeur`, `ParametreFonctionnel`, `ObjectifModule`, utilisateurs/rôles.
+- Les droits d’accès s’appuieront sur `uniteId` (+ rôle) sans changer le modèle de données de fond.
+- Les modules pourront enrichir leurs indicateurs (`indicateurCle`) consommés par le dashboard.
+
+### Alternatives écartées
+
+| Alternative | Pourquoi écartée |
+|-------------|------------------|
+| Calendrier horaire / sync Outlook | Hors vision « high level » |
+| Table Planning séparée | Double saisie |
+| Droits multi-unités dès maintenant | Demandé explicitement plus tard |
+| Objectifs uniquement dans le dashboard | Contredit « chaque module définit ses objectifs » |
+| Hardcoder taxinomies/délais en permanence | Bloquerait Administration |
+
+### Préparé pour la suite
+
+1. Module **Administration** (CRUD unités, users, rôles, référentiels, paramètres, objectifs).
+2. Matrice de **permissions** (responsable limité à son unité, etc.).
+3. Éventuelle vue planification **unité** (tous collaborateurs) côté responsable.
+4. Branching des indicateurs module depuis chaque fiche métier (édition locale) + agrégation inchangée.
+
+---
+
 ## Sprint 2 — Vague B (modules métier + correctifs dashboards)
 
 **Branche / PR :** `cursor/sprint2-vague-b-metier-72a6` · [#8](https://github.com/edudola-maker/GRC/pull/8)  

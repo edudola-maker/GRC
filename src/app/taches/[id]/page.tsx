@@ -14,7 +14,7 @@ import {
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +77,7 @@ export default async function TacheDetailPage({
         },
       },
     }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
 
   if (!tache) notFound();

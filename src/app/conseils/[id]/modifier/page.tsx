@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { ConseilForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
-import { listUtilisateursActifs } from "@/lib/session";
+import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { updateConseil } from "../../actions";
 
@@ -19,7 +19,7 @@ export default async function ModifierConseilPage({
   const sp = await searchParams;
   const [conseil, users] = await Promise.all([
     prisma.conseil.findUnique({ where: { id } }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
 
   if (!conseil) notFound();

@@ -1450,6 +1450,153 @@ a {
   font-size: 0.75rem;
 }
 
+/* ─── Planification collaborateur (plages) ─── */
+
+.planning__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.planning__chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg-muted);
+  color: var(--ink-muted);
+}
+
+.planning__chip--projet { background: var(--brand-soft); color: var(--brand-deep); }
+.planning__chip--audit { background: var(--info-bg); color: var(--info); }
+.planning__chip--conseil { background: var(--warn-bg); color: var(--warn); }
+.planning__chip--document { background: #ece8f4; color: #5a4a7a; }
+.planning__chip--action { background: var(--danger-bg); color: var(--danger); }
+
+.planning__grid {
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.planning__head,
+.planning__track {
+  display: grid;
+  grid-template-columns: repeat(var(--planning-weeks, 16), minmax(2.4rem, 1fr));
+  gap: 2px;
+  min-width: 36rem;
+}
+
+.planning__week {
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 0.15rem 0;
+}
+
+.planning__group {
+  margin-top: 0.85rem;
+}
+
+.planning__group-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--brand-deep);
+}
+
+.planning__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.planning__row {
+  min-height: 1.85rem;
+}
+
+.planning__track {
+  position: relative;
+  height: 1.85rem;
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(100% / var(--planning-weeks, 16) - 1px),
+      var(--line) calc(100% / var(--planning-weeks, 16) - 1px),
+      var(--line) calc(100% / var(--planning-weeks, 16))
+    );
+  border-radius: 6px;
+}
+
+.planning__band {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 1.65rem;
+  margin: 0.1rem 1px 0;
+  padding: 0 0.45rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: #fff;
+  text-decoration: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  z-index: 1;
+}
+
+.planning__band span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planning__band--projet { background: var(--brand); }
+.planning__band--audit { background: var(--info); }
+.planning__band--conseil { background: var(--warn); color: #1a2a24; }
+.planning__band--document { background: #6b5b8c; }
+.planning__band--action { background: var(--danger); }
+
+.planning__band:hover {
+  filter: brightness(1.05);
+}
+
+.objectifs-module-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.objectifs-module-list li {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.objectifs-module-list .module-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--brand-deep);
+}
+
+@media (max-width: 720px) {
+  .objectifs-module-list li {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}
+
 .filter-bar--form {
   display: flex;
   flex-wrap: wrap;

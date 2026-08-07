@@ -24,6 +24,7 @@ import {
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,8 @@ export default async function RisqueDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const [risque, controlesActifs] = await Promise.all([
     prisma.risque.findUnique({
@@ -54,7 +57,7 @@ export default async function RisqueDetailPage({
       },
     }),
     prisma.controleSCI.findMany({
-      where: { archive: false },
+      where: { archive: false, uniteId },
       include: { responsable: true },
       orderBy: { nom: "asc" },
     }),

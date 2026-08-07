@@ -1,5 +1,7 @@
 /**
- * Catalogue centralisé — listes configurables plus tard.
+ * Catalogue centralisé — valeurs de secours / structurelles.
+ * Taxinomies et paramètres unitaires : Preferer ReferentielValeur / ParametreFonctionnel
+ * (Administration future). Les enums de statut restent dans Prisma.
  */
 
 export const TAXINOMIE_OPTIONS = [
@@ -11,6 +13,9 @@ export const TAXINOMIE_OPTIONS = [
   { value: "ACHATS", label: "Achats" },
   { value: "AUTRE", label: "Autre" },
 ] as const;
+
+/** @deprecated Préférer getConseilDelaiCibleJours(uniteId) — paramètre par unité. */
+export const CONSEIL_DELAI_CIBLE_JOURS = 5;
 
 export const CATEGORIE_TACHE_OPTIONS = [
   { value: "CONSEIL", label: "Conseil" },
@@ -158,8 +163,6 @@ export const PROJET_STATUTS_ACTIFS = [
 ] as const;
 export const CONSEIL_STATUTS_CLOS = ["CLOTURE", "ANNULE", "REPONDU"] as const;
 export const RISQUE_STATUTS_MAITRISES = ["MAITRISE", "ACCEPTE", "CLOTURE"] as const;
-
-export const CONSEIL_DELAI_CIBLE_JOURS = 5;
 
 export const MODULE_HELP = {
   projets: {

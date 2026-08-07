@@ -32,7 +32,7 @@ import {
   TACHE_STATUTS_CLOS,
 } from "@/lib/catalog";
 import { toDateInputValue } from "@/lib/form";
-import { listUtilisateursActifs } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 
@@ -50,6 +50,8 @@ export default async function AuditDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
   const [audit, users, documentsDispo] = await Promise.all([
     prisma.audit.findUnique({
       where: { id },
@@ -71,9 +73,9 @@ export default async function AuditDetailPage({
         },
       },
     }),
-    listUtilisateursActifs(),
+    listUtilisateursActifsForCurrentUnite(),
     prisma.document.findMany({
-      where: { archive: false },
+      where: { archive: false, uniteId },
       orderBy: { nom: "asc" },
       select: { id: true, nom: true },
     }),

@@ -2,7 +2,7 @@ import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { listUtilisateursActifs } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { createTache } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -22,31 +22,37 @@ export default async function NouvelleTachePage({
   }>;
 }) {
   const sp = await searchParams;
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
   const [users, projets, conseils, controles, audits, documents] =
     await Promise.all([
-      listUtilisateursActifs(),
+      listUtilisateursActifsForCurrentUnite(),
       prisma.projet.findMany({
-        where: { archive: false, statut: { notIn: ["CLOTURE", "ABANDONNE"] } },
+        where: {
+          uniteId,
+          archive: false,
+          statut: { notIn: ["CLOTURE", "ABANDONNE"] },
+        },
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),
       prisma.conseil.findMany({
-        where: { archive: false },
+        where: { uniteId, archive: false },
         orderBy: { objet: "asc" },
         select: { id: true, objet: true },
       }),
       prisma.controleSCI.findMany({
-        where: { archive: false },
+        where: { uniteId, archive: false },
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),
       prisma.audit.findMany({
-        where: { archive: false },
+        where: { uniteId, archive: false },
         orderBy: { titre: "asc" },
         select: { id: true, titre: true },
       }),
       prisma.document.findMany({
-        where: { archive: false },
+        where: { uniteId, archive: false },
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),

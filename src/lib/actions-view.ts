@@ -104,11 +104,15 @@ export type MonitoringFilters = {
   echeance?: "retard" | "proche" | "toutes";
 };
 
-export async function getActionsUnite(filters: MonitoringFilters = {}) {
+export async function getActionsUnite(
+  uniteId: string,
+  filters: MonitoringFilters = {},
+) {
   const today = startOfToday();
   const soon = addDays(today, 7);
 
   const where: Prisma.TacheWhereInput = {
+    uniteId,
     statut: { notIn: [...TACHE_STATUTS_CLOS] },
   };
 
@@ -145,7 +149,10 @@ export async function getActionsUnite(filters: MonitoringFilters = {}) {
 
   const chargeParCollaborateur = await prisma.tache.groupBy({
     by: ["responsableId"],
-    where: { statut: { notIn: [...TACHE_STATUTS_CLOS] } },
+    where: {
+      uniteId,
+      statut: { notIn: [...TACHE_STATUTS_CLOS] },
+    },
     _count: { _all: true },
   });
 

@@ -36,6 +36,7 @@ async function assertResponsable(id: string) {
 
 export async function createProjet(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const nom = str(formData, "nom");
   if (!nom) {
     redirectWithError("/projets/nouveau", "Le nom du projet est obligatoire.");
@@ -47,7 +48,7 @@ export async function createProjet(formData: FormData) {
     redirectWithError("/projets/nouveau", "Statut ou priorité invalide.");
   }
 
-  const nomErr = await assertNomUnique("PROJET", nom);
+  const nomErr = await assertNomUnique("PROJET", nom, uniteId);
   if (nomErr) redirectWithError("/projets/nouveau", nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
@@ -62,7 +63,8 @@ export async function createProjet(formData: FormData) {
 
   const projet = await prisma.projet.create({
     data: {
-      code: await nextCode("PROJET"),
+      code: await nextCode("PROJET", uniteId),
+      uniteId,
       nom,
       description: optStr(formData, "description"),
       taxinomie: optStr(formData, "taxinomie"),
@@ -86,6 +88,7 @@ export async function createProjet(formData: FormData) {
 
 export async function updateProjet(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) {
     redirectWithError("/projets", "Identifiant projet manquant.");
@@ -110,7 +113,7 @@ export async function updateProjet(formData: FormData) {
     redirectWithError(`/projets/${id}/modifier`, "Statut ou priorité invalide.");
   }
 
-  const nomErr = await assertNomUnique("PROJET", nom, id);
+  const nomErr = await assertNomUnique("PROJET", nom, uniteId, id);
   if (nomErr) redirectWithError(`/projets/${id}/modifier`, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;

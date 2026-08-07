@@ -11,6 +11,7 @@ import {
 } from "@/lib/labels";
 import { MODULE_HELP, PROJET_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +23,13 @@ export default async function ProjetsPage({
   const sp = await searchParams;
   const showArchives = sp.archives === "1";
   const today = startOfToday();
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const [projets, actifs, termines, enRetard, avancementAgg, jalonsAtteints, jalonsTotal] =
     await Promise.all([
       prisma.projet.findMany({
-        where: { archive: showArchives },
+        where: { archive: showArchives, uniteId },
         include: {
           responsable: true,
           _count: { select: { taches: true, jalons: true } },
@@ -35,6 +38,7 @@ export default async function ProjetsPage({
       }),
       prisma.projet.count({
         where: {
+          uniteId,
           archive: false,
           statut: {
             in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
@@ -42,10 +46,11 @@ export default async function ProjetsPage({
         },
       }),
       prisma.projet.count({
-        where: { archive: false, statut: "CLOTURE" },
+        where: { uniteId, archive: false, statut: "CLOTURE" },
       }),
       prisma.projet.count({
         where: {
+          uniteId,
           archive: false,
           statut: { notIn: ["CLOTURE", "ABANDONNE"] },
           dateEcheance: { lt: today },
@@ -53,6 +58,7 @@ export default async function ProjetsPage({
       }),
       prisma.projet.aggregate({
         where: {
+          uniteId,
           archive: false,
           statut: {
             in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
@@ -61,10 +67,10 @@ export default async function ProjetsPage({
         _avg: { avancement: true },
       }),
       prisma.jalon.count({
-        where: { atteint: true, projet: { archive: false } },
+        where: { atteint: true, projet: { archive: false, uniteId } },
       }),
       prisma.jalon.count({
-        where: { projet: { archive: false } },
+        where: { projet: { archive: false, uniteId } },
       }),
     ]);
 

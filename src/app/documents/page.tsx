@@ -13,6 +13,7 @@ import {
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -44,32 +45,36 @@ export default async function DocumentsPage({
   const archives = sp.archives === "1";
   const today = startOfToday();
   const dans30j = addDays(today, 30);
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const [documents, inventorie, revuesProchaines, enRetard, enVigueur] =
     await Promise.all([
       prisma.document.findMany({
-        where: { archive: archives },
+        where: { archive: archives, uniteId },
         include: {
           responsable: true,
           _count: { select: { tachesRevue: true } },
         },
         orderBy: [{ prochaineRevue: "asc" }, { nom: "asc" }],
       }),
-      prisma.document.count({ where: { archive: false } }),
+      prisma.document.count({ where: { uniteId, archive: false } }),
       prisma.document.count({
         where: {
+          uniteId,
           archive: false,
           prochaineRevue: { gte: today, lte: dans30j },
         },
       }),
       prisma.document.count({
         where: {
+          uniteId,
           archive: false,
           prochaineRevue: { lt: today },
         },
       }),
       prisma.document.count({
-        where: { archive: false, statut: "EN_VIGUEUR" },
+        where: { uniteId, archive: false, statut: "EN_VIGUEUR" },
       }),
     ]);
 

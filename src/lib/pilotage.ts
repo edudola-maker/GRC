@@ -1,16 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import {
-  CONSEIL_DELAI_CIBLE_JOURS,
   CONSEIL_STATUTS_CLOS,
   RISQUE_STATUTS_MAITRISES,
   TACHE_STATUTS_CLOS,
 } from "@/lib/catalog";
 import { addDays, startOfToday, SOON_DAYS } from "@/lib/labels";
 import { businessDaysBetween, endOfMonth, endOfWeek } from "@/lib/dates";
+import { getConseilDelaiCibleJours } from "@/lib/referentiels";
 
-export async function getPilotageDashboard() {
+export async function getPilotageDashboard(uniteId: string) {
   const today = startOfToday();
   const soon = addDays(today, SOON_DAYS);
+  const delaiCible = await getConseilDelaiCibleJours(uniteId);
 
   const [
     auditsEnCours,
@@ -38,23 +39,34 @@ export async function getPilotageDashboard() {
     validationsControles,
   ] = await Promise.all([
     prisma.audit.count({
-      where: { archive: false, statut: { in: ["EN_COURS", "EN_REVUE"] } },
+      where: {
+        uniteId,
+        archive: false,
+        statut: { in: ["EN_COURS", "EN_REVUE"] },
+      },
     }),
-    prisma.audit.count({ where: { archive: false, statut: "TERMINE" } }),
+    prisma.audit.count({
+      where: { uniteId, archive: false, statut: "TERMINE" },
+    }),
     prisma.recommandation.count({
-      where: { statut: { in: ["OUVERTE", "EN_COURS"] } },
+      where: {
+        statut: { in: ["OUVERTE", "EN_COURS"] },
+        audit: { uniteId, archive: false },
+      },
     }),
     prisma.conseil.count({
       where: {
+        uniteId,
         archive: false,
         statut: { notIn: [...CONSEIL_STATUTS_CLOS] },
       },
     }),
     prisma.conseil.count({
-      where: { archive: false, statut: { in: ["CLOTURE", "REPONDU"] } },
+      where: { uniteId, archive: false, statut: { in: ["CLOTURE", "REPONDU"] } },
     }),
     prisma.conseil.findMany({
       where: {
+        uniteId,
         archive: false,
         statut: { in: ["CLOTURE", "REPONDU"] },
         OR: [{ dateCloture: { not: null } }, { dateReponse: { not: null } }],
@@ -63,15 +75,19 @@ export async function getPilotageDashboard() {
     }),
     prisma.projet.count({
       where: {
+        uniteId,
         archive: false,
         statut: {
           in: ["VALIDE", "PLANIFIE", "EN_COURS", "EN_VALIDATION", "DEPLOYE"],
         },
       },
     }),
-    prisma.projet.count({ where: { archive: false, statut: "CLOTURE" } }),
+    prisma.projet.count({
+      where: { uniteId, archive: false, statut: "CLOTURE" },
+    }),
     prisma.projet.count({
       where: {
+        uniteId,
         archive: false,
         statut: { notIn: ["CLOTURE", "ABANDONNE"] },
         dateEcheance: { lt: today },
@@ -79,15 +95,17 @@ export async function getPilotageDashboard() {
     }),
     prisma.controleSCI.count({
       where: {
+        uniteId,
         archive: false,
         statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
       },
     }),
     prisma.controleSCI.count({
-      where: { archive: false, statut: "REALISE" },
+      where: { uniteId, archive: false, statut: "REALISE" },
     }),
     prisma.controleSCI.count({
       where: {
+        uniteId,
         archive: false,
         OR: [
           { statut: "EN_RETARD" },
@@ -99,10 +117,11 @@ export async function getPilotageDashboard() {
       },
     }),
     prisma.document.count({
-      where: { archive: false, statut: "A_REVOIR" },
+      where: { uniteId, archive: false, statut: "A_REVOIR" },
     }),
     prisma.document.count({
       where: {
+        uniteId,
         archive: false,
         statut: { notIn: ["OBSOLETE", "ARCHIVE"] },
         prochaineRevue: { lt: today },
@@ -110,6 +129,7 @@ export async function getPilotageDashboard() {
     }),
     prisma.risque.count({
       where: {
+        uniteId,
         archive: false,
         criticite: { gte: 12, lt: 20 },
         statut: { notIn: [...RISQUE_STATUTS_MAITRISES] },
@@ -117,23 +137,29 @@ export async function getPilotageDashboard() {
     }),
     prisma.risque.count({
       where: {
+        uniteId,
         archive: false,
         criticite: { gte: 20 },
         statut: { notIn: [...RISQUE_STATUTS_MAITRISES] },
       },
     }),
     prisma.tache.count({
-      where: { statut: { notIn: [...TACHE_STATUTS_CLOS] } },
+      where: {
+        uniteId,
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+      },
     }),
     prisma.tache.count({
       where: {
+        uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { lt: today },
       },
     }),
-    prisma.tache.count({ where: { statut: "A_VALIDER" } }),
+    prisma.tache.count({ where: { uniteId, statut: "A_VALIDER" } }),
     prisma.tache.findMany({
       where: {
+        uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { lt: today },
       },
@@ -143,6 +169,7 @@ export async function getPilotageDashboard() {
     }),
     prisma.tache.findMany({
       where: {
+        uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { gte: today, lte: soon },
       },
@@ -151,20 +178,20 @@ export async function getPilotageDashboard() {
       take: 8,
     }),
     prisma.tache.findMany({
-      where: { statut: "A_VALIDER" },
+      where: { uniteId, statut: "A_VALIDER" },
       include: { responsable: true, soumisPar: true, projet: true },
       orderBy: { dateSoumission: "asc" },
       take: 6,
     }),
     prisma.controleSCI.findMany({
-      where: { statut: "A_VALIDER", archive: false },
+      where: { uniteId, statut: "A_VALIDER", archive: false },
       include: { responsable: true, soumisPar: true },
       orderBy: { dateSoumission: "asc" },
       take: 6,
     }),
   ]);
 
-  // Respect délai conseils (5 j. ouvrés)
+  // Respect délai conseils (paramètre unité)
   let respectDelai = 0;
   let sommeDelais = 0;
   for (const c of tousConseilsClos) {
@@ -172,7 +199,7 @@ export async function getPilotageDashboard() {
     if (!fin) continue;
     const jours = businessDaysBetween(c.dateReception, fin);
     sommeDelais += jours;
-    if (jours <= CONSEIL_DELAI_CIBLE_JOURS) respectDelai += 1;
+    if (jours <= delaiCible) respectDelai += 1;
   }
   const nbClosMesures = tousConseilsClos.filter(
     (c) => c.dateCloture || c.dateReponse,
@@ -184,6 +211,7 @@ export async function getPilotageDashboard() {
 
   const conseilsHorsDelai = await prisma.conseil.count({
     where: {
+      uniteId,
       archive: false,
       statut: { notIn: [...CONSEIL_STATUTS_CLOS] },
       dateEcheance: { lt: today },

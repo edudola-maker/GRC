@@ -12,6 +12,7 @@ import {
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,12 @@ export default async function ControlesSCIPage({
   const sp = await searchParams;
   const showArchives = sp.archives === "1";
   const today = startOfToday();
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const [controles, prevus, realises, enRetard] = await Promise.all([
     prisma.controleSCI.findMany({
-      where: { archive: showArchives },
+      where: { archive: showArchives, uniteId },
       include: {
         responsable: true,
         _count: { select: { preuves: true, risques: true, taches: true } },
@@ -35,15 +38,17 @@ export default async function ControlesSCIPage({
     }),
     prisma.controleSCI.count({
       where: {
+        uniteId,
         archive: false,
         statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
       },
     }),
     prisma.controleSCI.count({
-      where: { archive: false, statut: "REALISE" },
+      where: { uniteId, archive: false, statut: "REALISE" },
     }),
     prisma.controleSCI.count({
       where: {
+        uniteId,
         archive: false,
         OR: [
           { statut: "EN_RETARD" },

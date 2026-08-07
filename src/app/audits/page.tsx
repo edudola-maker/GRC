@@ -5,6 +5,7 @@ import { ModuleHelp } from "@/components/ModuleHelp";
 import { MODULE_HELP } from "@/lib/catalog";
 import { STATUT_AUDIT_LABELS, formatDate, urgenceEcheance } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,8 @@ export default async function AuditsPage({
 }) {
   const sp = await searchParams;
   const archives = sp.archives === "1";
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const [
     audits,
@@ -44,7 +47,7 @@ export default async function AuditsPage({
     recoCloturees,
   ] = await Promise.all([
     prisma.audit.findMany({
-      where: { archive: archives },
+      where: { archive: archives, uniteId },
       include: {
         responsable: true,
         _count: {
@@ -54,24 +57,28 @@ export default async function AuditsPage({
       orderBy: [{ dateDebut: "desc" }, { titre: "asc" }],
     }),
     prisma.audit.count({
-      where: { archive: false, statut: "PLANIFIE" },
+      where: { uniteId, archive: false, statut: "PLANIFIE" },
     }),
     prisma.audit.count({
-      where: { archive: false, statut: { in: ["EN_COURS", "EN_REVUE"] } },
+      where: {
+        uniteId,
+        archive: false,
+        statut: { in: ["EN_COURS", "EN_REVUE"] },
+      },
     }),
     prisma.audit.count({
-      where: { archive: false, statut: "TERMINE" },
+      where: { uniteId, archive: false, statut: "TERMINE" },
     }),
     prisma.recommandation.count({
       where: {
         statut: { in: ["OUVERTE", "EN_COURS"] },
-        audit: { archive: false },
+        audit: { uniteId, archive: false },
       },
     }),
     prisma.recommandation.count({
       where: {
         statut: "CLOTUREE",
-        audit: { archive: false },
+        audit: { uniteId, archive: false },
       },
     }),
   ]);

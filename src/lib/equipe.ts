@@ -22,14 +22,16 @@ export type EquipeCollaborateurSnapshot = {
   }>;
 };
 
-export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]> {
+export async function getEquipeOverview(
+  uniteId: string,
+): Promise<EquipeCollaborateurSnapshot[]> {
   const today = startOfToday();
   const users = await prisma.utilisateur.findMany({
-    where: { actif: true },
+    where: { actif: true, uniteId },
     orderBy: { nom: "asc" },
     include: {
       objectifs: {
-        where: { annee: today.getFullYear() },
+        where: { annee: today.getFullYear(), uniteId },
         orderBy: { creeLe: "asc" },
       },
     },
@@ -51,6 +53,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
     ] = await Promise.all([
       prisma.projet.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: {
@@ -60,6 +63,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.conseil.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: { notIn: ["CLOTURE", "ANNULE", "REPONDU"] },
@@ -67,6 +71,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.audit.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: { in: ["PLANIFIE", "EN_COURS", "EN_REVUE"] },
@@ -74,12 +79,14 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.tache.count({
         where: {
+          uniteId,
           responsableId: u.id,
           statut: { notIn: [...TACHE_STATUTS_CLOS] },
         },
       }),
       prisma.controleSCI.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: { notIn: ["REALISE"] },
@@ -87,6 +94,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.tache.count({
         where: {
+          uniteId,
           responsableId: u.id,
           statut: { notIn: [...TACHE_STATUTS_CLOS] },
           dateEcheance: { lt: today },
@@ -94,6 +102,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.projet.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: { notIn: ["CLOTURE", "ABANDONNE"] },
@@ -102,6 +111,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.conseil.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: { notIn: ["CLOTURE", "ANNULE", "REPONDU"] },
@@ -110,6 +120,7 @@ export async function getEquipeOverview(): Promise<EquipeCollaborateurSnapshot[]
       }),
       prisma.controleSCI.count({
         where: {
+          uniteId,
           archive: false,
           responsableId: u.id,
           statut: { notIn: ["REALISE"] },

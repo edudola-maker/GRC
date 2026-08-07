@@ -3,7 +3,12 @@ import { Suspense } from "react";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
 import { DemoUserSwitcher } from "@/components/DemoUserSwitcher";
-import { getCurrentUser, isResponsable, listUtilisateursActifs } from "@/lib/session";
+import {
+  getCurrentUser,
+  isResponsable,
+  listUtilisateursActifs,
+} from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import "./globals.css";
 
 const display = Fraunces({
@@ -30,16 +35,23 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   let userName = "";
+  let uniteName = "";
   let responsable = false;
   let switcher: React.ReactNode = null;
 
   try {
     const [user, users] = await Promise.all([
       getCurrentUser(),
+      // Démo : tous les utilisateurs (toutes unités) pour basculer le contexte
       listUtilisateursActifs(),
     ]);
     userName = user.nom;
     responsable = isResponsable(user);
+    const unite = await prisma.unite.findUnique({
+      where: { id: user.uniteId },
+      select: { nom: true, code: true },
+    });
+    uniteName = unite ? `${unite.nom}` : "";
     switcher = (
       <Suspense fallback={null}>
         <DemoUserSwitcher
@@ -59,6 +71,7 @@ export default async function RootLayout({
           <AppNav
             isResponsable={responsable}
             userName={userName}
+            uniteName={uniteName}
             demoSwitcher={switcher}
           />
           <main className="app-main">{children}</main>

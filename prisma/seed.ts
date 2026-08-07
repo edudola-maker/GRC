@@ -23,7 +23,7 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
-  console.log("🌱 Seed Sprint 2 Vague B…");
+  console.log("🌱 Seed Sprint 2 Vague C…");
 
   await prisma.journalEvenement.deleteMany();
   await prisma.historiqueTache.deleteMany();
@@ -42,12 +42,55 @@ async function main() {
   await prisma.conseil.deleteMany();
   await prisma.document.deleteMany();
   await prisma.objectifAnnuel.deleteMany();
+  await prisma.objectifModule.deleteMany();
+  await prisma.parametreFonctionnel.deleteMany();
+  await prisma.referentielValeur.deleteMany();
   await prisma.projet.deleteMany();
   await prisma.sequenceCode.deleteMany();
   await prisma.utilisateur.deleteMany();
+  await prisma.unite.deleteMany();
+
+  const unite = await prisma.unite.create({
+    data: { id: "unite_grc_demo", code: "U-GRC", nom: "Unité GRC" },
+  });
+  const uniteId = unite.id;
+
+  const uniteFinance = await prisma.unite.create({
+    data: { code: "U-FIN", nom: "Unité Finance (témoin)" },
+  });
+
+  await prisma.referentielValeur.createMany({
+    data: [
+      { type: "TAXINOMIE", code: "GOUVERNANCE", label: "Gouvernance", ordre: 1 },
+      { type: "TAXINOMIE", code: "RESSOURCES_HUMAINES", label: "Ressources humaines", ordre: 2 },
+      { type: "TAXINOMIE", code: "FINANCES", label: "Finances", ordre: 3 },
+      { type: "TAXINOMIE", code: "INFORMATIQUE", label: "Informatique", ordre: 4 },
+      { type: "TAXINOMIE", code: "JURIDIQUE", label: "Juridique", ordre: 5 },
+      { type: "TAXINOMIE", code: "ACHATS", label: "Achats", ordre: 6 },
+      { type: "TAXINOMIE", code: "AUTRE", label: "Autre", ordre: 99 },
+    ],
+  });
+
+  await prisma.parametreFonctionnel.createMany({
+    data: [
+      {
+        uniteId,
+        cle: "CONSEIL_DELAI_CIBLE_JOURS",
+        valeur: "5",
+        description: "Délai cible des conseils (jours ouvrés)",
+      },
+      {
+        uniteId: uniteFinance.id,
+        cle: "CONSEIL_DELAI_CIBLE_JOURS",
+        valeur: "5",
+        description: "Délai cible des conseils (jours ouvrés)",
+      },
+    ],
+  });
 
   const alice = await prisma.utilisateur.create({
     data: {
+      uniteId,
       nom: "Alice Martin",
       email: "alice.martin@exemple.fr",
       motDePasse: "demo-hash-alice",
@@ -56,6 +99,7 @@ async function main() {
   });
   const bernard = await prisma.utilisateur.create({
     data: {
+      uniteId,
       nom: "Bernard Dupont",
       email: "bernard.dupont@exemple.fr",
       motDePasse: "demo-hash-bernard",
@@ -64,6 +108,7 @@ async function main() {
   });
   const claire = await prisma.utilisateur.create({
     data: {
+      uniteId,
       nom: "Claire Bernard",
       email: "claire.bernard@exemple.fr",
       motDePasse: "demo-hash-claire",
@@ -73,17 +118,18 @@ async function main() {
 
   await prisma.sequenceCode.createMany({
     data: [
-      { prefixe: "PRO", dernier: 3 },
-      { prefixe: "CNS", dernier: 1 },
-      { prefixe: "RSK", dernier: 2 },
-      { prefixe: "CTL", dernier: 3 },
-      { prefixe: "DOC", dernier: 2 },
-      { prefixe: "AUD", dernier: 2 },
+      { uniteId, prefixe: "PRO", dernier: 3 },
+      { uniteId, prefixe: "CNS", dernier: 1 },
+      { uniteId, prefixe: "RSK", dernier: 2 },
+      { uniteId, prefixe: "CTL", dernier: 3 },
+      { uniteId, prefixe: "DOC", dernier: 2 },
+      { uniteId, prefixe: "AUD", dernier: 2 },
     ],
   });
 
   const projetMod = await prisma.projet.create({
     data: {
+      uniteId,
       code: "PRO-0001",
       nom: "Modernisation des procédures internes",
       description: "Revue du corpus procédural.",
@@ -120,6 +166,7 @@ async function main() {
 
   await prisma.projet.create({
     data: {
+      uniteId,
       code: "PRO-0002",
       nom: "Digitalisation du courrier entrant",
       description: "Dématérialisation du circuit courrier.",
@@ -138,6 +185,7 @@ async function main() {
 
   await prisma.projet.create({
     data: {
+      uniteId,
       code: "PRO-0003",
       nom: "Automatiser le reporting mensuel",
       description: "Idée à explorer — boîte à idées.",
@@ -155,6 +203,7 @@ async function main() {
   const reception = daysFromNow(-3);
   const conseil = await prisma.conseil.create({
     data: {
+      uniteId,
       code: "CNS-0001",
       objet: "Analyse du seuil de délégation",
       description: "Demande d'avis juridique court.",
@@ -196,6 +245,7 @@ async function main() {
 
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Analyser la question du seuil de délégation",
       responsableId: claire.id,
       conseilId: conseil.id,
@@ -210,6 +260,7 @@ async function main() {
 
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Finaliser la cartographie des processus",
       responsableId: alice.id,
       projetId: projetMod.id,
@@ -224,6 +275,7 @@ async function main() {
 
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Valider le plan de formation agents",
       responsableId: bernard.id,
       projetId: projetMod.id,
@@ -240,6 +292,7 @@ async function main() {
 
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Préparer la note de cadrage (terminée)",
       responsableId: claire.id,
       projetId: projetMod.id,
@@ -256,6 +309,7 @@ async function main() {
 
   const risque = await prisma.risque.create({
     data: {
+      uniteId,
       code: "RSK-0001",
       nom: "Accès applicatifs non maîtrisés",
       description: "Droits utilisateurs trop larges.",
@@ -276,6 +330,7 @@ async function main() {
 
   await prisma.risque.create({
     data: {
+      uniteId,
       code: "RSK-0002",
       nom: "Dépassement budgétaire engagements",
       taxinomie: "FINANCES",
@@ -295,6 +350,7 @@ async function main() {
 
   const controle = await prisma.controleSCI.create({
     data: {
+      uniteId,
       code: "CTL-0001",
       nom: "Revue mensuelle des accès applicatifs",
       description: "Vérification des droits.",
@@ -319,6 +375,7 @@ async function main() {
 
   await prisma.controleSCI.create({
     data: {
+      uniteId,
       code: "CTL-0002",
       nom: "Contrôle trimestriel des engagements budgétaires",
       taxinomie: "FINANCES",
@@ -337,6 +394,7 @@ async function main() {
 
   await prisma.controleSCI.create({
     data: {
+      uniteId,
       code: "CTL-0003",
       nom: "Vérification semestrielle du registre des délégations",
       taxinomie: "GOUVERNANCE",
@@ -358,6 +416,7 @@ async function main() {
   // Action SCI hors fenêtre (échéance dans 180 j., fenêtre 30) — ne doit pas polluer Mes actions
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Réaliser le contrôle : Vérification semestrielle délégations",
       responsableId: claire.id,
       controleSCIId: (
@@ -374,6 +433,7 @@ async function main() {
 
   const doc = await prisma.document.create({
     data: {
+      uniteId,
       code: "DOC-0001",
       nom: "Charte des délégations de signature",
       typeDocument: "CHARTE",
@@ -395,6 +455,7 @@ async function main() {
 
   await prisma.document.create({
     data: {
+      uniteId,
       code: "DOC-0002",
       nom: "Procédure de contrôle des accès",
       typeDocument: "PROCEDURE",
@@ -415,6 +476,7 @@ async function main() {
 
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Revue annuelle — Charte des délégations",
       responsableId: alice.id,
       documentId: doc.id,
@@ -429,6 +491,7 @@ async function main() {
 
   const audit = await prisma.audit.create({
     data: {
+      uniteId,
       code: "AUD-0001",
       titre: "Audit interne — processus Achats",
       perimetre: "Cycle Achats 2026",
@@ -457,6 +520,7 @@ async function main() {
 
   await prisma.tache.create({
     data: {
+      uniteId,
       titre: "Mettre en place l'échantillon mensuel BDC",
       responsableId: bernard.id,
       auditId: audit.id,
@@ -472,6 +536,7 @@ async function main() {
 
   await prisma.audit.create({
     data: {
+      uniteId,
       code: "AUD-0002",
       titre: "Revue qualité — Paie",
       perimetre: "Processus Paie",
@@ -488,6 +553,7 @@ async function main() {
   await prisma.objectifAnnuel.createMany({
     data: [
       {
+        uniteId,
         utilisateurId: alice.id,
         annee: 2026,
         objectif: "Clôturer 4 missions d'audit",
@@ -497,6 +563,7 @@ async function main() {
         dateEcheance: daysFromNow(120),
       },
       {
+        uniteId,
         utilisateurId: bernard.id,
         annee: 2026,
         objectif: "Taux de réalisation contrôles SCI ≥ 95 %",
@@ -506,6 +573,7 @@ async function main() {
         dateEcheance: daysFromNow(120),
       },
       {
+        uniteId,
         utilisateurId: claire.id,
         annee: 2026,
         objectif: "Respect du délai 5 j. sur les conseils",
@@ -517,7 +585,116 @@ async function main() {
     ],
   });
 
-  console.log("✅ Seed Vague B terminé.");
+  const annee = new Date().getFullYear();
+  await prisma.objectifModule.createMany({
+    data: [
+      {
+        uniteId,
+        module: "AUDIT",
+        annee,
+        libelle: "Audits réalisés",
+        indicateurCle: "audits_realises",
+        cibleNumerique: 4,
+        uniteMesure: "missions",
+      },
+      {
+        uniteId,
+        module: "CONSEIL",
+        annee,
+        libelle: "Respect du délai cible",
+        indicateurCle: "conseils_respect_delai_pct",
+        cibleNumerique: 90,
+        uniteMesure: "%",
+      },
+      {
+        uniteId,
+        module: "PROJET",
+        annee,
+        libelle: "Projets clôturés",
+        indicateurCle: "projets_clotures",
+        cibleNumerique: 2,
+        uniteMesure: "projets",
+      },
+      {
+        uniteId,
+        module: "CONTROLE_SCI",
+        annee,
+        libelle: "Taux de réalisation des contrôles",
+        indicateurCle: "controles_taux_pct",
+        cibleNumerique: 95,
+        uniteMesure: "%",
+      },
+      {
+        uniteId,
+        module: "RISQUE",
+        annee,
+        libelle: "Risques critiques ouverts (cible max.)",
+        indicateurCle: "risques_critiques",
+        cibleNumerique: 0,
+        uniteMesure: "risques",
+      },
+      {
+        uniteId,
+        module: "DOCUMENT",
+        annee,
+        libelle: "Documents en vigueur",
+        indicateurCle: "documents_en_vigueur",
+        cibleNumerique: 10,
+        uniteMesure: "documents",
+      },
+    ],
+  });
+
+  // Deuxième unité (témoin multi-unités — bascule via le sélecteur démo)
+  const denis = await prisma.utilisateur.create({
+    data: {
+      uniteId: uniteFinance.id,
+      nom: "Denis Leroy",
+      email: "denis.leroy@exemple.fr",
+      motDePasse: "demo-hash-denis",
+      role: "RESPONSABLE",
+    },
+  });
+  await prisma.sequenceCode.createMany({
+    data: [
+      { uniteId: uniteFinance.id, prefixe: "PRO", dernier: 1 },
+      { uniteId: uniteFinance.id, prefixe: "CNS", dernier: 0 },
+      { uniteId: uniteFinance.id, prefixe: "RSK", dernier: 0 },
+      { uniteId: uniteFinance.id, prefixe: "CTL", dernier: 0 },
+      { uniteId: uniteFinance.id, prefixe: "DOC", dernier: 0 },
+      { uniteId: uniteFinance.id, prefixe: "AUD", dernier: 0 },
+    ],
+  });
+  await prisma.projet.create({
+    data: {
+      uniteId: uniteFinance.id,
+      code: "PRO-0001",
+      nom: "Migration reporting financier",
+      description: "Projet témoin de l'unité Finance.",
+      taxinomie: "FINANCES",
+      responsableId: denis.id,
+      dateDebut: daysFromNow(-14),
+      dateEcheance: daysFromNow(70),
+      statut: "EN_COURS",
+      priorite: "HAUTE",
+      avancement: 20,
+      creeParId: denis.id,
+      modifieParId: denis.id,
+    },
+  });
+  await prisma.objectifModule.create({
+    data: {
+      uniteId: uniteFinance.id,
+      module: "PROJET",
+      annee,
+      libelle: "Projets clôturés",
+      indicateurCle: "projets_clotures",
+      cibleNumerique: 1,
+      uniteMesure: "projets",
+    },
+  });
+
+  console.log("✅ Seed Vague C terminé.");
 }
 
 main()

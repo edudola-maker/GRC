@@ -11,13 +11,24 @@ const PREFIXES = {
 
 export type PrefixeCode = keyof typeof PREFIXES;
 
-/** Génère le prochain code stable (ex. PRO-0001). */
-export async function nextCode(type: PrefixeCode): Promise<string> {
+/** Génère le prochain code stable par unité (ex. PRO-0001). */
+export async function nextCode(
+  type: PrefixeCode,
+  uniteId: string,
+): Promise<string> {
   const prefixe = PREFIXES[type];
-  const row = await prisma.sequenceCode.upsert({
-    where: { prefixe },
-    create: { prefixe, dernier: 1 },
-    update: { dernier: { increment: 1 } },
+  const existing = await prisma.sequenceCode.findUnique({
+    where: { uniteId_prefixe: { uniteId, prefixe } },
+  });
+  if (!existing) {
+    await prisma.sequenceCode.create({
+      data: { uniteId, prefixe, dernier: 1 },
+    });
+    return `${prefixe}-0001`;
+  }
+  const row = await prisma.sequenceCode.update({
+    where: { uniteId_prefixe: { uniteId, prefixe } },
+    data: { dernier: { increment: 1 } },
   });
   return `${prefixe}-${String(row.dernier).padStart(4, "0")}`;
 }
@@ -25,6 +36,7 @@ export async function nextCode(type: PrefixeCode): Promise<string> {
 export async function assertNomUnique(
   type: PrefixeCode,
   nom: string,
+  uniteId: string,
   excludeId?: string,
 ): Promise<string | null> {
   const n = nom.trim();
@@ -33,6 +45,7 @@ export async function assertNomUnique(
   if (type === "PROJET") {
     const existing = await prisma.projet.findFirst({
       where: {
+        uniteId,
         nom: n,
         archive: false,
         ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -43,6 +56,7 @@ export async function assertNomUnique(
   if (type === "CONSEIL") {
     const existing = await prisma.conseil.findFirst({
       where: {
+        uniteId,
         objet: n,
         archive: false,
         ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -53,6 +67,7 @@ export async function assertNomUnique(
   if (type === "RISQUE") {
     const existing = await prisma.risque.findFirst({
       where: {
+        uniteId,
         nom: n,
         archive: false,
         ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -63,6 +78,7 @@ export async function assertNomUnique(
   if (type === "CONTROLE_SCI") {
     const existing = await prisma.controleSCI.findFirst({
       where: {
+        uniteId,
         nom: n,
         archive: false,
         ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -73,6 +89,7 @@ export async function assertNomUnique(
   if (type === "DOCUMENT") {
     const existing = await prisma.document.findFirst({
       where: {
+        uniteId,
         nom: n,
         archive: false,
         ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -83,6 +100,7 @@ export async function assertNomUnique(
   if (type === "AUDIT") {
     const existing = await prisma.audit.findFirst({
       where: {
+        uniteId,
         titre: n,
         archive: false,
         ...(excludeId ? { id: { not: excludeId } } : {}),

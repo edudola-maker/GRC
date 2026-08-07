@@ -32,11 +32,20 @@ export async function getCurrentUser() {
   return user;
 }
 
-export async function listUtilisateursActifs() {
+export async function listUtilisateursActifs(uniteId?: string) {
   return prisma.utilisateur.findMany({
-    where: { actif: true },
+    where: {
+      actif: true,
+      ...(uniteId ? { uniteId } : {}),
+    },
     orderBy: { nom: "asc" },
   });
+}
+
+/** Utilisateurs actifs de l'unité de l'utilisateur courant (sélecteurs, monitoring). */
+export async function listUtilisateursActifsForCurrentUnite() {
+  const user = await getCurrentUser();
+  return listUtilisateursActifs(user.uniteId);
 }
 
 export function isResponsable(user: { role: string }) {

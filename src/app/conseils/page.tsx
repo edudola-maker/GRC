@@ -16,6 +16,7 @@ import {
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -27,24 +28,28 @@ export default async function ConseilsPage({
   const sp = await searchParams;
   const archives = sp.archives === "1";
   const today = startOfToday();
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
 
   const [conseils, ouverts, clotures, closAvecDelai] = await Promise.all([
     prisma.conseil.findMany({
-      where: { archive: archives },
+      where: { archive: archives, uniteId },
       include: { responsable: true, _count: { select: { taches: true } } },
       orderBy: { dateReception: "desc" },
     }),
     prisma.conseil.count({
       where: {
+        uniteId,
         archive: false,
         statut: { notIn: [...CONSEIL_STATUTS_CLOS] },
       },
     }),
     prisma.conseil.count({
-      where: { archive: false, statut: "CLOTURE" },
+      where: { uniteId, archive: false, statut: "CLOTURE" },
     }),
     prisma.conseil.findMany({
       where: {
+        uniteId,
         archive: false,
         statut: { in: ["CLOTURE", "REPONDU"] },
         OR: [{ dateCloture: { not: null } }, { dateReponse: { not: null } }],

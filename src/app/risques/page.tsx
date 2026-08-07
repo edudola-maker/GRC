@@ -10,6 +10,7 @@ import {
   criticiteNiveau,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,9 @@ export default async function RisquesPage({
 }) {
   const sp = await searchParams;
   const archives = sp.archives === "1";
+  const user = await getCurrentUser();
   const risques = await prisma.risque.findMany({
-    where: { archive: archives },
+    where: { archive: archives, uniteId: user.uniteId },
     include: {
       responsable: true,
       _count: { select: { controles: true } },

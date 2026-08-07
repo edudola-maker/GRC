@@ -8,6 +8,7 @@ export async function ajouterJournal(params: {
   message: string;
   auteurId?: string | null;
   automatique?: boolean;
+  uniteId?: string | null;
 }) {
   return prisma.journalEvenement.create({
     data: {
@@ -17,6 +18,7 @@ export async function ajouterJournal(params: {
       message: params.message,
       auteurId: params.auteurId ?? null,
       automatique: params.automatique ?? true,
+      uniteId: params.uniteId ?? null,
     },
   });
 }

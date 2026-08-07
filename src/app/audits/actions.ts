@@ -24,6 +24,7 @@ async function assertResponsable(id: string) {
 
 export async function createAudit(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const fallback = "/audits/nouveau";
   const titre = str(formData, "titre");
   if (!titre) {
@@ -40,12 +41,13 @@ export async function createAudit(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
-  const nomErr = await assertNomUnique("AUDIT", titre);
+  const nomErr = await assertNomUnique("AUDIT", titre, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const audit = await prisma.audit.create({
     data: {
-      code: await nextCode("AUDIT"),
+      code: await nextCode("AUDIT", uniteId),
+      uniteId,
       titre,
       perimetre: optStr(formData, "perimetre"),
       taxinomie: optStr(formData, "taxinomie"),
@@ -193,6 +195,7 @@ export async function createRecommandation(formData: FormData) {
   }
 
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const reco = await prisma.recommandation.create({
     data: {
       auditId,
@@ -208,6 +211,7 @@ export async function createRecommandation(formData: FormData) {
   if (str(formData, "creerTache") === "1") {
     await prisma.tache.create({
       data: {
+        uniteId,
         titre: `Reco : ${titre}`,
         description: optStr(formData, "description"),
         responsableId: responsableId ?? audit.responsableId,
@@ -293,6 +297,7 @@ export async function deleteRecommandation(formData: FormData) {
 
 export async function createTacheDepuisAudit(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const auditId = str(formData, "auditId") || str(formData, "id");
   if (!auditId) {
     redirectWithError("/audits", "Identifiant audit manquant.");
@@ -303,6 +308,7 @@ export async function createTacheDepuisAudit(formData: FormData) {
 
   const tache = await prisma.tache.create({
     data: {
+      uniteId,
       titre: `Audit : ${audit.titre}`,
       description: audit.perimetre,
       responsableId: audit.responsableId,
@@ -322,6 +328,7 @@ export async function createTacheDepuisAudit(formData: FormData) {
 
 export async function createTacheDepuisReco(formData: FormData) {
   const current = await getCurrentUser();
+  const uniteId = current.uniteId;
   const recommandationId =
     str(formData, "recommandationId") || str(formData, "id");
   if (!recommandationId) {
@@ -336,6 +343,7 @@ export async function createTacheDepuisReco(formData: FormData) {
 
   const tache = await prisma.tache.create({
     data: {
+      uniteId,
       titre: `Reco : ${reco.titre}`,
       description: reco.description,
       responsableId:
