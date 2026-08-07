@@ -3,21 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Pilotage", icon: "⌂" },
-  { href: "/backlog", label: "Backlog", icon: "☰" },
-  { href: "/taches", label: "Tâches", icon: "✓" },
+type NavItem = { href: string; label: string; icon: string; responsableOnly?: boolean };
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "Mon tableau de bord", icon: "⌂" },
+  {
+    href: "/responsable",
+    label: "Dashboard responsable",
+    icon: "◎",
+    responsableOnly: true,
+  },
   { href: "/projets", label: "Projets", icon: "▦" },
   { href: "/conseils", label: "Conseils", icon: "💬" },
-  { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
-  { href: "/risques", label: "Risques", icon: "⚠" },
-  { href: "/documents", label: "Documents", icon: "▤" },
   { href: "/audits", label: "Audits", icon: "◉" },
-  { href: "/equipe", label: "Équipe", icon: "◎" },
-] as const;
+  { href: "/risques", label: "Risques", icon: "⚠" },
+  { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
+  { href: "/documents", label: "Documents", icon: "▤" },
+];
 
-export function AppNav() {
+export function AppNav({
+  isResponsable = false,
+  userName,
+  demoSwitcher,
+}: {
+  isResponsable?: boolean;
+  userName?: string;
+  demoSwitcher?: React.ReactNode;
+}) {
   const pathname = usePathname();
+  const items = NAV_ITEMS.filter((i) => !i.responsableOnly || isResponsable);
 
   return (
     <aside className="app-nav">
@@ -30,7 +44,7 @@ export function AppNav() {
       </div>
 
       <nav className="app-nav__links" aria-label="Navigation principale">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active =
             item.href === "/"
               ? pathname === "/"
@@ -50,7 +64,15 @@ export function AppNav() {
         })}
       </nav>
 
-      <p className="app-nav__footnote">Squelette plateforme</p>
+      <div className="app-nav__footer">
+        {userName ? (
+          <p className="app-nav__user">
+            Connecté : <strong>{userName}</strong>
+          </p>
+        ) : null}
+        {demoSwitcher}
+        <p className="app-nav__footnote">Sprint 2 — étape 1</p>
+      </div>
     </aside>
   );
 }

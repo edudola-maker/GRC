@@ -49,6 +49,7 @@ async function main() {
       nom: "Alice Martin",
       email: "alice.martin@exemple.fr",
       motDePasse: "demo-hash-alice",
+      role: "RESPONSABLE",
     },
   });
   const bernard = await prisma.utilisateur.create({
@@ -56,6 +57,7 @@ async function main() {
       nom: "Bernard Dupont",
       email: "bernard.dupont@exemple.fr",
       motDePasse: "demo-hash-bernard",
+      role: "COLLABORATEUR",
     },
   });
   const claire = await prisma.utilisateur.create({
@@ -63,6 +65,7 @@ async function main() {
       nom: "Claire Bernard",
       email: "claire.bernard@exemple.fr",
       motDePasse: "demo-hash-claire",
+      role: "COLLABORATEUR",
     },
   });
 

@@ -1,0 +1,223 @@
+import { prisma } from "@/lib/prisma";
+import {
+  CONSEIL_DELAI_CIBLE_JOURS,
+  CONSEIL_STATUTS_CLOS,
+  RISQUE_STATUTS_MAITRISES,
+  TACHE_STATUTS_CLOS,
+} from "@/lib/catalog";
+import { businessDaysBetween } from "@/lib/dates";
+import { startOfToday } from "@/lib/labels";
+
+/** KPI synthétiques pour le Dashboard Responsable (volontairement courts). */
+export async function getDashboardResponsable() {
+  const today = startOfToday();
+  const annee = today.getFullYear();
+
+  const [
+    auditsEnCours,
+    auditsRealises,
+    auditsPlanifies,
+    conseilsOuverts,
+    conseilsClos,
+    conseilsTousClos,
+    projetsActifs,
+    projetsTermines,
+    projetsEnRetard,
+    controlesPrevus,
+    controlesRealises,
+    controlesEnRetard,
+    risquesCritiques,
+    risquesEleves,
+    actionsOuvertes,
+    actionsEnRetard,
+    objectifs,
+    auditsListe,
+    conseilsListe,
+    projetsListe,
+    controlesListe,
+    risquesListe,
+  ] = await Promise.all([
+    prisma.audit.count({
+      where: { archive: false, statut: { in: ["EN_COURS", "EN_REVUE"] } },
+    }),
+    prisma.audit.count({ where: { archive: false, statut: "TERMINE" } }),
+    prisma.audit.count({
+      where: {
+        archive: false,
+        statut: { in: ["PLANIFIE", "EN_COURS", "EN_REVUE", "TERMINE"] },
+      },
+    }),
+    prisma.conseil.count({
+      where: { archive: false, statut: { notIn: [...CONSEIL_STATUTS_CLOS] } },
+    }),
+    prisma.conseil.count({
+      where: { archive: false, statut: { in: ["CLOTURE", "REPONDU"] } },
+    }),
+    prisma.conseil.findMany({
+      where: {
+        archive: false,
+        statut: { in: ["CLOTURE", "REPONDU"] },
+        OR: [{ dateCloture: { not: null } }, { dateReponse: { not: null } }],
+      },
+      select: { dateReception: true, dateCloture: true, dateReponse: true },
+    }),
+    prisma.projet.count({
+      where: {
+        archive: false,
+        statut: { in: ["A_FAIRE", "EN_COURS", "EN_ATTENTE"] },
+      },
+    }),
+    prisma.projet.count({ where: { archive: false, statut: "TERMINE" } }),
+    prisma.projet.count({
+      where: {
+        archive: false,
+        statut: { notIn: ["TERMINE", "ANNULE"] },
+        dateEcheance: { lt: today },
+      },
+    }),
+    prisma.controleSCI.count({
+      where: {
+        archive: false,
+        statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
+      },
+    }),
+    prisma.controleSCI.count({
+      where: { archive: false, statut: "REALISE" },
+    }),
+    prisma.controleSCI.count({
+      where: {
+        archive: false,
+        OR: [
+          { statut: "EN_RETARD" },
+          {
+            statut: { notIn: ["REALISE"] },
+            dateProchaineEcheance: { lt: today },
+          },
+        ],
+      },
+    }),
+    prisma.risque.count({
+      where: {
+        archive: false,
+        criticite: { gte: 20 },
+        statut: { notIn: [...RISQUE_STATUTS_MAITRISES] },
+      },
+    }),
+    prisma.risque.count({
+      where: {
+        archive: false,
+        criticite: { gte: 12, lt: 20 },
+        statut: { notIn: [...RISQUE_STATUTS_MAITRISES] },
+      },
+    }),
+    prisma.tache.count({
+      where: { statut: { notIn: [...TACHE_STATUTS_CLOS] } },
+    }),
+    prisma.tache.count({
+      where: {
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        dateEcheance: { lt: today },
+      },
+    }),
+    prisma.objectifAnnuel.findMany({
+      where: { annee },
+      include: { utilisateur: true },
+      orderBy: { utilisateur: { nom: "asc" } },
+    }),
+    prisma.audit.findMany({
+      where: { archive: false, statut: { in: ["EN_COURS", "EN_REVUE"] } },
+      include: { responsable: true },
+      orderBy: { dateFin: "asc" },
+      take: 6,
+    }),
+    prisma.conseil.findMany({
+      where: { archive: false, statut: { notIn: [...CONSEIL_STATUTS_CLOS] } },
+      include: { responsable: true },
+      orderBy: { dateEcheance: "asc" },
+      take: 6,
+    }),
+    prisma.projet.findMany({
+      where: {
+        archive: false,
+        statut: { in: ["A_FAIRE", "EN_COURS", "EN_ATTENTE"] },
+      },
+      include: { responsable: true },
+      orderBy: { dateEcheance: "asc" },
+      take: 6,
+    }),
+    prisma.controleSCI.findMany({
+      where: {
+        archive: false,
+        statut: { in: ["A_REALISER", "EN_COURS", "A_VALIDER", "EN_RETARD"] },
+      },
+      include: { responsable: true },
+      orderBy: { dateProchaineEcheance: "asc" },
+      take: 6,
+    }),
+    prisma.risque.findMany({
+      where: {
+        archive: false,
+        criticite: { gte: 12 },
+        statut: { notIn: [...RISQUE_STATUTS_MAITRISES] },
+      },
+      include: { responsable: true },
+      orderBy: { criticite: "desc" },
+      take: 6,
+    }),
+  ]);
+
+  let respectDelai = 0;
+  let sommeDelais = 0;
+  for (const c of conseilsTousClos) {
+    const fin = c.dateCloture ?? c.dateReponse;
+    if (!fin) continue;
+    const jours = businessDaysBetween(c.dateReception, fin);
+    sommeDelais += jours;
+    if (jours <= CONSEIL_DELAI_CIBLE_JOURS) respectDelai += 1;
+  }
+  const nbClos = conseilsTousClos.filter(
+    (c) => c.dateCloture || c.dateReponse,
+  ).length;
+  const tauxRespectDelai =
+    nbClos > 0 ? Math.round((respectDelai / nbClos) * 100) : null;
+  const delaiMoyen =
+    nbClos > 0 ? Math.round(sommeDelais / nbClos) : null;
+
+  const totalControles = controlesPrevus + controlesRealises;
+  const tauxRealisationControles =
+    totalControles > 0
+      ? Math.round((controlesRealises / totalControles) * 100)
+      : null;
+
+  return {
+    synthetique: {
+      auditsEnCours,
+      auditsRealises,
+      auditsPlanifies,
+      conseilsOuverts,
+      conseilsClos,
+      delaiMoyen,
+      tauxRespectDelai,
+      projetsActifs,
+      projetsTermines,
+      projetsEnRetard,
+      controlesPrevus,
+      controlesRealises,
+      controlesEnRetard,
+      tauxRealisationControles,
+      risquesCritiques,
+      risquesEleves,
+      actionsOuvertes,
+      actionsEnRetard,
+    },
+    operationnel: {
+      audits: auditsListe,
+      conseils: conseilsListe,
+      projets: projetsListe,
+      controles: controlesListe,
+      risques: risquesListe,
+    },
+    objectifs,
+    meta: { today, annee, delaiCible: CONSEIL_DELAI_CIBLE_JOURS },
+  };
+}

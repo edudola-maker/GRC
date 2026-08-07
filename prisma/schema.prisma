@@ -129,16 +129,22 @@ enum CategorieTache {
   AUTRE
 }
 
+enum RoleUtilisateur {
+  COLLABORATEUR
+  RESPONSABLE
+}
+
 // ─── Utilisateur ────────────────────────────────────────────
 
 model Utilisateur {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   nom        String
-  email      String   @unique
+  email      String           @unique
   motDePasse String
-  actif      Boolean  @default(true)
-  creeLe     DateTime @default(now())
-  modifieLe  DateTime @updatedAt
+  role       RoleUtilisateur  @default(COLLABORATEUR)
+  actif      Boolean          @default(true)
+  creeLe     DateTime         @default(now())
+  modifieLe  DateTime         @updatedAt
 
   projetsResponsable      Projet[]           @relation("ProjetResponsable")
   tachesResponsable       Tache[]            @relation("TacheResponsable")

@@ -70,13 +70,13 @@ export default async function NouvelleTachePage({
 
   return (
     <>
-      <BackLink href="/taches" label="← Retour aux tâches" />
+      <BackLink href="/" label="← Retour au tableau de bord" />
       <PageHeader
-        title={isConseil ? "Nouvelle demande Conseil" : "Nouvelle tâche"}
+        title={isConseil ? "Nouvelle demande Conseil" : "Créer une action"}
         description={
           isConseil
             ? "Créez une demande ponctuelle sans projet associé (analyse, recherche, avis)."
-            : "Une tâche peut être indépendante ou rattachée à un objet métier."
+            : "De préférence, créez l'action depuis un objet métier. Une action libre reste possible pour un cas ponctuel."
         }
       />
       <FlashBanner erreur={sp.erreur} />
@@ -98,8 +98,8 @@ export default async function NouvelleTachePage({
             recommandationId: sp.recommandationId ?? null,
             categorie,
           }}
-          cancelHref="/taches"
-          submitLabel="Créer la tâche"
+          cancelHref="/"
+          submitLabel="Créer l'action"
           defaultCategorie={categorie}
         />
       </div>

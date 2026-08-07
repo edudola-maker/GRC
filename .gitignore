@@ -58,3 +58,4 @@ AGENTS.md
 CLAUDE.md
 
 /src/generated/prisma
+*.webp
