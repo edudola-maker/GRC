@@ -49,6 +49,12 @@ Pas un inventaire exhaustif : uniquement ce qui compte pour maintenir et faire �
 | Objectifs uniquement dans le dashboard | Contredit « chaque module définit ses objectifs » |
 | Hardcoder taxinomies/délais en permanence | Bloquerait Administration |
 
+### Inventaire Conseils (ajustement Vague C)
+
+- Ligne compacte : `CNS-xxxx | objet | provenance | statut` (+ meta discrète).
+- Pattern **InventoryBrowser** : filtres rapides + recherche dynamique (`useDeferredValue`) + recherche avancée, sans rechargement.
+- À réutiliser ensuite sur Projets, Audits, Risques, SCI, Documents.
+
 ### Ajustement planification (revue Vague C)
 
 - **Une seule grille** (plus de sections par type).

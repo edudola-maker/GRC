@@ -1,73 +1,94 @@
-import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import {
-  CONSEIL_DELAI_CIBLE_JOURS,
+  ConseilInventory,
+  type ConseilInventoryItem,
+} from "@/components/conseils/ConseilInventory";
+import {
   CONSEIL_STATUTS_CLOS,
   MODULE_HELP,
 } from "@/lib/catalog";
 import { businessDaysBetween } from "@/lib/dates";
 import {
   STATUT_CONSEIL_LABELS,
-  formatDate,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
-import { parseTags } from "@/lib/tags";
-import { getCurrentUser } from "@/lib/session";
+import { getConseilDelaiCibleJours, listReferentiel } from "@/lib/referentiels";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConseilsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ archives?: string; ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const archives = sp.archives === "1";
   const today = startOfToday();
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [conseils, ouverts, clotures, closAvecDelai] = await Promise.all([
+  const [conseils, responsables, taxinomies, delaiCible] = await Promise.all([
     prisma.conseil.findMany({
-      where: { archive: archives, uniteId },
-      include: { responsable: true, _count: { select: { taches: true } } },
+      where: { uniteId },
+      include: { responsable: true },
       orderBy: { dateReception: "desc" },
     }),
-    prisma.conseil.count({
-      where: {
-        uniteId,
-        archive: false,
-        statut: { notIn: [...CONSEIL_STATUTS_CLOS] },
-      },
-    }),
-    prisma.conseil.count({
-      where: { uniteId, archive: false, statut: "CLOTURE" },
-    }),
-    prisma.conseil.findMany({
-      where: {
-        uniteId,
-        archive: false,
-        statut: { in: ["CLOTURE", "REPONDU"] },
-        OR: [{ dateCloture: { not: null } }, { dateReponse: { not: null } }],
-      },
-      select: { dateReception: true, dateCloture: true, dateReponse: true },
-    }),
+    listUtilisateursActifsForCurrentUnite(),
+    listReferentiel("TAXINOMIE"),
+    getConseilDelaiCibleJours(uniteId),
   ]);
 
-  const enRetard = conseils.filter((c) => {
-    if (archives) return false;
-    const clos = (CONSEIL_STATUTS_CLOS as readonly string[]).includes(c.statut);
-    return !clos && c.dateEcheance && c.dateEcheance < today;
-  }).length;
+  const items: ConseilInventoryItem[] = conseils.map((c) => {
+    const estClos = (CONSEIL_STATUTS_CLOS as readonly string[]).includes(
+      c.statut,
+    );
+    const estOuvert = !estClos;
+    const estRetard = Boolean(
+      estOuvert && c.dateEcheance && c.dateEcheance < today,
+    );
+    return {
+      id: c.id,
+      code: c.code,
+      objet: c.objet,
+      tags: c.tags,
+      taxinomie: c.taxinomie,
+      demandeur: c.demandeur,
+      entiteDemandeuse: c.entiteDemandeuse,
+      statut: c.statut,
+      statutLabel: STATUT_CONSEIL_LABELS[c.statut] ?? c.statut,
+      responsableId: c.responsableId,
+      responsableNom: c.responsable.nom,
+      dateReception: c.dateReception.toISOString(),
+      dateEcheance: c.dateEcheance?.toISOString() ?? null,
+      dateCloture: c.dateCloture?.toISOString() ?? null,
+      archive: c.archive,
+      urgence: urgenceEcheance(c.dateEcheance, estClos || c.archive),
+      estOuvert,
+      estClos,
+      estRetard,
+    };
+  });
 
+  const actifs = conseils.filter((c) => !c.archive);
+  const ouverts = actifs.filter(
+    (c) => !(CONSEIL_STATUTS_CLOS as readonly string[]).includes(c.statut),
+  ).length;
+  const clotures = actifs.filter((c) => c.statut === "CLOTURE").length;
+  const enRetard = items.filter((c) => c.estRetard && !c.archive).length;
+
+  const closAvecDelai = actifs.filter(
+    (c) =>
+      (c.statut === "CLOTURE" || c.statut === "REPONDU") &&
+      (c.dateCloture || c.dateReponse),
+  );
   const respects = closAvecDelai.filter((c) => {
     const fin = c.dateCloture ?? c.dateReponse;
     if (!fin) return false;
-    return businessDaysBetween(c.dateReception, fin) <= CONSEIL_DELAI_CIBLE_JOURS;
+    return businessDaysBetween(c.dateReception, fin) <= delaiCible;
   }).length;
   const tauxRespect =
     closAvecDelai.length > 0
@@ -78,97 +99,39 @@ export default async function ConseilsPage({
     <>
       <PageHeader
         title="Conseils"
-        description="Demandes ponctuelles adressées à l'unité — délai cible 5 jours ouvrés."
+        description={`Demandes ponctuelles adressées à l'unité — délai cible ${delaiCible} jours ouvrés.`}
         actions={<BtnLink href="/conseils/nouveau">Nouveau conseil</BtnLink>}
       />
       <ModuleHelp {...MODULE_HELP.conseils} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      {!archives ? (
-        <div className="stats">
-          <div className="stat">
-            <strong>{ouverts}</strong>
-            Ouverts
-          </div>
-          <div className="stat">
-            <strong>{clotures}</strong>
-            Clôturés
-          </div>
-          <div className="stat">
-            <strong>{enRetard}</strong>
-            En retard
-          </div>
-          <div className="stat">
-            <strong>
-              {tauxRespect ?? "—"}
-              {tauxRespect != null ? "%" : ""}
-            </strong>
-            Respect délai {CONSEIL_DELAI_CIBLE_JOURS} j.
-          </div>
+      <div className="stats">
+        <div className="stat">
+          <strong>{ouverts}</strong>
+          Ouverts
         </div>
-      ) : null}
+        <div className="stat">
+          <strong>{clotures}</strong>
+          Clôturés
+        </div>
+        <div className="stat">
+          <strong>{enRetard}</strong>
+          En retard
+        </div>
+        <div className="stat">
+          <strong>
+            {tauxRespect ?? "—"}
+            {tauxRespect != null ? "%" : ""}
+          </strong>
+          Respect délai {delaiCible} j.
+        </div>
+      </div>
 
-      <div className="filter-bar">
-        <Link
-          href="/conseils"
-          className={`chip${!archives ? " is-active" : ""}`}
-        >
-          Actifs
-        </Link>
-        <Link
-          href="/conseils?archives=1"
-          className={`chip${archives ? " is-active" : ""}`}
-        >
-          Archivés
-        </Link>
-      </div>
-      <div className="panel">
-        {conseils.length === 0 ? (
-          <p className="empty">
-            Aucun conseil. <Link href="/conseils/nouveau">Créer le premier</Link>
-          </p>
-        ) : (
-          <ul className="entity-list">
-            {conseils.map((c) => {
-              const clos = (CONSEIL_STATUTS_CLOS as readonly string[]).includes(
-                c.statut,
-              );
-              const urgence = urgenceEcheance(c.dateEcheance, clos);
-              const tags = parseTags(c.tags);
-              return (
-                <li key={c.id}>
-                  <Link
-                    href={`/conseils/${c.id}`}
-                    className={`entity-row entity-row--${urgence}`}
-                  >
-                    <div className="entity-row__main">
-                      <strong>
-                        <span className="muted">{c.code}</span> · {c.objet}
-                      </strong>
-                      <span className="entity-row__meta">
-                        {c.responsable.nom}
-                        {c.demandeur ? ` · ${c.demandeur}` : ""}
-                        {c.entiteDemandeuse ? ` · ${c.entiteDemandeuse}` : ""}
-                        {" · "}
-                        {STATUT_CONSEIL_LABELS[c.statut]}
-                        {" · "}
-                        {c._count.taches} tâche
-                        {c._count.taches > 1 ? "s" : ""}
-                        {tags.length
-                          ? ` · ${tags.map((t) => `#${t}`).join(" ")}`
-                          : ""}
-                      </span>
-                    </div>
-                    <span className="entity-row__date">
-                      {formatDate(c.dateEcheance)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <ConseilInventory
+        items={items}
+        responsables={responsables.map((r) => ({ id: r.id, nom: r.nom }))}
+        taxinomies={taxinomies}
+      />
     </>
   );
 }
