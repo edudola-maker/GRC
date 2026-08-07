@@ -1,4 +1,5 @@
 import { TacheForm } from "@/components/EntityForms";
+import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { listUtilisateursActifs } from "@/lib/session";
@@ -9,13 +10,17 @@ export const dynamic = "force-dynamic";
 export default async function NouvelleTachePage({
   searchParams,
 }: {
-  searchParams: Promise<{ projetId?: string; categorie?: string }>;
+  searchParams: Promise<{
+    projetId?: string;
+    categorie?: string;
+    erreur?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const [users, projets] = await Promise.all([
     listUtilisateursActifs(),
     prisma.projet.findMany({
-      where: { statut: { notIn: ["ANNULE"] } },
+      where: { archive: false, statut: { notIn: ["ANNULE"] } },
       orderBy: { nom: "asc" },
       select: { id: true, nom: true },
     }),
@@ -25,14 +30,16 @@ export default async function NouvelleTachePage({
 
   return (
     <>
+      <BackLink href="/taches" label="← Retour aux tâches" />
       <PageHeader
         title={isConseil ? "Nouvelle demande Conseil" : "Nouvelle tâche"}
         description={
           isConseil
             ? "Créez une demande ponctuelle sans projet associé (analyse, recherche, avis)."
-            : "Une tâche peut être indépendante ou rattachée à un projet."
+            : "Une tâche peut être indépendante ou rattachée à un projet actif."
         }
       />
+      <FlashBanner erreur={sp.erreur} />
       <div className="panel">
         <TacheForm
           action={createTache}

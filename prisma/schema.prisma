@@ -116,6 +116,8 @@ model Projet {
   priorite      Priorite     @default(MOYENNE)
   avancement    Int          @default(0) // 0–100
   commentaires  String?
+  /// Archivage soft : masqué des listes actives, conservé en base
+  archive       Boolean      @default(false)
   creeParId     String
   modifieParId  String
   creeLe        DateTime     @default(now())

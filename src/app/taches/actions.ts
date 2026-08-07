@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import {
   CATEGORIE_TACHE_OPTIONS,
   PRIORITE_OPTIONS,
@@ -20,7 +21,10 @@ function revalidateTacheViews(id?: string, projetId?: string | null) {
   revalidatePath("/taches");
   revalidatePath("/backlog");
   revalidatePath("/projets");
-  if (id) revalidatePath(`/taches/${id}`);
+  if (id) {
+    revalidatePath(`/taches/${id}`);
+    revalidatePath(`/taches/${id}/modifier`);
+  }
   if (projetId) revalidatePath(`/projets/${projetId}`);
 }
 
@@ -42,26 +46,79 @@ async function recordHistory(
   });
 }
 
+async function assertResponsable(id: string) {
+  return prisma.utilisateur.findFirst({ where: { id, actif: true } });
+}
+
+async function assertProjetOptional(projetId: string | null) {
+  if (!projetId) return true;
+  const projet = await prisma.projet.findFirst({
+    where: { id: projetId, archive: false },
+  });
+  return Boolean(projet);
+}
+
+function validationPatchForStatut(
+  currentId: string,
+  ancienStatut: string,
+  nouveauStatut: string,
+) {
+  const patch: {
+    soumisParId?: string | null;
+    dateSoumission?: Date | null;
+    valideParId?: string | null;
+    dateValidation?: Date | null;
+  } = {};
+
+  if (nouveauStatut === "A_VALIDER" && ancienStatut !== "A_VALIDER") {
+    patch.soumisParId = currentId;
+    patch.dateSoumission = new Date();
+    patch.valideParId = null;
+    patch.dateValidation = null;
+  }
+  if (nouveauStatut === "TERMINE" && ancienStatut === "A_VALIDER") {
+    patch.valideParId = currentId;
+    patch.dateValidation = new Date();
+  }
+  return patch;
+}
+
 export async function createTache(formData: FormData) {
   const current = await getCurrentUser();
   const titre = str(formData, "titre");
-  if (!titre) throw new Error("Le titre de la tâche est obligatoire.");
+  const fallback = "/taches/nouvelle";
+
+  if (!titre) {
+    redirectWithError(fallback, "Le titre de la tâche est obligatoire.");
+  }
 
   const statut = str(formData, "statut") || "A_FAIRE";
   const priorite = str(formData, "priorite") || "MOYENNE";
   const categorie = str(formData, "categorie") || "AUTRE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite) || !CATEGORIES.has(categorie)) {
-    throw new Error("Statut, priorité ou catégorie invalide.");
+    redirectWithError(fallback, "Statut, priorité ou catégorie invalide.");
+  }
+
+  const responsableId = str(formData, "responsableId") || current.id;
+  if (!(await assertResponsable(responsableId))) {
+    redirectWithError(fallback, "Responsable introuvable.");
   }
 
   const projetId = optStr(formData, "projetId");
+  if (!(await assertProjetOptional(projetId))) {
+    redirectWithError(
+      fallback,
+      "Projet introuvable ou archivé. Choisissez un projet actif.",
+    );
+  }
+
   const dateEcheance = optDate(formData, "dateEcheance");
 
   const tache = await prisma.tache.create({
     data: {
       titre,
       description: optStr(formData, "description"),
-      responsableId: str(formData, "responsableId") || current.id,
+      responsableId,
       projetId,
       dateEcheance,
       statut: statut as "A_FAIRE",
@@ -70,61 +127,64 @@ export async function createTache(formData: FormData) {
       commentaires: optStr(formData, "commentaires"),
       creeParId: current.id,
       modifieParId: current.id,
-      ...(statut === "A_VALIDER"
-        ? { soumisParId: current.id, dateSoumission: new Date() }
-        : {}),
+      ...validationPatchForStatut(current.id, "A_FAIRE", statut),
     },
   });
 
   revalidateTacheViews(tache.id, projetId);
-  redirect(`/taches/${tache.id}`);
+  redirectWithOk(`/taches/${tache.id}`, "cree");
 }
 
 export async function updateTache(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
-  if (!id) throw new Error("Identifiant tâche manquant.");
+  if (!id) redirectWithError("/taches", "Identifiant tâche manquant.");
 
   const existing = await prisma.tache.findUnique({ where: { id } });
-  if (!existing) throw new Error("Tâche introuvable.");
+  if (!existing) redirectWithError("/taches", "Tâche introuvable.");
 
   const titre = str(formData, "titre");
-  if (!titre) throw new Error("Le titre de la tâche est obligatoire.");
+  if (!titre) {
+    redirectWithError(
+      `/taches/${id}/modifier`,
+      "Le titre de la tâche est obligatoire.",
+    );
+  }
 
   const statut = str(formData, "statut") || "A_FAIRE";
   const priorite = str(formData, "priorite") || "MOYENNE";
   const categorie = str(formData, "categorie") || "AUTRE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite) || !CATEGORIES.has(categorie)) {
-    throw new Error("Statut, priorité ou catégorie invalide.");
+    redirectWithError(
+      `/taches/${id}/modifier`,
+      "Statut, priorité ou catégorie invalide.",
+    );
+  }
+
+  const responsableId = str(formData, "responsableId") || current.id;
+  if (!(await assertResponsable(responsableId))) {
+    redirectWithError(`/taches/${id}/modifier`, "Responsable introuvable.");
   }
 
   const projetId = optStr(formData, "projetId");
+  // Autoriser de conserver un projet déjà lié même s'il est archivé
+  if (projetId && projetId !== existing.projetId) {
+    if (!(await assertProjetOptional(projetId))) {
+      redirectWithError(
+        `/taches/${id}/modifier`,
+        "Projet introuvable ou archivé.",
+      );
+    }
+  }
+
   const dateEcheance = optDate(formData, "dateEcheance");
-
-  const validationPatch: {
-    soumisParId?: string | null;
-    dateSoumission?: Date | null;
-    valideParId?: string | null;
-    dateValidation?: Date | null;
-  } = {};
-
-  if (statut === "A_VALIDER" && existing.statut !== "A_VALIDER") {
-    validationPatch.soumisParId = current.id;
-    validationPatch.dateSoumission = new Date();
-    validationPatch.valideParId = null;
-    validationPatch.dateValidation = null;
-  }
-  if (statut === "TERMINE" && existing.statut === "A_VALIDER") {
-    validationPatch.valideParId = current.id;
-    validationPatch.dateValidation = new Date();
-  }
 
   await prisma.tache.update({
     where: { id },
     data: {
       titre,
       description: optStr(formData, "description"),
-      responsableId: str(formData, "responsableId") || current.id,
+      responsableId,
       projetId,
       dateEcheance,
       statut: statut as "A_FAIRE",
@@ -132,31 +192,35 @@ export async function updateTache(formData: FormData) {
       categorie: categorie as "AUTRE",
       commentaires: optStr(formData, "commentaires"),
       modifieParId: current.id,
-      ...validationPatch,
+      ...validationPatchForStatut(current.id, existing.statut, statut),
     },
   });
 
+  const [avantResp, apresResp, avantProjet, apresProjet] = await Promise.all([
+    prisma.utilisateur.findUnique({ where: { id: existing.responsableId } }),
+    prisma.utilisateur.findUnique({ where: { id: responsableId } }),
+    existing.projetId
+      ? prisma.projet.findUnique({ where: { id: existing.projetId } })
+      : Promise.resolve(null),
+    projetId
+      ? prisma.projet.findUnique({ where: { id: projetId } })
+      : Promise.resolve(null),
+  ]);
+
   await recordHistory(id, current.id, [
     { champ: "titre", avant: existing.titre, apres: titre },
+    { champ: "statut", avant: existing.statut, apres: statut },
+    { champ: "priorite", avant: existing.priorite, apres: priorite },
+    { champ: "categorie", avant: existing.categorie, apres: categorie },
     {
-      champ: "statut",
-      avant: existing.statut,
-      apres: statut,
+      champ: "responsable",
+      avant: avantResp?.nom ?? existing.responsableId,
+      apres: apresResp?.nom ?? responsableId,
     },
     {
-      champ: "priorite",
-      avant: existing.priorite,
-      apres: priorite,
-    },
-    {
-      champ: "categorie",
-      avant: existing.categorie,
-      apres: categorie,
-    },
-    {
-      champ: "projetId",
-      avant: existing.projetId,
-      apres: projetId,
+      champ: "projet",
+      avant: avantProjet?.nom ?? existing.projetId,
+      apres: apresProjet?.nom ?? projetId,
     },
     {
       champ: "dateEcheance",
@@ -166,18 +230,96 @@ export async function updateTache(formData: FormData) {
   ]);
 
   revalidateTacheViews(id, projetId ?? existing.projetId);
-  redirect(`/taches/${id}`);
+  redirectWithOk(`/taches/${id}`, "modifie");
+}
+
+/** Mise à jour rapide depuis la fiche tâche (statut / priorité / responsable) */
+export async function updateTacheRapide(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const champ = str(formData, "champ");
+  const valeur = str(formData, "valeur");
+
+  if (!id) redirectWithError("/taches", "Identifiant tâche manquant.");
+
+  const existing = await prisma.tache.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/taches", "Tâche introuvable.");
+
+  if (champ === "statut") {
+    if (!STATUTS.has(valeur)) {
+      redirectWithError(`/taches/${id}`, "Statut invalide.");
+    }
+    await prisma.tache.update({
+      where: { id },
+      data: {
+        statut: valeur as "A_FAIRE",
+        modifieParId: current.id,
+        ...validationPatchForStatut(current.id, existing.statut, valeur),
+      },
+    });
+    await recordHistory(id, current.id, [
+      { champ: "statut", avant: existing.statut, apres: valeur },
+    ]);
+    revalidateTacheViews(id, existing.projetId);
+    redirectWithOk(`/taches/${id}`, "statut");
+  }
+
+  if (champ === "priorite") {
+    if (!PRIORITES.has(valeur)) {
+      redirectWithError(`/taches/${id}`, "Priorité invalide.");
+    }
+    await prisma.tache.update({
+      where: { id },
+      data: {
+        priorite: valeur as "MOYENNE",
+        modifieParId: current.id,
+      },
+    });
+    await recordHistory(id, current.id, [
+      { champ: "priorite", avant: existing.priorite, apres: valeur },
+    ]);
+    revalidateTacheViews(id, existing.projetId);
+    redirectWithOk(`/taches/${id}`, "priorite");
+  }
+
+  if (champ === "responsableId") {
+    if (!(await assertResponsable(valeur))) {
+      redirectWithError(`/taches/${id}`, "Responsable introuvable.");
+    }
+    const [avantUser, apresUser] = await Promise.all([
+      prisma.utilisateur.findUnique({ where: { id: existing.responsableId } }),
+      prisma.utilisateur.findUnique({ where: { id: valeur } }),
+    ]);
+    await prisma.tache.update({
+      where: { id },
+      data: {
+        responsableId: valeur,
+        modifieParId: current.id,
+      },
+    });
+    await recordHistory(id, current.id, [
+      {
+        champ: "responsable",
+        avant: avantUser?.nom ?? existing.responsableId,
+        apres: apresUser?.nom ?? valeur,
+      },
+    ]);
+    revalidateTacheViews(id, existing.projetId);
+    redirectWithOk(`/taches/${id}`, "responsable");
+  }
+
+  redirectWithError(`/taches/${id}`, "Action non reconnue.");
 }
 
 export async function deleteTache(formData: FormData) {
   const id = str(formData, "id");
-  if (!id) throw new Error("Identifiant tâche manquant.");
+  if (!id) redirectWithError("/taches", "Identifiant tâche manquant.");
 
   const existing = await prisma.tache.findUnique({ where: { id } });
-  if (!existing) throw new Error("Tâche introuvable.");
+  if (!existing) redirectWithError("/taches", "Tâche introuvable.");
 
   await prisma.tache.delete({ where: { id } });
 
   revalidateTacheViews(undefined, existing.projetId);
-  redirect("/taches");
+  redirect("/taches?ok=supprime");
 }

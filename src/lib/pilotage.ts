@@ -24,7 +24,7 @@ export async function getPilotageDashboard() {
     echeancesTaches,
     echeancesControles,
   ] = await Promise.all([
-    prisma.projet.count({ where: { statut: "EN_COURS" } }),
+    prisma.projet.count({ where: { statut: "EN_COURS", archive: false } }),
     prisma.tache.count({
       where: { statut: { notIn: [...TACHE_CLOSES] } },
     }),
@@ -120,6 +120,7 @@ export async function getPilotageDashboard() {
     }),
     prisma.projet.findMany({
       where: {
+        archive: false,
         dateEcheance: { not: null },
         statut: { notIn: ["TERMINE", "ANNULE"] },
       },

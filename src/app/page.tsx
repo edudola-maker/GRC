@@ -60,8 +60,9 @@ export default async function PilotagePage() {
       <header className="page-header">
         <h1>Pilotage</h1>
         <p>
-          Vue synthétique de l&apos;activité de l&apos;unité — projets, tâches et
-          contrôles SCI. Les données affichées sont des exemples de démonstration.
+          Vue synthétique de l&apos;activité de l&apos;unité — projets actifs,
+          tâches et contrôles SCI. Les indicateurs se mettent à jour
+          automatiquement à partir des données enregistrées.
         </p>
       </header>
 

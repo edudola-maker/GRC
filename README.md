@@ -5,18 +5,12 @@ Application web interne de pilotage pour une unité administrative.
 **Vision produit / feuille de route :** [ROADMAP.md](./ROADMAP.md)  
 **Ancrage architecture :** [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-## Module 1 (MVP actuel)
+## Sprint 1 — Socle utilisable au quotidien
 
-- **Pilotage** — tableau de bord (données réelles SQLite)
-- **Backlog** — tâches à traiter + filtres (vue d’action)
-- **Tâches** — CRUD des actions (dont catégorie Conseil — pont vers futur objet Conseil)
-- **Projets** — CRUD complet
-- **Contrôles SCI** — modèle prêt, UI placeholder
-
-## Prérequis
-
-- Node.js 20+
-- npm
+- **Projets** — créer, modifier, consulter, archiver / désarchiver, supprimer
+- **Tâches** — créer, modifier, supprimer, actions rapides (statut, priorité, responsable), échéance, projet optionnel, détection automatique des retards
+- **Pilotage** — indicateurs calculés uniquement sur les données SQLite réelles
+- **Backlog** — tâches ouvertes filtrables
 
 ## Démarrage local
 
@@ -38,6 +32,6 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 
 ## Notes
 
-- Les fichiers joints (preuves SCI) seront stockés hors base dans `uploads/`.
 - Sans authentification pour l’instant : le premier utilisateur actif sert d’auteur des créations/modifications.
-- Ne pas démarrer les modules Risques / Documents / Équipe / Audits / boîte de réception tant qu’ils ne sont pas explicitement demandés — la feuille de route les cadre déjà.
+- Les projets archivés sont exclus des listes actives et du tableau de bord ; ils restent consultables.
+- Ne pas démarrer les modules futurs (Risques, Documents, Équipe…) tant qu’ils ne sont pas demandés.

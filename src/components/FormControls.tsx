@@ -51,3 +51,35 @@ export function ConfirmDeleteButton({
     </form>
   );
 }
+
+export function ConfirmActionButton({
+  action,
+  id,
+  label,
+  confirmMessage,
+  variant = "ghost",
+  pendingLabel = "…",
+}: {
+  action: (formData: FormData) => void | Promise<void>;
+  id: string;
+  label: string;
+  confirmMessage: string;
+  variant?: "primary" | "ghost" | "danger";
+  pendingLabel?: string;
+}) {
+  return (
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (!window.confirm(confirmMessage)) {
+          e.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="id" value={id} />
+      <SubmitButton variant={variant} pendingLabel={pendingLabel}>
+        {label}
+      </SubmitButton>
+    </form>
+  );
+}

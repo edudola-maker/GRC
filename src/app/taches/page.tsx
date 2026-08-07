@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { FlashBanner } from "@/components/Flash";
 import {
   CATEGORIE_TACHE_LABELS,
   PRIORITE_LABELS,
@@ -15,7 +16,11 @@ export const dynamic = "force-dynamic";
 export default async function TachesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categorie?: string }>;
+  searchParams: Promise<{
+    categorie?: string;
+    ok?: string;
+    erreur?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const categorie = sp.categorie;
@@ -43,6 +48,8 @@ export default async function TachesPage({
           </>
         }
       />
+
+      <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
       <div className="filter-bar">
         <Link
@@ -90,7 +97,12 @@ export default async function TachesPage({
                     className={`entity-row entity-row--${urgence}`}
                   >
                     <div className="entity-row__main">
-                      <strong>{t.titre}</strong>
+                      <strong>
+                        {t.titre}
+                        {urgence === "retard" ? (
+                          <span className="tag tag--danger"> En retard</span>
+                        ) : null}
+                      </strong>
                       <span className="entity-row__meta">
                         {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
                         {t.responsable.nom}
