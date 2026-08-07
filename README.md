@@ -2,13 +2,16 @@
 
 Application web interne de pilotage pour une unité administrative.
 
-## Module 1 (MVP)
+**Vision produit / feuille de route :** [ROADMAP.md](./ROADMAP.md)  
+**Ancrage architecture :** [ARCHITECTURE.md](./ARCHITECTURE.md)
+
+## Module 1 (MVP actuel)
 
 - **Pilotage** — tableau de bord (données réelles SQLite)
-- **Backlog** — tâches à traiter + filtres
-- **Tâches** — CRUD complet (dont catégorie Conseil sans projet)
+- **Backlog** — tâches à traiter + filtres (vue d’action)
+- **Tâches** — CRUD des actions (dont catégorie Conseil — pont vers futur objet Conseil)
 - **Projets** — CRUD complet
-- **Contrôles SCI** — placeholder (prochaine étape)
+- **Contrôles SCI** — modèle prêt, UI placeholder
 
 ## Prérequis
 
@@ -36,5 +39,5 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 ## Notes
 
 - Les fichiers joints (preuves SCI) seront stockés hors base dans `uploads/`.
-- La vue **Équipe** et la personnalisation des listes (catégories, statuts) sont prévues dans l'architecture mais pas encore exposées.
-- Sans authentification pour l'instant : le premier utilisateur actif sert d'auteur des créations/modifications.
+- Sans authentification pour l’instant : le premier utilisateur actif sert d’auteur des créations/modifications.
+- Ne pas démarrer les modules Risques / Documents / Équipe / Audits / boîte de réception tant qu’ils ne sont pas explicitement demandés — la feuille de route les cadre déjà.

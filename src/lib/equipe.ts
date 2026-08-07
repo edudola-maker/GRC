@@ -1,17 +1,14 @@
 /**
  * Architecture réservée à la future vue « Équipe » (responsable d'unité).
- *
- * Ne pas exposer encore dans la navigation.
+ * Voir ROADMAP.md et ARCHITECTURE.md — ne pas exposer dans la navigation pour l'instant.
  *
  * Capacités prévues :
- * - vue par collaborateur : projets / tâches en cours, demandes Conseil,
- *   échéances, charge, retards
- * - suivi d'objectifs annuels (plus tard) :
- *   objectif, résultat attendu, réalisé, avancement, échéance
+ * - par collaborateur : projets, conseils, tâches, contrôles SCI, audits ;
+ * - charge approximative, échéances, éléments en retard ;
+ * - puis objectifs individuels (ObjectifAnnuel).
  *
- * Les données actuelles (Utilisateur, Projet, Tâche + categorie CONSEIL)
- * suffisent pour une première version sans nouveau modèle.
- * Un modèle ObjectifAnnuel pourra s'ajouter ensuite, relié à Utilisateur.
+ * MVP actuel : les « conseils » sont encore des tâches categorie=CONSEIL.
+ * Quand Conseil deviendra un objet métier, étendre ce snapshot (conseilsEnCours, etc.).
  */
 
 export type EquipeCollaborateurSnapshot = {
@@ -19,10 +16,13 @@ export type EquipeCollaborateurSnapshot = {
   nom: string;
   projetsEnCours: number;
   tachesEnCours: number;
+  /** Pont MVP : tâches categorie CONSEIL — remplacé par l'objet Conseil plus tard */
   demandesConseil: number;
+  controlesSCIEnCours?: number;
   elementsEnRetard: number;
+  chargeApproximative?: number;
   prochainesEcheances: Array<{
-    type: "projet" | "tache";
+    type: "projet" | "tache" | "conseil" | "controle_sci" | "audit" | "document";
     id: string;
     label: string;
     date: Date;

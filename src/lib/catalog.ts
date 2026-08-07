@@ -1,7 +1,13 @@
 /**
  * Catalogue de valeurs métier.
- * Centralisé ici pour pouvoir rendre ces listes configurables plus tard
- * (catégories, statuts, priorités personnalisées) sans changer toute l'UI.
+ *
+ * Centralisé pour pouvoir rendre ces listes configurables plus tard
+ * (catégories, statuts, priorités) sans changer toute l'UI.
+ *
+ * Vision produit (ROADMAP.md) :
+ * - les catégories de tâche actuelles sont un pont MVP ;
+ * - CONSEIL migrera vers un objet métier « Conseil » ;
+ * - les catégories de risques / documents / etc. s'ajouteront ici puis en base config.
  */
 
 export const CATEGORIE_TACHE_OPTIONS = [
@@ -11,6 +17,18 @@ export const CATEGORIE_TACHE_OPTIONS = [
   { value: "SCI", label: "SCI" },
   { value: "AUTRE", label: "Autre" },
 ] as const;
+
+/** Catégories risques — réservées au futur module (non utilisées en UI pour l'instant) */
+export const CATEGORIE_RISQUE_OPTIONS = [
+  { value: "FINANCIER", label: "Financier" },
+  { value: "OPERATIONNEL", label: "Opérationnel" },
+  { value: "CONFORMITE", label: "Conformité" },
+  { value: "CYBERSECURITE", label: "Cybersécurité" },
+  { value: "REPORTING", label: "Reporting" },
+] as const;
+
+/** Échelle matrice de criticité 5×5 (probabilité / impact) — futur module Risques */
+export const ECHELLE_RISQUE = [1, 2, 3, 4, 5] as const;
 
 export const STATUT_PROJET_OPTIONS = [
   { value: "A_FAIRE", label: "À faire" },

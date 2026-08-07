@@ -1,5 +1,11 @@
 // Schéma de données GRC — Module Pilotage & Monitoring (MVP)
 // SQLite pour le démarrage local ; migration PostgreSQL possible ultérieurement.
+//
+// Vision produit : ROADMAP.md + ARCHITECTURE.md
+// - Objets métier distincts (Projet, futur Conseil, ControleSCI, Document, futurs Risque/Audit)
+// - Tâche = action (libre ou générée depuis un objet métier), pas un métier en soi
+// - Tables de liaison métier plutôt qu'un polymorphe générique
+// - Ne pas implémenter les modules futurs tant qu'ils ne sont pas demandés
 
 generator client {
   provider     = "prisma-client"
@@ -53,7 +59,9 @@ enum FrequenceControle {
   PONCTUELLE
 }
 
-/// Catégories de tâche — liste fixe pour le MVP, destinée à devenir configurable.
+/// Catégories de tâche — pont MVP.
+/// CONSEIL : en attendant l'objet métier « Conseil » (voir ROADMAP.md).
+/// Liste destinée à devenir configurable / à évoluer après extraction des objets métier.
 enum CategorieTache {
   CONSEIL
   PROJET
@@ -163,7 +171,9 @@ model Tache {
   validePar   Utilisateur? @relation("TacheValideePar", fields: [valideParId], references: [id])
   historique  HistoriqueTache[]
 
-  // Extensions futures : lien Risque, Plan d'action, objectifs annuels (vue Équipe)…
+  // Origines futures (ne pas ajouter tant que non demandé) :
+  // conseilId, controleSCIId, auditId, revueDocumentId…
+  // Extensions : lien Risque, Plan d'action, objectifs (vue Équipe)…
 }
 
 model HistoriqueTache {
