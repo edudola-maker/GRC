@@ -238,3 +238,69 @@ export async function deleteJalon(formData: FormData) {
   revalidateProjetViews(jalon.projetId);
   redirectWithOk(`/projets/${jalon.projetId}`, "supprime");
 }
+
+export async function linkProjetDocument(formData: FormData) {
+  const projetId = str(formData, "projetId");
+  const documentId = str(formData, "documentId");
+  if (!projetId) redirectWithError("/projets", "Identifiant projet manquant.");
+  if (!documentId) {
+    redirectWithError(`/projets/${projetId}`, "Sélectionnez un document.");
+  }
+
+  const [projet, document] = await Promise.all([
+    prisma.projet.findUnique({ where: { id: projetId } }),
+    prisma.document.findUnique({ where: { id: documentId } }),
+  ]);
+  if (!projet) redirectWithError("/projets", "Projet introuvable.");
+  if (!document) {
+    redirectWithError(`/projets/${projetId}`, "Document introuvable.");
+  }
+
+  await prisma.projetDocument.upsert({
+    where: { projetId_documentId: { projetId, documentId } },
+    update: {},
+    create: { projetId, documentId },
+  });
+
+  revalidateProjetViews(projetId);
+  redirectWithOk(`/projets/${projetId}`, "lien");
+}
+
+export async function unlinkProjetDocument(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/projets", "Lien manquant.");
+  const link = await prisma.projetDocument.findUnique({ where: { id } });
+  if (!link) redirectWithError("/projets", "Lien introuvable.");
+  await prisma.projetDocument.delete({ where: { id } });
+  revalidateProjetViews(link.projetId);
+  redirectWithOk(`/projets/${link.projetId}`, "supprime");
+}
+
+export async function setProjetMembres(formData: FormData) {
+  const projetId = str(formData, "projetId");
+  if (!projetId) redirectWithError("/projets", "Identifiant projet manquant.");
+
+  const projet = await prisma.projet.findUnique({ where: { id: projetId } });
+  if (!projet) redirectWithError("/projets", "Projet introuvable.");
+
+  const membreIds = formData
+    .getAll("membreIds")
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  await prisma.$transaction([
+    prisma.projetMembre.deleteMany({ where: { projetId } }),
+    ...(membreIds.length > 0
+      ? [
+          prisma.projetMembre.createMany({
+            data: membreIds.map((utilisateurId) => ({
+              projetId,
+              utilisateurId,
+            })),
+          }),
+        ]
+      : []),
+  ]);
+
+  revalidateProjetViews(projetId);
+  redirectWithOk(`/projets/${projetId}`, "modifie");
+}

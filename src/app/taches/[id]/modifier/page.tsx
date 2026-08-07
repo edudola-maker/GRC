@@ -17,19 +17,39 @@ export default async function ModifierTachePage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const [tache, users, projets] = await Promise.all([
-    prisma.tache.findUnique({ where: { id } }),
-    listUtilisateursActifs(),
-    prisma.projet.findMany({
-      where: { archive: false, statut: { notIn: ["ANNULE"] } },
-      orderBy: { nom: "asc" },
-      select: { id: true, nom: true },
-    }),
-  ]);
+  const [tache, users, projets, conseils, controles, audits, documents] =
+    await Promise.all([
+      prisma.tache.findUnique({ where: { id } }),
+      listUtilisateursActifs(),
+      prisma.projet.findMany({
+        where: { archive: false, statut: { notIn: ["ANNULE"] } },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+      prisma.conseil.findMany({
+        where: { archive: false },
+        orderBy: { objet: "asc" },
+        select: { id: true, objet: true },
+      }),
+      prisma.controleSCI.findMany({
+        where: { archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+      prisma.audit.findMany({
+        where: { archive: false },
+        orderBy: { titre: "asc" },
+        select: { id: true, titre: true },
+      }),
+      prisma.document.findMany({
+        where: { archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+    ]);
 
   if (!tache) notFound();
 
-  // Si la tâche est liée à un projet archivé, l'inclure pour ne pas perdre le lien
   let projetsOptions = projets;
   if (tache.projetId && !projets.some((p) => p.id === tache.projetId)) {
     const linked = await prisma.projet.findUnique({
@@ -57,6 +77,10 @@ export default async function ModifierTachePage({
           action={updateTache}
           users={users}
           projets={projetsOptions}
+          conseils={conseils.map((c) => ({ id: c.id, nom: c.objet }))}
+          controles={controles}
+          audits={audits.map((a) => ({ id: a.id, nom: a.titre }))}
+          documents={documents}
           values={tache}
           cancelHref={`/taches/${tache.id}`}
           submitLabel="Enregistrer"

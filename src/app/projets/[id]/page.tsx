@@ -12,19 +12,24 @@ import {
   createJalon,
   deleteJalon,
   deleteProjet,
+  linkProjetDocument,
+  setProjetMembres,
   toggleJalon,
   unarchiveProjet,
+  unlinkProjetDocument,
 } from "../actions";
 import {
   CATEGORIE_TACHE_LABELS,
   PRIORITE_LABELS,
   STATUT_PROJET_LABELS,
   STATUT_TACHE_LABELS,
+  TYPE_DOCUMENT_LABELS,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { listUtilisateursActifs } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -37,21 +42,39 @@ export default async function ProjetDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const projet = await prisma.projet.findUnique({
-    where: { id },
-    include: {
-      responsable: true,
-      creePar: true,
-      modifiePar: true,
-      jalons: { orderBy: { dateEcheance: "asc" } },
-      taches: {
-        include: { responsable: true },
-        orderBy: { dateEcheance: "asc" },
+  const [projet, users, documentsDispo] = await Promise.all([
+    prisma.projet.findUnique({
+      where: { id },
+      include: {
+        responsable: true,
+        creePar: true,
+        modifiePar: true,
+        membres: { include: { utilisateur: true } },
+        jalons: { orderBy: { dateEcheance: "asc" } },
+        documents: {
+          include: { document: true },
+          orderBy: { creeLe: "desc" },
+        },
+        taches: {
+          include: { responsable: true },
+          orderBy: { dateEcheance: "asc" },
+        },
       },
-    },
-  });
+    }),
+    listUtilisateursActifs(),
+    prisma.document.findMany({
+      where: { archive: false },
+      orderBy: { nom: "asc" },
+      select: { id: true, nom: true, typeDocument: true },
+    }),
+  ]);
 
   if (!projet) notFound();
+
+  const membreIds = new Set(projet.membres.map((m) => m.utilisateurId));
+  const linkedDocIds = new Set(projet.documents.map((d) => d.documentId));
+  const docsDisponibles = documentsDispo.filter((d) => !linkedDocIds.has(d.id));
+  const jalonsAtteints = projet.jalons.filter((j) => j.atteint).length;
 
   return (
     <>
@@ -107,6 +130,27 @@ export default async function ProjetDetailPage({
         </div>
       ) : null}
 
+      <div className="stats" style={{ marginBottom: "1rem" }}>
+        <div className="stat">
+          <strong>{projet.avancement}%</strong>
+          Avancement
+        </div>
+        <div className="stat">
+          <strong>
+            {jalonsAtteints}/{projet.jalons.length}
+          </strong>
+          Jalons atteints
+        </div>
+        <div className="stat">
+          <strong>{projet.taches.length}</strong>
+          Tâches
+        </div>
+        <div className="stat">
+          <strong>{projet.membres.length + 1}</strong>
+          Équipe
+        </div>
+      </div>
+
       <div className="detail-grid">
         <div className="panel">
           <h2 className="panel-title">Informations</h2>
@@ -146,6 +190,57 @@ export default async function ProjetDetailPage({
         </div>
 
         <div className="panel">
+          <h2 className="panel-title">Équipe projet</h2>
+          <p className="muted" style={{ marginBottom: "0.65rem" }}>
+            Responsable : {projet.responsable.nom}. Cochez les membres
+            éventuels.
+          </p>
+          {!projet.archive ? (
+            <form action={setProjetMembres}>
+              <input type="hidden" name="projetId" value={projet.id} />
+              <ul className="check-list">
+                {users
+                  .filter((u) => u.id !== projet.responsableId)
+                  .map((u) => (
+                    <li key={u.id}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="membreIds"
+                          value={u.id}
+                          defaultChecked={membreIds.has(u.id)}
+                        />
+                        {u.nom}
+                      </label>
+                    </li>
+                  ))}
+              </ul>
+              <div className="form-actions" style={{ marginTop: "0.65rem" }}>
+                <SubmitButton>Enregistrer l&apos;équipe</SubmitButton>
+              </div>
+            </form>
+          ) : (
+            <ul className="entity-list">
+              {projet.membres.length === 0 ? (
+                <li>
+                  <p className="empty">Aucun membre additionnel.</p>
+                </li>
+              ) : (
+                projet.membres.map((m) => (
+                  <li key={m.id}>
+                    <span className="entity-row__main">
+                      <strong>{m.utilisateur.nom}</strong>
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="detail-grid" style={{ marginTop: "1rem" }}>
+        <div className="panel">
           <h2 className="panel-title">Jalons ({projet.jalons.length})</h2>
           {!projet.archive ? (
             <form action={createJalon} className="inline-form">
@@ -153,7 +248,12 @@ export default async function ProjetDetailPage({
               <div className="inline-form__row">
                 <label className="field" htmlFor="jalon-nom">
                   <span className="field__label">Nom *</span>
-                  <input id="jalon-nom" name="nom" required placeholder="Ex. Livraison V1" />
+                  <input
+                    id="jalon-nom"
+                    name="nom"
+                    required
+                    placeholder="Ex. Livraison V1"
+                  />
                 </label>
                 <label className="field" htmlFor="jalon-date">
                   <span className="field__label">Échéance</span>
@@ -195,6 +295,64 @@ export default async function ProjetDetailPage({
                       </form>
                     </div>
                   ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="panel">
+          <h2 className="panel-title">
+            Documents liés ({projet.documents.length})
+          </h2>
+          {!projet.archive && docsDisponibles.length > 0 ? (
+            <form action={linkProjetDocument} className="inline-form">
+              <input type="hidden" name="projetId" value={projet.id} />
+              <div className="inline-form__row">
+                <label className="field" htmlFor="documentId">
+                  <span className="field__label">Document</span>
+                  <select id="documentId" name="documentId" required defaultValue="">
+                    <option value="" disabled>
+                      Choisir…
+                    </option>
+                    {docsDisponibles.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.nom} ({TYPE_DOCUMENT_LABELS[d.typeDocument]})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <SubmitButton>Lier</SubmitButton>
+              </div>
+            </form>
+          ) : null}
+          {projet.documents.length === 0 ? (
+            <p className="empty">Aucun document lié.</p>
+          ) : (
+            <ul className="entity-list">
+              {projet.documents.map((link) => (
+                <li key={link.id}>
+                  <div className="entity-row">
+                    <div className="entity-row__main">
+                      <Link href={`/documents/${link.document.id}`}>
+                        <strong>{link.document.nom}</strong>
+                      </Link>
+                      <span className="entity-row__meta">
+                        {TYPE_DOCUMENT_LABELS[link.document.typeDocument]}
+                        {link.document.version
+                          ? ` · v${link.document.version}`
+                          : ""}
+                      </span>
+                    </div>
+                    {!projet.archive ? (
+                      <form action={unlinkProjetDocument}>
+                        <input type="hidden" name="id" value={link.id} />
+                        <SubmitButton variant="ghost" pendingLabel="…">
+                          Retirer
+                        </SubmitButton>
+                      </form>
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>

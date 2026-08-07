@@ -22,16 +22,37 @@ export default async function NouvelleTachePage({
   }>;
 }) {
   const sp = await searchParams;
-  const [users, projets] = await Promise.all([
-    listUtilisateursActifs(),
-    prisma.projet.findMany({
-      where: { archive: false, statut: { notIn: ["ANNULE"] } },
-      orderBy: { nom: "asc" },
-      select: { id: true, nom: true },
-    }),
-  ]);
+  const [users, projets, conseils, controles, audits, documents] =
+    await Promise.all([
+      listUtilisateursActifs(),
+      prisma.projet.findMany({
+        where: { archive: false, statut: { notIn: ["ANNULE"] } },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+      prisma.conseil.findMany({
+        where: { archive: false },
+        orderBy: { objet: "asc" },
+        select: { id: true, objet: true },
+      }),
+      prisma.controleSCI.findMany({
+        where: { archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+      prisma.audit.findMany({
+        where: { archive: false },
+        orderBy: { titre: "asc" },
+        select: { id: true, titre: true },
+      }),
+      prisma.document.findMany({
+        where: { archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+    ]);
 
-  let categorie =
+  const categorie =
     sp.categorie ??
     (sp.projetId
       ? "PROJET"
@@ -64,6 +85,10 @@ export default async function NouvelleTachePage({
           action={createTache}
           users={users}
           projets={projets}
+          conseils={conseils.map((c) => ({ id: c.id, nom: c.objet }))}
+          controles={controles}
+          audits={audits.map((a) => ({ id: a.id, nom: a.titre }))}
+          documents={documents}
           values={{
             projetId: sp.projetId ?? null,
             conseilId: sp.conseilId ?? null,
