@@ -2,6 +2,7 @@ import "dotenv/config";
 import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { addBusinessDays } from "../src/lib/dates";
 
 const databaseUrl = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
 const filePath = databaseUrl.startsWith("file:")
@@ -22,14 +23,24 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
-  console.log("🌱 Initialisation des données de démonstration…");
+  console.log("🌱 Seed squelette plateforme…");
 
-  // Nettoyage (ordre respectant les clés étrangères)
-  await prisma.controleDocument.deleteMany();
-  await prisma.document.deleteMany();
   await prisma.historiqueTache.deleteMany();
   await prisma.tache.deleteMany();
+  await prisma.recommandation.deleteMany();
+  await prisma.auditDocument.deleteMany();
+  await prisma.auditMembre.deleteMany();
+  await prisma.audit.deleteMany();
+  await prisma.risqueControle.deleteMany();
+  await prisma.risque.deleteMany();
+  await prisma.controleDocument.deleteMany();
   await prisma.controleSCI.deleteMany();
+  await prisma.projetDocument.deleteMany();
+  await prisma.jalon.deleteMany();
+  await prisma.projetMembre.deleteMany();
+  await prisma.conseil.deleteMany();
+  await prisma.document.deleteMany();
+  await prisma.objectifAnnuel.deleteMany();
   await prisma.projet.deleteMany();
   await prisma.utilisateur.deleteMany();
 
@@ -37,11 +48,9 @@ async function main() {
     data: {
       nom: "Alice Martin",
       email: "alice.martin@exemple.fr",
-      // Mot de passe de démo uniquement — authentification réelle plus tard
       motDePasse: "demo-hash-alice",
     },
   });
-
   const bernard = await prisma.utilisateur.create({
     data: {
       nom: "Bernard Dupont",
@@ -49,7 +58,6 @@ async function main() {
       motDePasse: "demo-hash-bernard",
     },
   });
-
   const claire = await prisma.utilisateur.create({
     data: {
       nom: "Claire Bernard",
@@ -58,27 +66,43 @@ async function main() {
     },
   });
 
-  const projetModernisation = await prisma.projet.create({
+  const projetMod = await prisma.projet.create({
     data: {
       nom: "Modernisation des procédures internes",
-      description:
-        "Revue et mise à jour du corpus procédural de l'unité administrative.",
+      description: "Revue du corpus procédural.",
       responsableId: alice.id,
       dateDebut: daysFromNow(-60),
       dateEcheance: daysFromNow(45),
       statut: "EN_COURS",
       priorite: "HAUTE",
       avancement: 55,
-      commentaires: "Avancement conforme au planning.",
       creeParId: alice.id,
       modifieParId: alice.id,
+      membres: {
+        create: [{ utilisateurId: bernard.id }, { utilisateurId: claire.id }],
+      },
+      jalons: {
+        create: [
+          {
+            nom: "Cartographie validée",
+            dateEcheance: daysFromNow(-10),
+            atteint: true,
+            dateAtteinte: daysFromNow(-12),
+          },
+          {
+            nom: "Diffusion procédures",
+            dateEcheance: daysFromNow(30),
+            atteint: false,
+          },
+        ],
+      },
     },
   });
 
-  const projetDigitalisation = await prisma.projet.create({
+  const projetDig = await prisma.projet.create({
     data: {
       nom: "Digitalisation du courrier entrant",
-      description: "Mise en place du circuit de dématérialisation du courrier.",
+      description: "Dématérialisation du circuit courrier.",
       responsableId: bernard.id,
       dateDebut: daysFromNow(-30),
       dateEcheance: daysFromNow(20),
@@ -93,7 +117,6 @@ async function main() {
   await prisma.projet.create({
     data: {
       nom: "Préparation du rapport annuel",
-      description: "Collecte des éléments pour le rapport d'activité.",
       responsableId: claire.id,
       dateDebut: daysFromNow(-10),
       dateEcheance: daysFromNow(90),
@@ -105,39 +128,55 @@ async function main() {
     },
   });
 
-  // Tâches — mélange : en retard, bientôt, à valider, ouvertes, conseil
-  const tacheRetard = await prisma.tache.create({
+  const reception = daysFromNow(-3);
+  const conseil = await prisma.conseil.create({
     data: {
-      titre: "Finaliser la cartographie des processus",
-      description: "Mettre à jour la cartographie pour le comité de direction.",
-      responsableId: alice.id,
-      projetId: projetModernisation.id,
-      dateEcheance: daysFromNow(-5),
+      objet: "Analyse du seuil de délégation",
+      description: "Demande d'avis juridique court.",
+      demandeur: "Service Achats",
+      entiteDemandeuse: "Direction des Achats",
+      dateReception: reception,
+      responsableId: claire.id,
+      dateEcheance: addBusinessDays(reception, 5),
       statut: "EN_COURS",
-      priorite: "CRITIQUE",
-      categorie: "PROJET",
-      commentaires: "Retard lié à la disponibilité des contributeurs.",
       creeParId: alice.id,
       modifieParId: alice.id,
     },
   });
 
-  await prisma.historiqueTache.create({
+  await prisma.tache.create({
     data: {
-      tacheId: tacheRetard.id,
+      titre: "Analyser la question du seuil de délégation",
+      responsableId: claire.id,
+      conseilId: conseil.id,
+      dateEcheance: conseil.dateEcheance,
+      statut: "A_FAIRE",
+      priorite: "MOYENNE",
+      categorie: "CONSEIL",
+      creeParId: alice.id,
       modifieParId: alice.id,
-      champModifie: "statut",
-      ancienneValeur: "A_FAIRE",
-      nouvelleValeur: "EN_COURS",
+    },
+  });
+
+  await prisma.tache.create({
+    data: {
+      titre: "Finaliser la cartographie des processus",
+      responsableId: alice.id,
+      projetId: projetMod.id,
+      dateEcheance: daysFromNow(-5),
+      statut: "EN_COURS",
+      priorite: "CRITIQUE",
+      categorie: "PROJET",
+      creeParId: alice.id,
+      modifieParId: alice.id,
     },
   });
 
   await prisma.tache.create({
     data: {
       titre: "Valider le plan de formation agents",
-      description: "Soumettre le plan au responsable d'unité.",
       responsableId: bernard.id,
-      projetId: projetModernisation.id,
+      projetId: projetMod.id,
       dateEcheance: daysFromNow(3),
       statut: "A_VALIDER",
       priorite: "HAUTE",
@@ -152,9 +191,8 @@ async function main() {
   await prisma.tache.create({
     data: {
       titre: "Configurer le scanner multifonction",
-      description: "Paramétrage et tests de numérisation.",
       responsableId: claire.id,
-      projetId: projetDigitalisation.id,
+      projetId: projetDig.id,
       dateEcheance: daysFromNow(7),
       statut: "EN_COURS",
       priorite: "MOYENNE",
@@ -164,75 +202,59 @@ async function main() {
     },
   });
 
-  await prisma.tache.create({
+  const risque = await prisma.risque.create({
     data: {
-      titre: "Rédiger la note de cadrage archivage",
-      description: "Note destinée au service archives.",
-      responsableId: alice.id,
-      dateEcheance: daysFromNow(14),
-      statut: "A_FAIRE",
-      priorite: "BASSE",
-      categorie: "ADMINISTRATIF",
-      creeParId: alice.id,
-      modifieParId: alice.id,
-    },
-  });
-
-  await prisma.tache.create({
-    data: {
-      titre: "Contrôler la qualité des scans de la semaine",
-      description: "Échantillon de 20 documents.",
+      nom: "Accès applicatifs non maîtrisés",
+      description: "Droits utilisateurs trop larges.",
+      processus: "Sécurité informatique",
       responsableId: bernard.id,
-      projetId: projetDigitalisation.id,
-      dateEcheance: daysFromNow(-2),
-      statut: "A_VALIDER",
-      priorite: "HAUTE",
-      categorie: "SCI",
-      soumisParId: bernard.id,
-      dateSoumission: daysFromNow(-2),
+      categorie: "CYBERSECURITE",
+      probabilite: 4,
+      impact: 4,
+      criticite: 16,
+      statut: "EN_TRAITEMENT",
       creeParId: bernard.id,
       modifieParId: bernard.id,
     },
   });
 
-  // Exemple « Conseil » : tâche indépendante, sans projet
-  await prisma.tache.create({
+  await prisma.risque.create({
     data: {
-      titre: "Analyser la question du seuil de délégation",
-      description:
-        "Demande d'une unité : rechercher le cadre applicable et proposer une réponse courte.",
-      responsableId: claire.id,
-      dateEcheance: daysFromNow(2),
-      statut: "A_FAIRE",
-      priorite: "MOYENNE",
-      categorie: "CONSEIL",
-      commentaires: "Demande reçue par téléphone — estimation 2 à 3 heures.",
+      nom: "Dépassement budgétaire engagements",
+      processus: "Finances",
+      responsableId: alice.id,
+      categorie: "FINANCIER",
+      probabilite: 3,
+      impact: 5,
+      criticite: 15,
+      statut: "IDENTIFIE",
       creeParId: alice.id,
       modifieParId: alice.id,
     },
   });
 
-  // Contrôles SCI
-  await prisma.controleSCI.create({
+  const controle = await prisma.controleSCI.create({
     data: {
       nom: "Revue mensuelle des accès applicatifs",
-      description: "Vérification des droits utilisateurs sur les applications métier.",
+      description: "Vérification des droits.",
       processusConcerne: "Sécurité informatique",
       responsableId: bernard.id,
       frequence: "MENSUELLE",
       dateDerniereRealisation: daysFromNow(-40),
       dateProchaineEcheance: daysFromNow(-5),
       statut: "EN_RETARD",
-      commentaires: "Échéance dépassée — à planifier en urgence.",
       creeParId: bernard.id,
       modifieParId: bernard.id,
     },
   });
 
+  await prisma.risqueControle.create({
+    data: { risqueId: risque.id, controleSCIId: controle.id },
+  });
+
   await prisma.controleSCI.create({
     data: {
       nom: "Contrôle trimestriel des engagements budgétaires",
-      description: "Rapprochement engagements / consommations.",
       processusConcerne: "Finances",
       responsableId: alice.id,
       frequence: "TRIMESTRIELLE",
@@ -244,10 +266,9 @@ async function main() {
     },
   });
 
-  const controleAValider = await prisma.controleSCI.create({
+  await prisma.controleSCI.create({
     data: {
       nom: "Vérification semestrielle du registre des délégations",
-      description: "Contrôle de cohérence et de validité des délégations de signature.",
       processusConcerne: "Gouvernance",
       responsableId: claire.id,
       frequence: "SEMESTRIELLE",
@@ -261,48 +282,138 @@ async function main() {
     },
   });
 
-  await prisma.controleSCI.create({
+  const doc = await prisma.document.create({
     data: {
-      nom: "Audit annuel de la piste d'audit comptable",
-      description: "Revue documentaire de la piste d'audit.",
-      processusConcerne: "Comptabilité",
+      nom: "Charte des délégations de signature",
+      typeDocument: "CHARTE",
+      version: "2.1",
       responsableId: alice.id,
-      frequence: "ANNUELLE",
-      dateDerniereRealisation: daysFromNow(-300),
-      dateProchaineEcheance: daysFromNow(60),
-      statut: "A_REALISER",
+      dateApprobation: daysFromNow(-200),
+      dateDerniereRevue: daysFromNow(-200),
+      frequenceRevue: "ANNUELLE",
+      prochaineRevue: daysFromNow(-10),
+      statut: "A_REVOIR",
+      reference: "DIR-DEL-2025",
       creeParId: alice.id,
       modifieParId: alice.id,
     },
   });
 
-  // Document de démonstration (métadonnées uniquement — pas de fichier réel à cette étape)
-  const preuve = await prisma.document.create({
+  await prisma.document.create({
     data: {
-      nomFichier: "preuve-delegations-S1.pdf",
-      nomStockage: "demo-preuve-delegations.pdf",
-      chemin: "uploads/preuves/demo-preuve-delegations.pdf",
-      typeMime: "application/pdf",
-      taille: 245760,
-      description: "Preuve de réalisation — registre des délégations",
+      nom: "Procédure de contrôle des accès",
+      typeDocument: "PROCEDURE",
+      version: "1.0",
+      responsableId: bernard.id,
+      dateApprobation: daysFromNow(-100),
+      frequenceRevue: "ANNUELLE",
+      prochaineRevue: daysFromNow(60),
+      statut: "EN_VIGUEUR",
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+
+  await prisma.tache.create({
+    data: {
+      titre: "Revue annuelle — Charte des délégations",
+      responsableId: alice.id,
+      documentId: doc.id,
+      dateEcheance: daysFromNow(-10),
+      statut: "A_FAIRE",
+      priorite: "HAUTE",
+      categorie: "DOCUMENT",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+
+  const audit = await prisma.audit.create({
+    data: {
+      titre: "Audit interne — processus Achats",
+      perimetre: "Cycle Achats 2026",
+      responsableId: alice.id,
+      dateDebut: daysFromNow(-20),
+      dateFin: daysFromNow(40),
+      statut: "EN_COURS",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+      membres: { create: [{ utilisateurId: bernard.id }] },
+    },
+  });
+
+  const reco = await prisma.recommandation.create({
+    data: {
+      auditId: audit.id,
+      titre: "Formaliser le contrôle a posteriori des bons de commande",
+      description: "Mettre en place un échantillon mensuel.",
+      responsableId: bernard.id,
+      dateEcheance: daysFromNow(25),
+      statut: "OUVERTE",
+    },
+  });
+
+  await prisma.tache.create({
+    data: {
+      titre: "Mettre en place l'échantillon mensuel BDC",
+      responsableId: bernard.id,
+      auditId: audit.id,
+      recommandationId: reco.id,
+      dateEcheance: daysFromNow(25),
+      statut: "A_FAIRE",
+      priorite: "HAUTE",
+      categorie: "AUDIT",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+
+  await prisma.audit.create({
+    data: {
+      titre: "Revue qualité — Paie",
+      perimetre: "Processus Paie",
+      responsableId: claire.id,
+      dateDebut: daysFromNow(60),
+      dateFin: daysFromNow(90),
+      statut: "PLANIFIE",
       creeParId: claire.id,
+      modifieParId: claire.id,
     },
   });
 
-  await prisma.controleDocument.create({
-    data: {
-      controleSCIId: controleAValider.id,
-      documentId: preuve.id,
-      typeLien: "preuve",
-    },
+  await prisma.objectifAnnuel.createMany({
+    data: [
+      {
+        utilisateurId: alice.id,
+        annee: 2026,
+        objectif: "Clôturer 4 missions d'audit",
+        attenduAnnuel: "4 missions",
+        realiseADate: "1 en cours",
+        progression: 25,
+        dateEcheance: daysFromNow(120),
+      },
+      {
+        utilisateurId: bernard.id,
+        annee: 2026,
+        objectif: "Taux de réalisation contrôles SCI ≥ 95 %",
+        attenduAnnuel: "95 %",
+        realiseADate: "70 %",
+        progression: 70,
+        dateEcheance: daysFromNow(120),
+      },
+      {
+        utilisateurId: claire.id,
+        annee: 2026,
+        objectif: "Respect du délai 5 j. sur les conseils",
+        attenduAnnuel: "≥ 90 %",
+        realiseADate: "En cours",
+        progression: 40,
+        dateEcheance: daysFromNow(120),
+      },
+    ],
   });
 
-  console.log("✅ Données de démonstration créées.");
-  console.log(`   Utilisateurs : 3`);
-  console.log(`   Projets      : 3`);
-  console.log(`   Tâches       : 6 (dont 1 Conseil sans projet)`);
-  console.log(`   Contrôles SCI: 4`);
-  console.log(`   Documents    : 1 (métadonnées)`);
+  console.log("✅ Seed terminé (utilisateurs, projets, conseils, SCI, risques, documents, audits, objectifs).");
 }
 
 main()

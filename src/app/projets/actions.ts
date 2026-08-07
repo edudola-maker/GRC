@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import {
@@ -9,20 +8,18 @@ import {
 } from "@/lib/catalog";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
+import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
 
 const STATUTS = new Set<string>(STATUT_PROJET_OPTIONS.map((o) => o.value));
 const PRIORITES = new Set<string>(PRIORITE_OPTIONS.map((o) => o.value));
 
 function revalidateProjetViews(id?: string) {
-  revalidatePath("/");
-  revalidatePath("/projets");
-  revalidatePath("/backlog");
-  revalidatePath("/taches");
+  const extra: string[] = [];
   if (id) {
-    revalidatePath(`/projets/${id}`);
-    revalidatePath(`/projets/${id}/modifier`);
+    extra.push(`/projets/${id}`, `/projets/${id}/modifier`);
   }
+  revalidateApp(extra);
 }
 
 async function assertResponsable(id: string) {
@@ -181,4 +178,63 @@ export async function deleteProjet(formData: FormData) {
 
   revalidateProjetViews();
   redirect("/projets?ok=supprime");
+}
+
+export async function createJalon(formData: FormData) {
+  const projetId = str(formData, "projetId");
+  if (!projetId) redirectWithError("/projets", "Identifiant projet manquant.");
+
+  const projet = await prisma.projet.findUnique({ where: { id: projetId } });
+  if (!projet) redirectWithError("/projets", "Projet introuvable.");
+  if (projet.archive) {
+    redirectWithError(`/projets/${projetId}`, "Projet archivé.");
+  }
+
+  const nom = str(formData, "nom");
+  if (!nom) {
+    redirectWithError(`/projets/${projetId}`, "Le nom du jalon est obligatoire.");
+  }
+
+  await prisma.jalon.create({
+    data: {
+      projetId,
+      nom,
+      dateEcheance: optDate(formData, "dateEcheance"),
+    },
+  });
+
+  revalidateProjetViews(projetId);
+  redirectWithOk(`/projets/${projetId}`, "jalon");
+}
+
+export async function toggleJalon(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/projets", "Identifiant jalon manquant.");
+
+  const jalon = await prisma.jalon.findUnique({ where: { id } });
+  if (!jalon) redirectWithError("/projets", "Jalon introuvable.");
+
+  const atteint = !jalon.atteint;
+  await prisma.jalon.update({
+    where: { id },
+    data: {
+      atteint,
+      dateAtteinte: atteint ? new Date() : null,
+    },
+  });
+
+  revalidateProjetViews(jalon.projetId);
+  redirectWithOk(`/projets/${jalon.projetId}`, "jalon");
+}
+
+export async function deleteJalon(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/projets", "Identifiant jalon manquant.");
+
+  const jalon = await prisma.jalon.findUnique({ where: { id } });
+  if (!jalon) redirectWithError("/projets", "Jalon introuvable.");
+
+  await prisma.jalon.delete({ where: { id } });
+  revalidateProjetViews(jalon.projetId);
+  redirectWithOk(`/projets/${jalon.projetId}`, "supprime");
 }

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import {
@@ -10,22 +9,35 @@ import {
 } from "@/lib/catalog";
 import { optDate, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
+import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
 
 const STATUTS = new Set<string>(STATUT_TACHE_OPTIONS.map((o) => o.value));
 const PRIORITES = new Set<string>(PRIORITE_OPTIONS.map((o) => o.value));
 const CATEGORIES = new Set<string>(CATEGORIE_TACHE_OPTIONS.map((o) => o.value));
 
-function revalidateTacheViews(id?: string, projetId?: string | null) {
-  revalidatePath("/");
-  revalidatePath("/taches");
-  revalidatePath("/backlog");
-  revalidatePath("/projets");
+function revalidateTacheViews(
+  id?: string,
+  links?: {
+    projetId?: string | null;
+    conseilId?: string | null;
+    controleSCIId?: string | null;
+    auditId?: string | null;
+    documentId?: string | null;
+  },
+) {
+  const extra: string[] = [];
   if (id) {
-    revalidatePath(`/taches/${id}`);
-    revalidatePath(`/taches/${id}/modifier`);
+    extra.push(`/taches/${id}`, `/taches/${id}/modifier`);
   }
-  if (projetId) revalidatePath(`/projets/${projetId}`);
+  if (links?.projetId) extra.push(`/projets/${links.projetId}`);
+  if (links?.conseilId) extra.push(`/conseils/${links.conseilId}`);
+  if (links?.controleSCIId) {
+    extra.push(`/controles-sci/${links.controleSCIId}`);
+  }
+  if (links?.auditId) extra.push(`/audits/${links.auditId}`);
+  if (links?.documentId) extra.push(`/documents/${links.documentId}`);
+  revalidateApp(extra);
 }
 
 async function recordHistory(
@@ -56,6 +68,54 @@ async function assertProjetOptional(projetId: string | null) {
     where: { id: projetId, archive: false },
   });
   return Boolean(projet);
+}
+
+async function assertOptionalLinks(links: {
+  conseilId: string | null;
+  controleSCIId: string | null;
+  auditId: string | null;
+  documentId: string | null;
+  recommandationId: string | null;
+}) {
+  if (links.conseilId) {
+    const c = await prisma.conseil.findUnique({
+      where: { id: links.conseilId },
+    });
+    if (!c) return "Conseil lié introuvable.";
+  }
+  if (links.controleSCIId) {
+    const c = await prisma.controleSCI.findUnique({
+      where: { id: links.controleSCIId },
+    });
+    if (!c) return "Contrôle SCI lié introuvable.";
+  }
+  if (links.auditId) {
+    const a = await prisma.audit.findUnique({ where: { id: links.auditId } });
+    if (!a) return "Audit lié introuvable.";
+  }
+  if (links.documentId) {
+    const d = await prisma.document.findUnique({
+      where: { id: links.documentId },
+    });
+    if (!d) return "Document lié introuvable.";
+  }
+  if (links.recommandationId) {
+    const r = await prisma.recommandation.findUnique({
+      where: { id: links.recommandationId },
+    });
+    if (!r) return "Recommandation liée introuvable.";
+  }
+  return null;
+}
+
+function readLinks(formData: FormData) {
+  return {
+    conseilId: optStr(formData, "conseilId"),
+    controleSCIId: optStr(formData, "controleSCIId"),
+    auditId: optStr(formData, "auditId"),
+    documentId: optStr(formData, "documentId"),
+    recommandationId: optStr(formData, "recommandationId"),
+  };
 }
 
 function validationPatchForStatut(
@@ -112,6 +172,10 @@ export async function createTache(formData: FormData) {
     );
   }
 
+  const links = readLinks(formData);
+  const linkError = await assertOptionalLinks(links);
+  if (linkError) redirectWithError(fallback, linkError);
+
   const dateEcheance = optDate(formData, "dateEcheance");
 
   const tache = await prisma.tache.create({
@@ -120,6 +184,7 @@ export async function createTache(formData: FormData) {
       description: optStr(formData, "description"),
       responsableId,
       projetId,
+      ...links,
       dateEcheance,
       statut: statut as "A_FAIRE",
       priorite: priorite as "MOYENNE",
@@ -131,7 +196,7 @@ export async function createTache(formData: FormData) {
     },
   });
 
-  revalidateTacheViews(tache.id, projetId);
+  revalidateTacheViews(tache.id, { projetId, ...links });
   redirectWithOk(`/taches/${tache.id}`, "cree");
 }
 
@@ -167,7 +232,6 @@ export async function updateTache(formData: FormData) {
   }
 
   const projetId = optStr(formData, "projetId");
-  // Autoriser de conserver un projet déjà lié même s'il est archivé
   if (projetId && projetId !== existing.projetId) {
     if (!(await assertProjetOptional(projetId))) {
       redirectWithError(
@@ -175,6 +239,12 @@ export async function updateTache(formData: FormData) {
         "Projet introuvable ou archivé.",
       );
     }
+  }
+
+  const links = readLinks(formData);
+  const linkError = await assertOptionalLinks(links);
+  if (linkError) {
+    redirectWithError(`/taches/${id}/modifier`, linkError);
   }
 
   const dateEcheance = optDate(formData, "dateEcheance");
@@ -186,6 +256,7 @@ export async function updateTache(formData: FormData) {
       description: optStr(formData, "description"),
       responsableId,
       projetId,
+      ...links,
       dateEcheance,
       statut: statut as "A_FAIRE",
       priorite: priorite as "MOYENNE",
@@ -229,11 +300,16 @@ export async function updateTache(formData: FormData) {
     },
   ]);
 
-  revalidateTacheViews(id, projetId ?? existing.projetId);
+  revalidateTacheViews(id, {
+    projetId: projetId ?? existing.projetId,
+    conseilId: links.conseilId ?? existing.conseilId,
+    controleSCIId: links.controleSCIId ?? existing.controleSCIId,
+    auditId: links.auditId ?? existing.auditId,
+    documentId: links.documentId ?? existing.documentId,
+  });
   redirectWithOk(`/taches/${id}`, "modifie");
 }
 
-/** Mise à jour rapide depuis la fiche tâche (statut / priorité / responsable) */
 export async function updateTacheRapide(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
@@ -260,7 +336,7 @@ export async function updateTacheRapide(formData: FormData) {
     await recordHistory(id, current.id, [
       { champ: "statut", avant: existing.statut, apres: valeur },
     ]);
-    revalidateTacheViews(id, existing.projetId);
+    revalidateTacheViews(id, existing);
     redirectWithOk(`/taches/${id}`, "statut");
   }
 
@@ -278,7 +354,7 @@ export async function updateTacheRapide(formData: FormData) {
     await recordHistory(id, current.id, [
       { champ: "priorite", avant: existing.priorite, apres: valeur },
     ]);
-    revalidateTacheViews(id, existing.projetId);
+    revalidateTacheViews(id, existing);
     redirectWithOk(`/taches/${id}`, "priorite");
   }
 
@@ -304,7 +380,7 @@ export async function updateTacheRapide(formData: FormData) {
         apres: apresUser?.nom ?? valeur,
       },
     ]);
-    revalidateTacheViews(id, existing.projetId);
+    revalidateTacheViews(id, existing);
     redirectWithOk(`/taches/${id}`, "responsable");
   }
 
@@ -320,6 +396,6 @@ export async function deleteTache(formData: FormData) {
 
   await prisma.tache.delete({ where: { id } });
 
-  revalidateTacheViews(undefined, existing.projetId);
+  revalidateTacheViews(undefined, existing);
   redirect("/taches?ok=supprime");
 }

@@ -1,0 +1,41 @@
+import { ConseilForm } from "@/components/EntityForms";
+import { FlashBanner, BackLink } from "@/components/Flash";
+import { PageHeader } from "@/components/ui";
+import { CONSEIL_DELAI_CIBLE_JOURS } from "@/lib/catalog";
+import { addBusinessDays } from "@/lib/dates";
+import { listUtilisateursActifs } from "@/lib/session";
+import { createConseil } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function NouveauConseilPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erreur?: string }>;
+}) {
+  const sp = await searchParams;
+  const users = await listUtilisateursActifs();
+  const today = new Date();
+  const echeance = addBusinessDays(today, CONSEIL_DELAI_CIBLE_JOURS);
+
+  return (
+    <>
+      <BackLink href="/conseils" label="← Retour aux conseils" />
+      <PageHeader
+        title="Nouveau conseil"
+        description="Demande ponctuelle — échéance par défaut à 5 jours ouvrés."
+      />
+      <FlashBanner erreur={sp.erreur} />
+      <div className="panel">
+        <ConseilForm
+          action={createConseil}
+          users={users}
+          values={{ dateReception: today, dateEcheance: echeance }}
+          cancelHref="/conseils"
+          submitLabel="Créer le conseil"
+          showCreerTache
+        />
+      </div>
+    </>
+  );
+}

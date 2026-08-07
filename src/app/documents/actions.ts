@@ -1,0 +1,242 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
+import {
+  FREQUENCE_REVUE_OPTIONS,
+  STATUT_DOCUMENT_OPTIONS,
+  TYPE_DOCUMENT_OPTIONS,
+} from "@/lib/catalog";
+import { nextRevueDate } from "@/lib/dates";
+import { optDate, optStr, str } from "@/lib/form";
+import { addDays, startOfToday } from "@/lib/labels";
+import { prisma } from "@/lib/prisma";
+import { revalidateApp } from "@/lib/revalidate";
+import { getCurrentUser } from "@/lib/session";
+
+const TYPES = new Set<string>(TYPE_DOCUMENT_OPTIONS.map((o) => o.value));
+const STATUTS = new Set<string>(STATUT_DOCUMENT_OPTIONS.map((o) => o.value));
+const FREQUENCES = new Set<string>(
+  FREQUENCE_REVUE_OPTIONS.map((o) => o.value),
+);
+
+async function assertResponsable(id: string) {
+  return prisma.utilisateur.findFirst({ where: { id, actif: true } });
+}
+
+function resolveProchaineRevue(
+  formData: FormData,
+  dateDerniereRevue: Date | null,
+  frequenceRevue: string | null,
+): Date | null {
+  if (str(formData, "prochaineRevue")) {
+    return optDate(formData, "prochaineRevue");
+  }
+  if (dateDerniereRevue && frequenceRevue) {
+    return nextRevueDate(dateDerniereRevue, frequenceRevue);
+  }
+  return null;
+}
+
+export async function createDocument(formData: FormData) {
+  const current = await getCurrentUser();
+  const fallback = "/documents/nouveau";
+  const nom = str(formData, "nom");
+  if (!nom) {
+    redirectWithError(fallback, "Le nom du document est obligatoire.");
+  }
+
+  const typeDocument = str(formData, "typeDocument") || "AUTRE";
+  const statut = str(formData, "statut") || "BROUILLON";
+  if (!TYPES.has(typeDocument) || !STATUTS.has(statut)) {
+    redirectWithError(fallback, "Type ou statut invalide.");
+  }
+
+  const frequenceRevue = optStr(formData, "frequenceRevue");
+  if (frequenceRevue && !FREQUENCES.has(frequenceRevue)) {
+    redirectWithError(fallback, "Fréquence de revue invalide.");
+  }
+
+  const responsableId = optStr(formData, "responsableId");
+  if (responsableId && !(await assertResponsable(responsableId))) {
+    redirectWithError(fallback, "Responsable introuvable.");
+  }
+
+  const dateDerniereRevue = optDate(formData, "dateDerniereRevue");
+  const prochaineRevue = resolveProchaineRevue(
+    formData,
+    dateDerniereRevue,
+    frequenceRevue,
+  );
+
+  const document = await prisma.document.create({
+    data: {
+      nom,
+      typeDocument: typeDocument as "AUTRE",
+      version: optStr(formData, "version"),
+      responsableId,
+      dateApprobation: optDate(formData, "dateApprobation"),
+      dateDerniereRevue,
+      frequenceRevue: frequenceRevue as "ANNUELLE" | null,
+      prochaineRevue,
+      statut: statut as "BROUILLON",
+      description: optStr(formData, "description"),
+      reference: optStr(formData, "reference"),
+      nomFichier: optStr(formData, "nomFichier"),
+      archive: false,
+      creeParId: current.id,
+      modifieParId: current.id,
+    },
+  });
+
+  revalidateApp([`/documents/${document.id}`]);
+  redirectWithOk(`/documents/${document.id}`, "cree");
+}
+
+export async function updateDocument(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/documents", "Identifiant document manquant.");
+
+  const existing = await prisma.document.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/documents", "Document introuvable.");
+
+  const nom = str(formData, "nom");
+  if (!nom) {
+    redirectWithError(
+      `/documents/${id}/modifier`,
+      "Le nom du document est obligatoire.",
+    );
+  }
+
+  const typeDocument = str(formData, "typeDocument") || "AUTRE";
+  const statut = str(formData, "statut") || "BROUILLON";
+  if (!TYPES.has(typeDocument) || !STATUTS.has(statut)) {
+    redirectWithError(`/documents/${id}/modifier`, "Type ou statut invalide.");
+  }
+
+  const frequenceRevue = optStr(formData, "frequenceRevue");
+  if (frequenceRevue && !FREQUENCES.has(frequenceRevue)) {
+    redirectWithError(
+      `/documents/${id}/modifier`,
+      "Fréquence de revue invalide.",
+    );
+  }
+
+  const responsableId = optStr(formData, "responsableId");
+  if (responsableId && !(await assertResponsable(responsableId))) {
+    redirectWithError(
+      `/documents/${id}/modifier`,
+      "Responsable introuvable.",
+    );
+  }
+
+  const dateDerniereRevue = optDate(formData, "dateDerniereRevue");
+  const prochaineRevue = resolveProchaineRevue(
+    formData,
+    dateDerniereRevue,
+    frequenceRevue,
+  );
+
+  await prisma.document.update({
+    where: { id },
+    data: {
+      nom,
+      typeDocument: typeDocument as "AUTRE",
+      version: optStr(formData, "version"),
+      responsableId,
+      dateApprobation: optDate(formData, "dateApprobation"),
+      dateDerniereRevue,
+      frequenceRevue: frequenceRevue as "ANNUELLE" | null,
+      prochaineRevue,
+      statut: statut as "BROUILLON",
+      description: optStr(formData, "description"),
+      reference: optStr(formData, "reference"),
+      nomFichier: optStr(formData, "nomFichier"),
+      modifieParId: current.id,
+    },
+  });
+
+  revalidateApp([`/documents/${id}`, `/documents/${id}/modifier`]);
+  redirectWithOk(`/documents/${id}`, "modifie");
+}
+
+export async function archiveDocument(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/documents", "Identifiant document manquant.");
+
+  const existing = await prisma.document.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/documents", "Document introuvable.");
+
+  await prisma.document.update({
+    where: { id },
+    data: { archive: true, modifieParId: current.id },
+  });
+
+  revalidateApp([`/documents/${id}`]);
+  redirectWithOk(`/documents/${id}`, "archive");
+}
+
+export async function unarchiveDocument(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/documents", "Identifiant document manquant.");
+
+  const existing = await prisma.document.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/documents", "Document introuvable.");
+
+  await prisma.document.update({
+    where: { id },
+    data: { archive: false, modifieParId: current.id },
+  });
+
+  revalidateApp([`/documents/${id}`]);
+  redirectWithOk(`/documents/${id}`, "desarchive");
+}
+
+export async function deleteDocument(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/documents", "Identifiant document manquant.");
+
+  const existing = await prisma.document.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/documents", "Document introuvable.");
+
+  await prisma.document.delete({ where: { id } });
+  revalidateApp();
+  redirect("/documents?ok=supprime");
+}
+
+export async function creerTacheRevue(formData: FormData) {
+  const current = await getCurrentUser();
+  const documentId = str(formData, "documentId") || str(formData, "id");
+  if (!documentId) {
+    redirectWithError("/documents", "Identifiant document manquant.");
+  }
+
+  const document = await prisma.document.findUnique({
+    where: { id: documentId },
+  });
+  if (!document) redirectWithError("/documents", "Document introuvable.");
+
+  const echeance =
+    document.prochaineRevue ?? addDays(startOfToday(), 30);
+
+  const tache = await prisma.tache.create({
+    data: {
+      titre: `Revue : ${document.nom}`,
+      description: document.description,
+      responsableId: document.responsableId ?? current.id,
+      documentId: document.id,
+      dateEcheance: echeance,
+      statut: "A_FAIRE",
+      priorite: "MOYENNE",
+      categorie: "DOCUMENT",
+      creeParId: current.id,
+      modifieParId: current.id,
+    },
+  });
+
+  revalidateApp([`/documents/${document.id}`, `/taches/${tache.id}`]);
+  redirectWithOk(`/taches/${tache.id}`, "tache");
+}

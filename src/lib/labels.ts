@@ -25,6 +25,71 @@ export const STATUT_CONTROLE_LABELS: Record<string, string> = {
   EN_RETARD: "En retard",
 };
 
+export const STATUT_CONSEIL_LABELS: Record<string, string> = {
+  RECU: "Reçu",
+  EN_COURS: "En cours",
+  EN_ATTENTE: "En attente",
+  REPONDU: "Répondu",
+  CLOTURE: "Clôturé",
+  ANNULE: "Annulé",
+};
+
+export const STATUT_RISQUE_LABELS: Record<string, string> = {
+  IDENTIFIE: "Identifié",
+  EN_EVALUATION: "En évaluation",
+  EN_TRAITEMENT: "En traitement",
+  MAITRISE: "Maîtrisé",
+  ACCEPTE: "Accepté",
+  CLOTURE: "Clôturé",
+};
+
+export const CATEGORIE_RISQUE_LABELS: Record<string, string> = {
+  FINANCIER: "Financier",
+  OPERATIONNEL: "Opérationnel",
+  CONFORMITE: "Conformité",
+  CYBERSECURITE: "Cybersécurité",
+  REPORTING: "Reporting",
+};
+
+export const TYPE_DOCUMENT_LABELS: Record<string, string> = {
+  DIRECTIVE: "Directive",
+  PROCEDURE: "Procédure",
+  CHARTE: "Charte",
+  POLITIQUE: "Politique",
+  MODELE: "Modèle",
+  AUTRE: "Autre",
+};
+
+export const STATUT_DOCUMENT_LABELS: Record<string, string> = {
+  BROUILLON: "Brouillon",
+  EN_VIGUEUR: "En vigueur",
+  A_REVOIR: "À revoir",
+  OBSOLETE: "Obsolète",
+  ARCHIVE: "Archivé",
+};
+
+export const FREQUENCE_REVUE_LABELS: Record<string, string> = {
+  ANNUELLE: "Annuelle",
+  BIANNUELLE: "Tous les 2 ans",
+  TRIENNALE: "Tous les 3 ans",
+  PONCTUELLE: "Ponctuelle",
+};
+
+export const STATUT_AUDIT_LABELS: Record<string, string> = {
+  PLANIFIE: "Planifié",
+  EN_COURS: "En cours",
+  EN_REVUE: "En revue",
+  TERMINE: "Terminé",
+  ANNULE: "Annulé",
+};
+
+export const STATUT_RECO_LABELS: Record<string, string> = {
+  OUVERTE: "Ouverte",
+  EN_COURS: "En cours",
+  CLOTUREE: "Clôturée",
+  ANNULEE: "Annulée",
+};
+
 export const PRIORITE_LABELS: Record<string, string> = {
   BASSE: "Basse",
   MOYENNE: "Moyenne",
@@ -45,6 +110,8 @@ export const CATEGORIE_TACHE_LABELS: Record<string, string> = {
   PROJET: "Projet",
   ADMINISTRATIF: "Administratif",
   SCI: "SCI",
+  AUDIT: "Audit",
+  DOCUMENT: "Document",
   AUTRE: "Autre",
 };
 
@@ -58,7 +125,6 @@ export function formatDate(date: Date | string | null | undefined): string {
   });
 }
 
-/** Seuil « bientôt » en jours */
 export const SOON_DAYS = 7;
 
 export function startOfToday(): Date {
@@ -86,4 +152,11 @@ export function urgenceEcheance(
   if (echeance < today) return "retard";
   if (echeance <= addDays(today, SOON_DAYS)) return "bientot";
   return "a_venir";
+}
+
+export function criticiteNiveau(criticite: number): "faible" | "modere" | "eleve" | "critique" {
+  if (criticite >= 20) return "critique";
+  if (criticite >= 12) return "eleve";
+  if (criticite >= 6) return "modere";
+  return "faible";
 }

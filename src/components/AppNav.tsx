@@ -8,7 +8,12 @@ const NAV_ITEMS = [
   { href: "/backlog", label: "Backlog", icon: "☰" },
   { href: "/taches", label: "Tâches", icon: "✓" },
   { href: "/projets", label: "Projets", icon: "▦" },
+  { href: "/conseils", label: "Conseils", icon: "💬" },
   { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
+  { href: "/risques", label: "Risques", icon: "⚠" },
+  { href: "/documents", label: "Documents", icon: "▤" },
+  { href: "/audits", label: "Audits", icon: "◉" },
+  { href: "/equipe", label: "Équipe", icon: "◎" },
 ] as const;
 
 export function AppNav() {
@@ -45,7 +50,7 @@ export function AppNav() {
         })}
       </nav>
 
-      <p className="app-nav__footnote">MVP — Module 1</p>
+      <p className="app-nav__footnote">Squelette plateforme</p>
     </aside>
   );
 }

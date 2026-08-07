@@ -61,6 +61,11 @@ export default async function TacheDetailPage({
       include: {
         responsable: true,
         projet: true,
+        conseil: true,
+        controleSCI: true,
+        audit: true,
+        document: true,
+        recommandation: true,
         creePar: true,
         modifiePar: true,
         soumisPar: true,
@@ -131,10 +136,56 @@ export default async function TacheDetailPage({
                     {tache.projet.archive ? " (archivé)" : ""}
                   </Link>
                 ) : (
-                  "Indépendante"
+                  "—"
                 )}
               </dd>
             </div>
+            {tache.conseil ? (
+              <div>
+                <dt>Conseil</dt>
+                <dd>
+                  <Link href={`/conseils/${tache.conseil.id}`}>
+                    {tache.conseil.objet}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {tache.controleSCI ? (
+              <div>
+                <dt>Contrôle SCI</dt>
+                <dd>
+                  <Link href={`/controles-sci/${tache.controleSCI.id}`}>
+                    {tache.controleSCI.nom}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {tache.audit ? (
+              <div>
+                <dt>Audit</dt>
+                <dd>
+                  <Link href={`/audits/${tache.audit.id}`}>
+                    {tache.audit.titre}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {tache.document ? (
+              <div>
+                <dt>Document</dt>
+                <dd>
+                  <Link href={`/documents/${tache.document.id}`}>
+                    {tache.document.nom}
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+            {tache.recommandation ? (
+              <div>
+                <dt>Recommandation</dt>
+                <dd>{tache.recommandation.titre}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_TACHE_LABELS[tache.statut]}</dd>

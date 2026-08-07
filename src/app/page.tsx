@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   CATEGORIE_TACHE_LABELS,
-  FREQUENCE_LABELS,
   PRIORITE_LABELS,
   formatDate,
 } from "@/lib/labels";
@@ -13,107 +12,98 @@ function Stat({
   label,
   value,
   tone,
+  suffix,
 }: {
   label: string;
-  value: number;
+  value: number | string | null;
   tone?: "warn" | "danger" | "info";
+  suffix?: string;
 }) {
   return (
     <div className={`stat${tone ? ` stat--${tone}` : ""}`}>
       <span className="stat__label">{label}</span>
-      <span className="stat__value">{value}</span>
+      <span className="stat__value">
+        {value ?? "—"}
+        {suffix && value != null ? (
+          <span className="stat__suffix">{suffix}</span>
+        ) : null}
+      </span>
     </div>
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return <p className="empty">{text}</p>;
-}
-
 export default async function PilotagePage() {
   const data = await getPilotageDashboard();
-  const { synthetique, aTraiter, calendrier } = data;
-
-  const evenements = [
-    ...calendrier.projets.map((p) => ({
-      id: `p-${p.id}`,
-      date: p.dateEcheance!,
-      type: "Projet",
-      label: p.nom,
-    })),
-    ...calendrier.taches.map((t) => ({
-      id: `t-${t.id}`,
-      date: t.dateEcheance!,
-      type: "Tâche",
-      label: t.titre,
-    })),
-    ...calendrier.controles.map((c) => ({
-      id: `c-${c.id}`,
-      date: c.dateProchaineEcheance!,
-      type: "Contrôle SCI",
-      label: c.nom,
-    })),
-  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const { synthetique: s, aTraiter } = data;
 
   return (
     <>
       <header className="page-header">
         <h1>Pilotage</h1>
         <p>
-          Vue synthétique de l&apos;activité de l&apos;unité — projets actifs,
-          tâches et contrôles SCI. Les indicateurs se mettent à jour
-          automatiquement à partir des données enregistrées.
+          Que se passe-t-il dans l&apos;unité et qu&apos;est-ce qui nécessite
+          notre attention ? Vue synthétique multi-modules.
         </p>
       </header>
 
       <section className="section" aria-label="Vue synthétique">
         <h2 className="section__title">Vue synthétique</h2>
-        <div className="stats-grid">
-          <Stat label="Projets en cours" value={synthetique.projetsEnCours} />
-          <Stat label="Tâches ouvertes" value={synthetique.tachesOuvertes} />
+        <div className="stats-grid stats-grid--dense">
+          <Stat label="Audits en cours" value={s.auditsEnCours} />
+          <Stat label="Audits réalisés" value={s.auditsRealises} />
+          <Stat label="Recommandations ouvertes" value={s.recoOuvertes} tone="info" />
+          <Stat label="Conseils ouverts" value={s.conseilsOuverts} />
           <Stat
-            label="Tâches en retard"
-            value={synthetique.tachesEnRetard}
+            label="Conseils hors délai"
+            value={s.conseilsHorsDelai}
             tone="danger"
           />
           <Stat
-            label="Tâches à valider"
-            value={synthetique.tachesAValider}
+            label="Respect délai conseils (5 j.)"
+            value={s.tauxRespectDelai}
+            suffix=" %"
             tone="info"
           />
-          <Stat
-            label="Contrôles SCI à venir (7 j.)"
-            value={synthetique.controlesAVenir}
-            tone="warn"
-          />
+          <Stat label="Projets actifs" value={s.projetsActifs} />
+          <Stat label="Projets terminés" value={s.projetsTermines} />
+          <Stat label="Projets en retard" value={s.projetsEnRetard} tone="danger" />
+          <Stat label="Contrôles SCI planifiés" value={s.controlesPlanifies} />
+          <Stat label="Contrôles SCI réalisés" value={s.controlesRealises} />
           <Stat
             label="Contrôles SCI en retard"
-            value={synthetique.controlesEnRetard}
+            value={s.controlesEnRetard}
             tone="danger"
           />
+          <Stat label="Documents à revoir" value={s.docsARevoir} tone="warn" />
+          <Stat
+            label="Revues documentaires en retard"
+            value={s.docsRevueRetard}
+            tone="danger"
+          />
+          <Stat label="Risques élevés" value={s.risquesEleves} tone="warn" />
+          <Stat label="Risques critiques" value={s.risquesCritiques} tone="danger" />
+          <Stat label="Tâches ouvertes" value={s.tachesOuvertes} />
+          <Stat label="Tâches en retard" value={s.tachesEnRetard} tone="danger" />
+          <Stat label="Tâches à valider" value={s.tachesAValider} tone="info" />
         </div>
       </section>
 
       <section className="section" aria-label="À traiter">
-        <h2 className="section__title">À traiter</h2>
-        <div className="legend">
-          <span>
-            <i className="dot-retard" /> En retard
-          </span>
-          <span>
-            <i className="dot-bientot" /> Échéance proche (≤ 7 j.)
-          </span>
-          <span>
-            <i className="dot-validation" /> Validation en attente
-          </span>
+        <div className="panel-head" style={{ marginBottom: "0.85rem" }}>
+          <h2 className="section__title" style={{ margin: 0 }}>
+            Actions nécessitant une attention
+          </h2>
+          <Link href="/backlog?vue=retard" className="btn btn--ghost">
+            Ouvrir le backlog
+          </Link>
         </div>
 
         <div className="panels">
           <div className="panel">
-            <h3>Tâches</h3>
+            <h3>Tâches en retard / proches</h3>
             {aTraiter.tachesEnRetard.length === 0 &&
             aTraiter.tachesBientot.length === 0 ? (
-              <Empty text="Aucune tâche urgente pour le moment." />
+              <p className="empty">Aucune tâche urgente.</p>
             ) : (
               <ul className="item-list">
                 {aTraiter.tachesEnRetard.map((t) => (
@@ -124,9 +114,11 @@ export default async function PilotagePage() {
                         <Link href={`/taches/${t.id}`}>{t.titre}</Link>
                       </p>
                       <p className="item__meta">
-                        {CATEGORIE_TACHE_LABELS[t.categorie]} · {t.responsable.nom}
-                        {t.projet ? ` · ${t.projet.nom}` : " · Indépendante"}
-                        {` · ${PRIORITE_LABELS[t.priorite]}`}
+                        {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
+                        {t.responsable.nom}
+                        {t.projet ? ` · ${t.projet.nom}` : ""}
+                        {t.conseil ? ` · ${t.conseil.objet}` : ""} ·{" "}
+                        {PRIORITE_LABELS[t.priorite]}
                       </p>
                     </div>
                     <span className="item__date">{formatDate(t.dateEcheance)}</span>
@@ -141,7 +133,6 @@ export default async function PilotagePage() {
                       </p>
                       <p className="item__meta">
                         {CATEGORIE_TACHE_LABELS[t.categorie]} · {t.responsable.nom}
-                        {t.projet ? ` · ${t.projet.nom}` : " · Indépendante"}
                       </p>
                     </div>
                     <span className="item__date">{formatDate(t.dateEcheance)}</span>
@@ -152,50 +143,10 @@ export default async function PilotagePage() {
           </div>
 
           <div className="panel">
-            <h3>Contrôles SCI</h3>
-            {aTraiter.controlesEnRetard.length === 0 &&
-            aTraiter.controlesBientot.length === 0 ? (
-              <Empty text="Aucun contrôle SCI urgent." />
-            ) : (
-              <ul className="item-list">
-                {aTraiter.controlesEnRetard.map((c) => (
-                  <li key={c.id} className="item item--retard">
-                    <span className="item__badge">Retard</span>
-                    <div>
-                      <p className="item__title">{c.nom}</p>
-                      <p className="item__meta">
-                        {c.responsable.nom} · {c.processusConcerne} ·{" "}
-                        {FREQUENCE_LABELS[c.frequence]}
-                      </p>
-                    </div>
-                    <span className="item__date">
-                      {formatDate(c.dateProchaineEcheance)}
-                    </span>
-                  </li>
-                ))}
-                {aTraiter.controlesBientot.map((c) => (
-                  <li key={c.id} className="item item--bientot">
-                    <span className="item__badge">Bientôt</span>
-                    <div>
-                      <p className="item__title">{c.nom}</p>
-                      <p className="item__meta">
-                        {c.responsable.nom} · {c.processusConcerne}
-                      </p>
-                    </div>
-                    <span className="item__date">
-                      {formatDate(c.dateProchaineEcheance)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="panel" style={{ gridColumn: "1 / -1" }}>
             <h3>Validations en attente</h3>
             {aTraiter.validationsTaches.length === 0 &&
             aTraiter.validationsControles.length === 0 ? (
-              <Empty text="Aucune validation en attente." />
+              <p className="empty">Aucune validation en attente.</p>
             ) : (
               <ul className="item-list">
                 {aTraiter.validationsTaches.map((t) => (
@@ -206,9 +157,7 @@ export default async function PilotagePage() {
                         <Link href={`/taches/${t.id}`}>{t.titre}</Link>
                       </p>
                       <p className="item__meta">
-                        {CATEGORIE_TACHE_LABELS[t.categorie]} · Soumis par{" "}
-                        {t.soumisPar?.nom ?? "—"}
-                        {t.projet ? ` · ${t.projet.nom}` : ""}
+                        Soumis par {t.soumisPar?.nom ?? "—"}
                       </p>
                     </div>
                     <span className="item__date">
@@ -220,10 +169,11 @@ export default async function PilotagePage() {
                   <li key={`vc-${c.id}`} className="item item--validation">
                     <span className="item__badge">Contrôle</span>
                     <div>
-                      <p className="item__title">{c.nom}</p>
+                      <p className="item__title">
+                        <Link href={`/controles-sci/${c.id}`}>{c.nom}</Link>
+                      </p>
                       <p className="item__meta">
-                        Soumis par {c.soumisPar?.nom ?? "—"} ·{" "}
-                        {c.processusConcerne}
+                        Soumis par {c.soumisPar?.nom ?? "—"}
                       </p>
                     </div>
                     <span className="item__date">
@@ -234,25 +184,6 @@ export default async function PilotagePage() {
               </ul>
             )}
           </div>
-        </div>
-      </section>
-
-      <section className="section" aria-label="Calendrier des échéances">
-        <h2 className="section__title">Calendrier des échéances</h2>
-        <div className="panel">
-          {evenements.length === 0 ? (
-            <Empty text="Aucune échéance à afficher." />
-          ) : (
-            <ul className="calendar-list">
-              {evenements.map((e) => (
-                <li key={e.id} className="calendar-row">
-                  <span className="calendar-row__date">{formatDate(e.date)}</span>
-                  <span className="calendar-row__type">{e.type}</span>
-                  <span className="calendar-row__label">{e.label}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </section>
     </>

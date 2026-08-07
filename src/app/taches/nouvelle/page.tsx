@@ -12,6 +12,11 @@ export default async function NouvelleTachePage({
 }: {
   searchParams: Promise<{
     projetId?: string;
+    conseilId?: string;
+    controleSCIId?: string;
+    auditId?: string;
+    documentId?: string;
+    recommandationId?: string;
     categorie?: string;
     erreur?: string;
   }>;
@@ -26,7 +31,21 @@ export default async function NouvelleTachePage({
     }),
   ]);
 
-  const isConseil = sp.categorie === "CONSEIL";
+  let categorie =
+    sp.categorie ??
+    (sp.projetId
+      ? "PROJET"
+      : sp.conseilId
+        ? "CONSEIL"
+        : sp.controleSCIId
+          ? "SCI"
+          : sp.auditId || sp.recommandationId
+            ? "AUDIT"
+            : sp.documentId
+              ? "DOCUMENT"
+              : "AUTRE");
+
+  const isConseil = categorie === "CONSEIL";
 
   return (
     <>
@@ -36,7 +55,7 @@ export default async function NouvelleTachePage({
         description={
           isConseil
             ? "Créez une demande ponctuelle sans projet associé (analyse, recherche, avis)."
-            : "Une tâche peut être indépendante ou rattachée à un projet actif."
+            : "Une tâche peut être indépendante ou rattachée à un objet métier."
         }
       />
       <FlashBanner erreur={sp.erreur} />
@@ -47,11 +66,16 @@ export default async function NouvelleTachePage({
           projets={projets}
           values={{
             projetId: sp.projetId ?? null,
-            categorie: sp.categorie ?? (sp.projetId ? "PROJET" : "AUTRE"),
+            conseilId: sp.conseilId ?? null,
+            controleSCIId: sp.controleSCIId ?? null,
+            auditId: sp.auditId ?? null,
+            documentId: sp.documentId ?? null,
+            recommandationId: sp.recommandationId ?? null,
+            categorie,
           }}
           cancelHref="/taches"
           submitLabel="Créer la tâche"
-          defaultCategorie={sp.categorie ?? undefined}
+          defaultCategorie={categorie}
         />
       </div>
     </>

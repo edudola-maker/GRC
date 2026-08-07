@@ -3,12 +3,16 @@ import { notFound } from "next/navigation";
 import {
   ConfirmActionButton,
   ConfirmDeleteButton,
+  SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveProjet,
+  createJalon,
+  deleteJalon,
   deleteProjet,
+  toggleJalon,
   unarchiveProjet,
 } from "../actions";
 import {
@@ -39,6 +43,7 @@ export default async function ProjetDetailPage({
       responsable: true,
       creePar: true,
       modifiePar: true,
+      jalons: { orderBy: { dateEcheance: "asc" } },
       taches: {
         include: { responsable: true },
         orderBy: { dateEcheance: "asc" },
@@ -141,43 +146,99 @@ export default async function ProjetDetailPage({
         </div>
 
         <div className="panel">
-          <div className="panel-head">
-            <h2 className="panel-title">Tâches ({projet.taches.length})</h2>
-          </div>
-          {projet.taches.length === 0 ? (
-            <p className="empty">Aucune tâche rattachée.</p>
+          <h2 className="panel-title">Jalons ({projet.jalons.length})</h2>
+          {!projet.archive ? (
+            <form action={createJalon} className="inline-form">
+              <input type="hidden" name="projetId" value={projet.id} />
+              <div className="inline-form__row">
+                <label className="field" htmlFor="jalon-nom">
+                  <span className="field__label">Nom *</span>
+                  <input id="jalon-nom" name="nom" required placeholder="Ex. Livraison V1" />
+                </label>
+                <label className="field" htmlFor="jalon-date">
+                  <span className="field__label">Échéance</span>
+                  <input id="jalon-date" name="dateEcheance" type="date" />
+                </label>
+                <SubmitButton>Ajouter</SubmitButton>
+              </div>
+            </form>
+          ) : null}
+          {projet.jalons.length === 0 ? (
+            <p className="empty">Aucun jalon.</p>
           ) : (
-            <ul className="entity-list">
-              {projet.taches.map((t) => {
-                const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
-                  t.statut,
-                );
-                const urgence = urgenceEcheance(t.dateEcheance, clos);
-                return (
-                  <li key={t.id}>
-                    <Link
-                      href={`/taches/${t.id}`}
-                      className={`entity-row entity-row--${urgence}`}
-                    >
-                      <div className="entity-row__main">
-                        <strong>{t.titre}</strong>
-                        <span className="entity-row__meta">
-                          {t.responsable.nom} ·{" "}
-                          {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
-                          {STATUT_TACHE_LABELS[t.statut]}
-                          {urgence === "retard" ? " · En retard" : ""}
-                        </span>
-                      </div>
-                      <span className="entity-row__date">
-                        {formatDate(t.dateEcheance)}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
+            <ul className="jalon-list">
+              {projet.jalons.map((j) => (
+                <li key={j.id} className={j.atteint ? "is-done" : undefined}>
+                  <div>
+                    <strong>{j.nom}</strong>
+                    <span className="entity-row__meta">
+                      {" "}
+                      {formatDate(j.dateEcheance)}
+                      {j.atteint && j.dateAtteinte
+                        ? ` · Atteint le ${formatDate(j.dateAtteinte)}`
+                        : ""}
+                    </span>
+                  </div>
+                  {!projet.archive ? (
+                    <div className="form-actions">
+                      <form action={toggleJalon}>
+                        <input type="hidden" name="id" value={j.id} />
+                        <SubmitButton variant="ghost" pendingLabel="…">
+                          {j.atteint ? "Rouvrir" : "Atteint"}
+                        </SubmitButton>
+                      </form>
+                      <form action={deleteJalon}>
+                        <input type="hidden" name="id" value={j.id} />
+                        <SubmitButton variant="danger" pendingLabel="…">
+                          ×
+                        </SubmitButton>
+                      </form>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
             </ul>
           )}
         </div>
+      </div>
+
+      <div className="panel" style={{ marginTop: "1rem" }}>
+        <div className="panel-head">
+          <h2 className="panel-title">Tâches ({projet.taches.length})</h2>
+        </div>
+        {projet.taches.length === 0 ? (
+          <p className="empty">Aucune tâche rattachée.</p>
+        ) : (
+          <ul className="entity-list">
+            {projet.taches.map((t) => {
+              const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
+                t.statut,
+              );
+              const urgence = urgenceEcheance(t.dateEcheance, clos);
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={`/taches/${t.id}`}
+                    className={`entity-row entity-row--${urgence}`}
+                  >
+                    <div className="entity-row__main">
+                      <strong>{t.titre}</strong>
+                      <span className="entity-row__meta">
+                        {t.responsable.nom} ·{" "}
+                        {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
+                        {STATUT_TACHE_LABELS[t.statut]}
+                        {urgence === "retard" ? " · En retard" : ""}
+                      </span>
+                    </div>
+                    <span className="entity-row__date">
+                      {formatDate(t.dateEcheance)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </>
   );
