@@ -11,6 +11,7 @@ import {
   InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
+import { toneFromStatut } from "@/components/ui/StatusBadge";
 import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
 import {
   EMPTY_CONSEIL_ADVANCED,
@@ -337,7 +338,7 @@ export function ConseilInventory({
                   { value: c.code, emphasis: "code" },
                   { value: c.objet, emphasis: "title" },
                   { value: provenance(c) },
-                  { value: c.statutLabel, emphasis: "status" },
+                  { value: c.statutLabel, badgeTone: toneFromStatut(c.statut) },
                 ]}
                 secondary={[
                   { value: c.responsableNom },

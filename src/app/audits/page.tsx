@@ -10,6 +10,7 @@ import {
 import { MODULE_HELP } from "@/lib/catalog";
 import {
   STATUT_AUDIT_LABELS,
+  TYPE_MISSION_LABELS,
   formatDateDot,
   startOfToday,
   urgenceEcheance,
@@ -78,6 +79,8 @@ export default async function AuditsPage({
       id: a.id,
       code: a.code,
       titre: a.titre,
+      typeMission: a.typeMission,
+      typeMissionLabel: TYPE_MISSION_LABELS[a.typeMission] ?? a.typeMission,
       statut: a.statut,
       statutLabel: STATUT_AUDIT_LABELS[a.statut] ?? a.statut,
       responsableId: a.responsableId,
@@ -107,9 +110,9 @@ export default async function AuditsPage({
   return (
     <>
       <PageHeader
-        title="Audits"
-        description="Planification des missions d'audit, recommandations et suivi des actions."
-        actions={<BtnLink href="/audits/nouveau">Nouvel audit</BtnLink>}
+        title="Missions d'assurance"
+        description="Audits et revues de processus — planification, travaux, recommandations et suivi."
+        actions={<BtnLink href="/audits/nouveau">Nouvelle mission</BtnLink>}
       />
       <ModuleHelp {...MODULE_HELP.audits} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

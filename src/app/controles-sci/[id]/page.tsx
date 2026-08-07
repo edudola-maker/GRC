@@ -29,6 +29,7 @@ import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { getCurrentUser } from "@/lib/session";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 
 export const dynamic = "force-dynamic";
 
@@ -361,6 +362,13 @@ export default async function ControleSCIDetailPage({
           </ul>
         )}
       </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="CONTROLE_SCI"
+        id={controle.id}
+        retour={`/controles-sci/${controle.id}`}
+      />
     </>
   );
 }

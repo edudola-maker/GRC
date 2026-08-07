@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { TacheActionsRapides } from "@/components/TacheActionsRapides";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { deleteTache } from "../actions";
@@ -271,6 +272,13 @@ export default async function TacheDetailPage({
           </div>
         </div>
       </div>
+
+      <ElementsAssocies
+        uniteId={tache.uniteId}
+        type="TACHE"
+        id={tache.id}
+        retour={`/taches/${tache.id}`}
+      />
     </>
   );
 }

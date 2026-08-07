@@ -30,6 +30,7 @@ import {
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 
 export const dynamic = "force-dynamic";
 
@@ -412,6 +413,13 @@ export default async function ProjetDetailPage({
           </ul>
         )}
       </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="PROJET"
+        id={projet.id}
+        retour={`/projets/${projet.id}`}
+      />
     </>
   );
 }

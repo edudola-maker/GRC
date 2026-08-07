@@ -12,12 +12,15 @@ import {
   InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
+import { toneFromStatut } from "@/components/ui/StatusBadge";
 import { formatDateDot } from "@/lib/labels";
 
 export type AuditInventoryItem = {
   id: string;
   code: string;
   titre: string;
+  typeMission: string;
+  typeMissionLabel: string;
   statut: string;
   statutLabel: string;
   responsableId: string;
@@ -213,11 +216,11 @@ export function AuditInventory({
     >
       {filtered.length === 0 ? (
         <InventoryEmpty>
-          Aucun audit ne correspond à votre recherche.
+          Aucune mission ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Période", "Statut"]}
+          columns={["Code", "Nom", "Type", "Statut"]}
           secondaryColumns={["Responsable", "Échéance", "Reco / tâches", "Tags"]}
         >
           {filtered.map((a) => (
@@ -229,10 +232,8 @@ export function AuditInventory({
                 primary={[
                   { value: a.code, emphasis: "code" },
                   { value: a.titre, emphasis: "title" },
-                  {
-                    value: `${formatDateDot(a.dateDebut)} → ${formatDateDot(a.dateFin)}`,
-                  },
-                  { value: a.statutLabel, emphasis: "status" },
+                  { value: a.typeMissionLabel },
+                  { value: a.statutLabel, badgeTone: toneFromStatut(a.statut) },
                 ]}
                 secondary={[
                   { value: a.responsableNom },

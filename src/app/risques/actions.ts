@@ -70,6 +70,21 @@ export async function createRisque(formData: FormData) {
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
+
+  const prRaw = optInt(formData, "probabiliteResiduelle");
+  const irRaw = optInt(formData, "impactResiduel");
+  let probabiliteResiduelle: number | null = null;
+  let impactResiduel: number | null = null;
+  let criticiteResiduelle: number | null = null;
+  if (prRaw != null || irRaw != null) {
+    probabiliteResiduelle = prRaw ?? probabilite;
+    impactResiduel = irRaw ?? impact;
+    if (!ECHELLE.has(probabiliteResiduelle) || !ECHELLE.has(impactResiduel)) {
+      redirectWithError(fallback, "Échelle résiduelle invalide (1–5).");
+    }
+    criticiteResiduelle = clamp(probabiliteResiduelle * impactResiduel, 1, 25);
+  }
+
   const nomErr = await assertNomUnique("RISQUE", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
@@ -92,6 +107,9 @@ export async function createRisque(formData: FormData) {
       probabilite,
       impact,
       criticite,
+      probabiliteResiduelle,
+      impactResiduel,
+      criticiteResiduelle,
       strategie: (strategie as "REDUIRE") ?? null,
       statut: statut as "IDENTIFIE",
       commentaires: optStr(formData, "commentaires"),
@@ -151,6 +169,20 @@ export async function updateRisque(formData: FormData) {
     redirectWithError(`/risques/${id}/modifier`, "Stratégie invalide.");
   }
 
+  const prRaw = optInt(formData, "probabiliteResiduelle");
+  const irRaw = optInt(formData, "impactResiduel");
+  let probabiliteResiduelle: number | null = null;
+  let impactResiduel: number | null = null;
+  let criticiteResiduelle: number | null = null;
+  if (prRaw != null || irRaw != null) {
+    probabiliteResiduelle = prRaw ?? probabilite;
+    impactResiduel = irRaw ?? impact;
+    if (!ECHELLE.has(probabiliteResiduelle) || !ECHELLE.has(impactResiduel)) {
+      redirectWithError(`/risques/${id}/modifier`, "Échelle résiduelle invalide (1–5).");
+    }
+    criticiteResiduelle = clamp(probabiliteResiduelle * impactResiduel, 1, 25);
+  }
+
   await prisma.risque.update({
     where: { id },
     data: {
@@ -164,6 +196,9 @@ export async function updateRisque(formData: FormData) {
       probabilite,
       impact,
       criticite,
+      probabiliteResiduelle,
+      impactResiduel,
+      criticiteResiduelle,
       strategie: (strategie as "REDUIRE") ?? null,
       statut: statut as "IDENTIFIE",
       commentaires: optStr(formData, "commentaires"),

@@ -3,6 +3,7 @@ import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { AttentionZone } from "@/components/module/AttentionZone";
 import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { RiskMatrix } from "@/components/risques/RiskMatrix";
 import {
   RisqueInventory,
   type RisqueInventoryItem,
@@ -45,12 +46,6 @@ export default async function RisquesPage({
     (RISQUE_STATUTS_MAITRISES as readonly string[]).includes(r.statut),
   ).length;
   const sansStrategie = actifs.filter((r) => !r.strategie).length;
-
-  const matrixCounts: Record<string, number> = {};
-  for (const r of actifs) {
-    const key = `${r.probabilite}-${r.impact}`;
-    matrixCounts[key] = (matrixCounts[key] ?? 0) + 1;
-  }
 
   const items: RisqueInventoryItem[] = risques.map((r) => {
     const niveau = criticiteNiveau(r.criticite);
@@ -96,11 +91,24 @@ export default async function RisquesPage({
     ).values(),
   );
 
+  const matrixPoints = actifs.map((r) => ({
+    id: r.id,
+    code: r.code,
+    nom: r.nom,
+    categorie: r.categorie,
+    probabilite: r.probabilite,
+    impact: r.impact,
+    criticite: r.criticite,
+    probabiliteResiduelle: r.probabiliteResiduelle,
+    impactResiduel: r.impactResiduel,
+    criticiteResiduelle: r.criticiteResiduelle,
+  }));
+
   return (
     <>
       <PageHeader
         title="Risques"
-        description="Cartographie des risques — criticité = probabilité × impact."
+        description="Cartographie des risques — criticité = probabilité × impact (inhérent et résiduel)."
         actions={<BtnLink href="/risques/nouveau">Nouveau risque</BtnLink>}
       />
       <ModuleHelp {...MODULE_HELP.risques} />
@@ -114,45 +122,7 @@ export default async function RisquesPage({
         <KpiStat value={sansStrategie} label="Sans stratégie" />
       </KpiZone>
 
-      <section className="page-zone page-zone--panel" aria-label="Matrice des risques">
-        <p className="page-zone__label">Cartographie</p>
-        <p className="muted page-zone__intro">
-          Matrice 5×5 — lignes = impact (5→1), colonnes = probabilité (1→5).
-        </p>
-        <div className="matrix">
-          <table className="matrix-table">
-            <thead>
-              <tr>
-                <th scope="col">I \\ P</th>
-                {[1, 2, 3, 4, 5].map((p) => (
-                  <th key={p} scope="col">
-                    {p}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[5, 4, 3, 2, 1].map((impact) => (
-                <tr key={impact}>
-                  <th scope="row">{impact}</th>
-                  {[1, 2, 3, 4, 5].map((probabilite) => {
-                    const score = probabilite * impact;
-                    const count = matrixCounts[`${probabilite}-${impact}`] ?? 0;
-                    return (
-                      <td
-                        key={probabilite}
-                        className={`matrix-cell matrix-cell--${criticiteNiveau(score)}`}
-                      >
-                        {count || "·"}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <RiskMatrix risques={matrixPoints} />
 
       <AttentionZone
         label="Attention requise"

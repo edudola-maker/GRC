@@ -17,6 +17,7 @@ import {
   TAXINOMIE_OPTIONS,
   TYPE_CONTROLE_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
+  TYPE_MISSION_OPTIONS,
 } from "@/lib/catalog";
 import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
@@ -104,6 +105,8 @@ type RisqueValues = {
   categorie?: string;
   probabilite?: number;
   impact?: number;
+  probabiliteResiduelle?: number | null;
+  impactResiduel?: number | null;
   strategie?: string | null;
   statut?: string;
   commentaires?: string | null;
@@ -130,6 +133,7 @@ type DocumentValues = {
 type AuditValues = {
   id?: string;
   titre?: string;
+  typeMission?: string;
   perimetre?: string | null;
   taxinomie?: string | null;
   tags?: string | null;
@@ -1000,7 +1004,7 @@ export function RisqueForm({
             ))}
           </select>
         </Field>
-        <Field label="Probabilité (1–5)" htmlFor="probabilite">
+        <Field label="Probabilité inhérente (1–5)" htmlFor="probabilite">
           <select
             id="probabilite"
             name="probabilite"
@@ -1013,12 +1017,52 @@ export function RisqueForm({
             ))}
           </select>
         </Field>
-        <Field label="Impact (1–5)" htmlFor="impact">
+        <Field label="Impact inhérent (1–5)" htmlFor="impact">
           <select
             id="impact"
             name="impact"
             defaultValue={String(values?.impact ?? 1)}
           >
+            {ECHELLE_RISQUE.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field
+          label="Probabilité résiduelle (1–5)"
+          htmlFor="probabiliteResiduelle"
+          hint="Après maîtrise — laisser vide = égale à l'inhérent"
+        >
+          <select
+            id="probabiliteResiduelle"
+            name="probabiliteResiduelle"
+            defaultValue={
+              values?.probabiliteResiduelle != null
+                ? String(values.probabiliteResiduelle)
+                : ""
+            }
+          >
+            <option value="">— (inhérent)</option>
+            {ECHELLE_RISQUE.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Impact résiduel (1–5)" htmlFor="impactResiduel">
+          <select
+            id="impactResiduel"
+            name="impactResiduel"
+            defaultValue={
+              values?.impactResiduel != null
+                ? String(values.impactResiduel)
+                : ""
+            }
+          >
+            <option value="">— (inhérent)</option>
             {ECHELLE_RISQUE.map((n) => (
               <option key={n} value={n}>
                 {n}
@@ -1239,6 +1283,20 @@ export function AuditForm({
           defaultValue={values?.titre ?? ""}
           placeholder="Ex. Audit interne conformité 2026"
         />
+      </Field>
+
+      <Field label="Type de mission *" htmlFor="typeMission">
+        <select
+          id="typeMission"
+          name="typeMission"
+          defaultValue={values?.typeMission ?? "AUDIT"}
+        >
+          {TYPE_MISSION_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field label="Périmètre" htmlFor="perimetre">

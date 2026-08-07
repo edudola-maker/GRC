@@ -15,7 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   { href: "/projets", label: "Projets", icon: "▦" },
   { href: "/conseils", label: "Conseils", icon: "💬" },
-  { href: "/audits", label: "Audits", icon: "◉" },
+  { href: "/audits", label: "Missions d'assurance", icon: "◉" },
   { href: "/risques", label: "Risques", icon: "⚠" },
   { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
   { href: "/documents", label: "Documents", icon: "▤" },

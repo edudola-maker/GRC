@@ -93,6 +93,13 @@ export const CATEGORIE_RISQUE_OPTIONS = [
   { value: "CONFORMITE", label: "Conformité" },
   { value: "CYBERSECURITE", label: "Cybersécurité" },
   { value: "REPORTING", label: "Reporting" },
+  { value: "JURIDIQUE", label: "Juridique" },
+  { value: "SYSTEME_INFORMATION", label: "Système d'information" },
+] as const;
+
+export const TYPE_MISSION_OPTIONS = [
+  { value: "AUDIT", label: "Audit" },
+  { value: "REVUE_PROCESSUS", label: "Revue de processus" },
 ] as const;
 
 export const TYPE_DOCUMENT_OPTIONS = [
@@ -186,7 +193,7 @@ export const MODULE_HELP = {
     body: "Inventaire et pilotage documentaire (métadonnées, revues, liens). Le contenu détaillé reste dans Confluence — cette application n'est pas une GED.",
   },
   audits: {
-    title: "Qu'est-ce qu'un audit ?",
-    body: "Mission d'audit avec périmètre, équipe, recommandations et actions de suivi. Les papiers de travail avancés arriveront plus tard.",
+    title: "Qu'est-ce qu'une mission d'assurance ?",
+    body: "Mission d'assurance (Audit ou Revue de processus) : même moteur — planification, travaux, rapport, recommandations et suivi. Le type choisi à la création pourra ensuite disposer de son propre template.",
   },
 } as const;

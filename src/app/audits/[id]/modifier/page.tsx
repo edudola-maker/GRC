@@ -31,8 +31,8 @@ export default async function ModifierAuditPage({
 
   return (
     <>
-      <BackLink href={`/audits/${audit.id}`} label="← Retour à l'audit" />
-      <PageHeader title="Modifier l'audit" description={audit.titre} />
+      <BackLink href={`/audits/${audit.id}`} label="← Retour à la mission" />
+      <PageHeader title="Modifier la mission" description={audit.titre} />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
         <AuditForm

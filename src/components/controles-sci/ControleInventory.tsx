@@ -12,6 +12,7 @@ import {
   InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
+import { toneFromStatut } from "@/components/ui/StatusBadge";
 import { formatDateDot } from "@/lib/labels";
 
 export type ControleInventoryItem = {
@@ -246,7 +247,7 @@ export function ControleInventory({
                   { value: c.code, emphasis: "code" },
                   { value: c.nom, emphasis: "title" },
                   { value: c.processusConcerne },
-                  { value: c.statutLabel, emphasis: "status" },
+                  { value: c.statutLabel, badgeTone: toneFromStatut(c.statut) },
                 ]}
                 secondary={[
                   { value: c.responsableNom },

@@ -12,6 +12,7 @@ import {
   InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
+import { toneFromStatut } from "@/components/ui/StatusBadge";
 
 export type RisqueInventoryItem = {
   id: string;
@@ -232,7 +233,7 @@ export function RisqueInventory({
                   { value: r.code, emphasis: "code" },
                   { value: r.nom, emphasis: "title" },
                   { value: r.categorieLabel },
-                  { value: r.statutLabel, emphasis: "status" },
+                  { value: r.statutLabel, badgeTone: toneFromStatut(r.statut) },
                 ]}
                 secondary={[
                   { value: r.responsableNom },

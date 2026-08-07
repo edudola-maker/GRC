@@ -24,6 +24,7 @@ import {
   STATUT_RECO_LABELS,
   STATUT_TACHE_LABELS,
   TAXINOMIE_LABELS,
+  TYPE_MISSION_LABELS,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -35,6 +36,7 @@ import { toDateInputValue } from "@/lib/form";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 
 export const dynamic = "force-dynamic";
 
@@ -148,6 +150,12 @@ export default async function AuditDetailPage({
             <div>
               <dt>Responsable</dt>
               <dd>{audit.responsable.nom}</dd>
+            </div>
+            <div>
+              <dt>Type de mission</dt>
+              <dd>
+                {TYPE_MISSION_LABELS[audit.typeMission] ?? audit.typeMission}
+              </dd>
             </div>
             <div>
               <dt>Statut</dt>
@@ -519,6 +527,13 @@ export default async function AuditDetailPage({
           </ul>
         )}
       </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="AUDIT"
+        id={audit.id}
+        retour={`/audits/${audit.id}`}
+      />
     </>
   );
 }

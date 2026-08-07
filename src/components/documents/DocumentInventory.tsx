@@ -12,6 +12,7 @@ import {
   InventoryList,
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
+import { toneFromStatut } from "@/components/ui/StatusBadge";
 import { formatDateDot } from "@/lib/labels";
 
 export type DocumentInventoryItem = {
@@ -249,7 +250,7 @@ export function DocumentInventory({
                   {
                     value: `${d.typeLabel}${d.version ? ` · v${d.version}` : ""}`,
                   },
-                  { value: d.statutLabel, emphasis: "status" },
+                  { value: d.statutLabel, badgeTone: toneFromStatut(d.statut) },
                 ]}
                 secondary={[
                   { value: d.responsableNom },

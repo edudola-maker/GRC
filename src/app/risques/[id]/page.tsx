@@ -25,6 +25,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { getCurrentUser } from "@/lib/session";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 
 export const dynamic = "force-dynamic";
 
@@ -156,17 +157,20 @@ export default async function RisqueDetailPage({
               <dd>{risque.processus ?? "—"}</dd>
             </div>
             <div>
-              <dt>Probabilité</dt>
-              <dd>{risque.probabilite}</dd>
-            </div>
-            <div>
-              <dt>Impact</dt>
-              <dd>{risque.impact}</dd>
-            </div>
-            <div>
-              <dt>Criticité</dt>
+              <dt>Inhérent (P × I)</dt>
               <dd>
-                {risque.criticite} ({niveau})
+                {risque.probabilite} × {risque.impact} = {risque.criticite} (
+                {niveau})
+              </dd>
+            </div>
+            <div>
+              <dt>Résiduel (P × I)</dt>
+              <dd>
+                {risque.probabiliteResiduelle != null &&
+                risque.impactResiduel != null &&
+                risque.criticiteResiduelle != null
+                  ? `${risque.probabiliteResiduelle} × ${risque.impactResiduel} = ${risque.criticiteResiduelle} (${criticiteNiveau(risque.criticiteResiduelle)})`
+                  : "Non renseigné"}
               </dd>
             </div>
             <div>
@@ -265,6 +269,13 @@ export default async function RisqueDetailPage({
           ) : null}
         </div>
       </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="RISQUE"
+        id={risque.id}
+        retour={`/risques/${risque.id}`}
+      />
     </>
   );
 }

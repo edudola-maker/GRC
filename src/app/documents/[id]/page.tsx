@@ -7,6 +7,7 @@ import {
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import {
   archiveDocument,
   creerTacheRevue,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +40,7 @@ export default async function DocumentDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
   const document = await prisma.document.findUnique({
     where: { id },
     include: {
@@ -252,6 +255,13 @@ export default async function DocumentDetailPage({
           )}
         </div>
       </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="DOCUMENT"
+        id={document.id}
+        retour={`/documents/${document.id}`}
+      />
     </>
   );
 }

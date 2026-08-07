@@ -67,6 +67,8 @@ enum CategorieRisque {
   CONFORMITE
   CYBERSECURITE
   REPORTING
+  JURIDIQUE
+  SYSTEME_INFORMATION
 }
 
 enum TypeDocument {
@@ -100,6 +102,12 @@ enum TypeObjetMetier {
   CONTROLE_SCI
   DOCUMENT
   TACHE
+}
+
+/// Type de mission d'assurance (évolution progressive du module Audits).
+enum TypeMissionAssurance {
+  AUDIT
+  REVUE_PROCESSUS
 }
 
 enum StatutDocument {
@@ -199,6 +207,7 @@ model Unite {
   sequences        SequenceCode[]
   journal          JournalEvenement[]
   parametres       ParametreFonctionnel[]
+  liensObjets      LienObjet[]
 }
 
 // ─── Utilisateur ────────────────────────────────────────────
@@ -492,9 +501,14 @@ model Risque {
   processus     String?
   responsableId String
   categorie     CategorieRisque
+  /// Risque inhérent (avant maîtrise)
   probabilite   Int              @default(1) // 1–5
   impact        Int              @default(1) // 1–5
   criticite     Int              @default(1) // probabilite × impact
+  /// Risque résiduel (après maîtrise) — si null, égal à l'inhérent à l'affichage
+  probabiliteResiduelle Int?
+  impactResiduel        Int?
+  criticiteResiduelle   Int?
   strategie     StrategieRisque?
   statut        StatutRisque     @default(IDENTIFIE)
   commentaires  String?
@@ -576,23 +590,25 @@ model Document {
 // ─── Audit ──────────────────────────────────────────────────
 
 model Audit {
-  id            String      @id @default(cuid())
+  id            String               @id @default(cuid())
   uniteId       String
   code          String
   titre         String
+  /// Audit ou Revue de processus — même moteur (planif / travaux / reco).
+  typeMission   TypeMissionAssurance @default(AUDIT)
   perimetre     String?
   taxinomie     String?
   tags          String?
   responsableId String
   dateDebut     DateTime?
   dateFin       DateTime?
-  statut        StatutAudit @default(PLANIFIE)
+  statut        StatutAudit          @default(PLANIFIE)
   commentaires  String?
-  archive       Boolean     @default(false)
+  archive       Boolean              @default(false)
   creeParId     String
   modifieParId  String
-  creeLe        DateTime    @default(now())
-  modifieLe     DateTime    @updatedAt
+  creeLe        DateTime             @default(now())
+  modifieLe     DateTime             @updatedAt
   meta          Json?
 
   unite           Unite            @relation(fields: [uniteId], references: [id])
@@ -733,6 +749,25 @@ model SequenceCode {
   unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
 
   @@unique([uniteId, prefixe])
+}
+
+/// Lien générique entre deux objets métier (bidirectionnel à la lecture).
+model LienObjet {
+  id        String         @id @default(cuid())
+  uniteId   String
+  typeA     TypeObjetMetier
+  idA       String
+  typeB     TypeObjetMetier
+  idB       String
+  libelle   String?
+  creeParId String?
+  creeLe    DateTime       @default(now())
+
+  unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+
+  @@unique([uniteId, typeA, idA, typeB, idB])
+  @@index([uniteId, typeA, idA])
+  @@index([uniteId, typeB, idB])
 }
 
 // Journal d'activité commun (Conseils en priorité, extensible)

@@ -7,6 +7,7 @@ import {
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import {
   addNoteJournal,
   archiveConseil,
@@ -31,6 +32,7 @@ import {
 import { businessDaysBetween } from "@/lib/dates";
 import { listerJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +46,7 @@ export default async function ConseilDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const user = await getCurrentUser();
   const [conseil, journal] = await Promise.all([
     prisma.conseil.findUnique({
       where: { id },
@@ -317,6 +320,13 @@ export default async function ConseilDetailPage({
           </div>
         </div>
       </div>
+
+      <ElementsAssocies
+        uniteId={user.uniteId}
+        type="CONSEIL"
+        id={conseil.id}
+        retour={`/conseils/${conseil.id}`}
+      />
     </>
   );
 }

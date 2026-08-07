@@ -53,6 +53,8 @@ export const CATEGORIE_RISQUE_LABELS: Record<string, string> = {
   CONFORMITE: "Conformité",
   CYBERSECURITE: "Cybersécurité",
   REPORTING: "Reporting",
+  JURIDIQUE: "Juridique",
+  SYSTEME_INFORMATION: "Système d'information",
 };
 
 export const TYPE_DOCUMENT_LABELS: Record<string, string> = {
@@ -109,6 +111,21 @@ export const STATUT_AUDIT_LABELS: Record<string, string> = {
   EN_REVUE: "En revue",
   TERMINE: "Terminé",
   ANNULE: "Annulé",
+};
+
+export const TYPE_MISSION_LABELS: Record<string, string> = {
+  AUDIT: "Audit",
+  REVUE_PROCESSUS: "Revue de processus",
+};
+
+export const TYPE_OBJET_LABELS: Record<string, string> = {
+  PROJET: "Projet",
+  CONSEIL: "Conseil",
+  AUDIT: "Mission d'assurance",
+  RISQUE: "Risque",
+  CONTROLE_SCI: "Contrôle SCI",
+  DOCUMENT: "Document",
+  TACHE: "Action",
 };
 
 export const STATUT_RECO_LABELS: Record<string, string> = {

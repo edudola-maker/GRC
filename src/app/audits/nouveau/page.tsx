@@ -16,10 +16,10 @@ export default async function NouveauAuditPage({
 
   return (
     <>
-      <BackLink href="/audits" label="← Retour aux audits" />
+      <BackLink href="/audits" label="← Retour aux missions" />
       <PageHeader
-        title="Nouvel audit"
-        description="Définissez le titre, le périmètre et le calendrier de la mission."
+        title="Nouvelle mission"
+        description="Choisissez le type (Audit ou Revue de processus), le périmètre et le calendrier."
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
@@ -27,7 +27,7 @@ export default async function NouveauAuditPage({
           action={createAudit}
           users={users}
           cancelHref="/audits"
-          submitLabel="Créer l'audit"
+          submitLabel="Créer la mission"
         />
       </div>
     </>

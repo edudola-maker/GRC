@@ -88,12 +88,14 @@ Pour le responsable d’unité, par collaborateur :
 
 ### 3. Risques
 
-Champs cibles : nom, description, processus, responsable, catégorie, probabilité (1–5), impact (1–5), **criticité calculée**, statut.
+Champs cibles : nom, description, processus, responsable, catégorie, **probabilité / impact inhérents**, **probabilité / impact résiduels**, criticité calculée, statut.
 
-Catégories initiales : Financier · Opérationnel · Conformité · Cybersécurité · Reporting.
+Catégories : Financier · Opérationnel · Conformité · Cybersécurité · Reporting · Juridique · Système d'information.
 
-- Matrice de criticité **5 × 5** simple et visuelle.
+- Matrice de criticité **5 × 5** filtrable (catégorie, inhérent / résiduel).
 - Depuis un risque → création d’un ou plusieurs **contrôles SCI** (le contrôle = réponse au risque).
+
+**Roadmap (prochains sprints) :** visualisation de l’évolution d’un risque entre niveau **inhérent** et niveau **résiduel** (parcours / flèches sur la matrice).
 
 ### 4. Contrôles SCI
 
@@ -108,6 +110,21 @@ Inventaire : nom, type, version, responsable, date d’approbation, prochaine re
 - Revues planifiées (ex. annuelles).
 - Une revue due **crée automatiquement une tâche** pour le responsable.
 
+### 5bis. Relations entre objets
+
+Architecture générique `LienObjet` : tout objet métier peut être lié librement à tout autre (Projets, Missions d'assurance, Conseils, Risques, Contrôles SCI, Documents, Actions). Section **Éléments associés** sur chaque fiche.
+
+### 5ter. Missions d'assurance (évolution d’Audits)
+
+Le module Audits évolue progressivement vers **Missions d'assurance** :
+
+- types : **Audit** · **Revue de processus** ;
+- moteur commun : planification, travaux, rapport, recommandations, suivi ;
+- templates différenciés par type (plus tard).
+
+**Roadmap (prochains sprints) — programmes récurrents :**  
+ex. programme de revue des processus avec rotation tous les 3 ans ; chaque occurrence génère automatiquement une Mission d'assurance de type Revue de processus. À concevoir sans développer maintenant.
+
 ### 6. Indicateurs par module
 
 Indicateurs de progression (pas de gamification). Exemples :
@@ -120,7 +137,7 @@ Indicateurs de progression (pas de gamification). Exemples :
 | Contrôles SCI | Réalisés, planifiés, en retard, taux de réalisation |
 | Documents | Inventoriés, revues à faire / en retard / réalisées |
 | Risques | Nombre, répartition, critiques, élevés, traités |
-| Audits *(plus tard)* | Réalisés, en cours, recommandations ouvertes/clôturées, planning annuel |
+| Audits / Missions d'assurance | Réalisés, en cours, recommandations ouvertes/clôturées, planning annuel |
 
 ### 7. Boîte de réception (long terme — non prioritaire)
 

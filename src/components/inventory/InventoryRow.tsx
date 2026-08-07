@@ -1,10 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 
 export type InventoryCell = {
   value: ReactNode;
   /** Mise en avant visuelle du contenu */
   emphasis?: "code" | "title" | "status" | "muted";
+  /** Badge coloré pour le statut (fond de ligne reste neutre) */
+  badgeTone?: StatusTone;
 };
 
 /**
@@ -32,19 +35,17 @@ export function InventoryColumns({
 }
 
 /**
- * Ligne d’inventaire type tableau moderne.
- * Ligne 1 = valeurs alignées sur les colonnes principales ;
- * ligne 2 = méta alignée sur les colonnes secondaires.
+ * Ligne d’inventaire neutre — le statut porte la couleur via badge.
  */
 export function InventoryRow({
   href,
-  urgence = "neutre",
   archived = false,
   primary,
   secondary,
 }: {
   href: string;
-  urgence?: "retard" | "bientot" | "a_venir" | "neutre" | string;
+  /** @deprecated Conservé pour compat ; n’applique plus de fond coloré. */
+  urgence?: string;
   archived?: boolean;
   primary: InventoryCell[];
   secondary?: InventoryCell[];
@@ -52,7 +53,7 @@ export function InventoryRow({
   return (
     <Link
       href={href}
-      className={`inventory-row inventory-row--${urgence}${archived ? " is-archived" : ""}`}
+      className={`inventory-row${archived ? " is-archived" : ""}`}
     >
       <div className="inventory-row__line inventory-row__line--primary">
         {primary.map((cell, i) => (
@@ -77,6 +78,16 @@ function InventoryCellView({
   cell: InventoryCell;
   secondary?: boolean;
 }) {
+  if (cell.badgeTone != null || cell.emphasis === "status") {
+    return (
+      <div className="inventory-cell">
+        <StatusBadge tone={cell.badgeTone ?? "neutral"}>
+          {cell.value || "—"}
+        </StatusBadge>
+      </div>
+    );
+  }
+
   const valueClass = [
     "inventory-cell__value",
     cell.emphasis ? `inventory-cell__value--${cell.emphasis}` : null,
@@ -96,9 +107,7 @@ export function InventoryEmpty({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>;
 }
 
-/**
- * Liste avec double en-tête de colonnes (principales + secondaires) + lignes.
- */
+/** Liste avec double en-tête de colonnes (principales + secondaires) + lignes. */
 export function InventoryList({
   columns,
   secondaryColumns,

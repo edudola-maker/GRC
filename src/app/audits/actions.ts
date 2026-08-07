@@ -5,6 +5,7 @@ import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import {
   STATUT_AUDIT_OPTIONS,
   STATUT_RECO_OPTIONS,
+  TYPE_MISSION_OPTIONS,
 } from "@/lib/catalog";
 import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optDate, optStr, str } from "@/lib/form";
@@ -17,6 +18,9 @@ const STATUTS_AUDIT = new Set<string>(
   STATUT_AUDIT_OPTIONS.map((o) => o.value),
 );
 const STATUTS_RECO = new Set<string>(STATUT_RECO_OPTIONS.map((o) => o.value));
+const TYPES_MISSION = new Set<string>(
+  TYPE_MISSION_OPTIONS.map((o) => o.value),
+);
 
 async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
@@ -41,6 +45,11 @@ export async function createAudit(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
+  const typeMission = str(formData, "typeMission") || "AUDIT";
+  if (!TYPES_MISSION.has(typeMission)) {
+    redirectWithError(fallback, "Type de mission invalide.");
+  }
+
   const nomErr = await assertNomUnique("AUDIT", titre, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
@@ -49,6 +58,7 @@ export async function createAudit(formData: FormData) {
       code: await nextCode("AUDIT", uniteId),
       uniteId,
       titre,
+      typeMission: typeMission as "AUDIT",
       perimetre: optStr(formData, "perimetre"),
       taxinomie: optStr(formData, "taxinomie"),
       tags: serializeTags(optStr(formData, "tags")),
@@ -98,6 +108,11 @@ export async function updateAudit(formData: FormData) {
     redirectWithError(`/audits/${id}/modifier`, "Statut invalide.");
   }
 
+  const typeMission = str(formData, "typeMission") || existing.typeMission;
+  if (!TYPES_MISSION.has(typeMission)) {
+    redirectWithError(`/audits/${id}/modifier`, "Type de mission invalide.");
+  }
+
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
     redirectWithError(`/audits/${id}/modifier`, "Responsable introuvable.");
@@ -107,6 +122,7 @@ export async function updateAudit(formData: FormData) {
     where: { id },
     data: {
       titre,
+      typeMission: typeMission as "AUDIT",
       perimetre: optStr(formData, "perimetre"),
       taxinomie: optStr(formData, "taxinomie"),
       tags: serializeTags(optStr(formData, "tags")),
