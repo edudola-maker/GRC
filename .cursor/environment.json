@@ -1,0 +1,4 @@
+{
+  "install": "cp -n .env.example .env\nnpm install\nnpx prisma migrate deploy\nnpx prisma generate\nnpm run db:seed",
+  "start": "npm run dev"
+}
