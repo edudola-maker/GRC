@@ -1,0 +1,262 @@
+// Schéma de données GRC — Module Pilotage & Monitoring (MVP)
+// SQLite pour le démarrage local ; migration PostgreSQL possible ultérieurement.
+//
+// Vision produit : ROADMAP.md + ARCHITECTURE.md
+// - Objets métier distincts (Projet, futur Conseil, ControleSCI, Document, futurs Risque/Audit)
+// - Tâche = action (libre ou générée depuis un objet métier), pas un métier en soi
+// - Tables de liaison métier plutôt qu'un polymorphe générique
+// - Ne pas implémenter les modules futurs tant qu'ils ne sont pas demandés
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── Énumérations ───────────────────────────────────────────
+
+enum StatutProjet {
+  A_FAIRE
+  EN_COURS
+  EN_ATTENTE
+  TERMINE
+  ANNULE
+}
+
+enum StatutTache {
+  A_FAIRE
+  EN_COURS
+  EN_ATTENTE
+  A_VALIDER
+  TERMINE
+  ANNULE
+}
+
+enum StatutControleSCI {
+  A_REALISER
+  EN_COURS
+  A_VALIDER
+  REALISE
+  EN_RETARD
+}
+
+enum Priorite {
+  BASSE
+  MOYENNE
+  HAUTE
+  CRITIQUE
+}
+
+enum FrequenceControle {
+  MENSUELLE
+  TRIMESTRIELLE
+  SEMESTRIELLE
+  ANNUELLE
+  PONCTUELLE
+}
+
+/// Catégories de tâche — pont MVP.
+/// CONSEIL : en attendant l'objet métier « Conseil » (voir ROADMAP.md).
+/// Liste destinée à devenir configurable / à évoluer après extraction des objets métier.
+enum CategorieTache {
+  CONSEIL
+  PROJET
+  ADMINISTRATIF
+  SCI
+  AUTRE
+}
+
+// ─── Utilisateur ────────────────────────────────────────────
+
+model Utilisateur {
+  id           String   @id @default(cuid())
+  nom          String
+  email        String   @unique
+  motDePasse   String
+  actif        Boolean  @default(true)
+  creeLe       DateTime @default(now())
+  modifieLe    DateTime @updatedAt
+
+  // Responsabilités
+  projetsResponsable   Projet[]      @relation("ProjetResponsable")
+  tachesResponsable    Tache[]       @relation("TacheResponsable")
+  controlesResponsable ControleSCI[] @relation("ControleResponsable")
+
+  // Traçabilité — création / modification
+  projetsCrees         Projet[]      @relation("ProjetCreePar")
+  projetsModifies      Projet[]      @relation("ProjetModifiePar")
+  tachesCrees          Tache[]       @relation("TacheCreePar")
+  tachesModifiees      Tache[]       @relation("TacheModifiePar")
+  controlesCrees       ControleSCI[] @relation("ControleCreePar")
+  controlesModifies    ControleSCI[] @relation("ControleModifiePar")
+  documentsCrees       Document[]    @relation("DocumentCreePar")
+  historiquesTache     HistoriqueTache[]
+
+  // Validation
+  tachesSoumises       Tache[]       @relation("TacheSoumisePar")
+  tachesValidees       Tache[]       @relation("TacheValideePar")
+  controlesSoumis      ControleSCI[] @relation("ControleSoumisPar")
+  controlesValides     ControleSCI[] @relation("ControleValidePar")
+}
+
+// ─── Projet ─────────────────────────────────────────────────
+
+model Projet {
+  id            String       @id @default(cuid())
+  nom           String
+  description   String?
+  responsableId String
+  dateDebut     DateTime?
+  dateEcheance  DateTime?
+  statut        StatutProjet @default(A_FAIRE)
+  priorite      Priorite     @default(MOYENNE)
+  avancement    Int          @default(0) // 0–100
+  commentaires  String?
+  /// Archivage soft : masqué des listes actives, conservé en base
+  archive       Boolean      @default(false)
+  creeParId     String
+  modifieParId  String
+  creeLe        DateTime     @default(now())
+  modifieLe     DateTime     @updatedAt
+
+  // Réservé aux extensions futures (champs personnalisés) — non exposé UI
+  meta Json?
+
+  responsable Utilisateur @relation("ProjetResponsable", fields: [responsableId], references: [id])
+  creePar     Utilisateur @relation("ProjetCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur @relation("ProjetModifiePar", fields: [modifieParId], references: [id])
+  taches      Tache[]
+
+  // Extensions futures : ProjetDocument, Risque, Indicateur, objectifs…
+}
+
+// ─── Tâche ──────────────────────────────────────────────────
+
+model Tache {
+  id            String         @id @default(cuid())
+  titre         String
+  description   String?
+  responsableId String
+  projetId      String? // facultatif — une tâche peut être indépendante (ex. Conseil)
+  dateCreation  DateTime       @default(now())
+  dateEcheance  DateTime?
+  statut        StatutTache    @default(A_FAIRE)
+  priorite      Priorite       @default(MOYENNE)
+  categorie     CategorieTache @default(AUTRE)
+  commentaires  String?
+
+  // Validation (prévue dès le MVP ; workflow avancé plus tard)
+  soumisParId    String?
+  valideParId    String?
+  dateSoumission DateTime?
+  dateValidation DateTime?
+
+  // Traçabilité
+  creeParId    String
+  modifieParId String
+  creeLe       DateTime @default(now())
+  modifieLe    DateTime @updatedAt
+
+  // Champ JSON libre réservé aux extensions futures (champs personnalisés)
+  // Non exposé dans l'UI pour l'instant.
+  meta Json?
+
+  responsable Utilisateur @relation("TacheResponsable", fields: [responsableId], references: [id])
+  projet      Projet?     @relation(fields: [projetId], references: [id], onDelete: SetNull)
+  creePar     Utilisateur @relation("TacheCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur @relation("TacheModifiePar", fields: [modifieParId], references: [id])
+  soumisPar   Utilisateur? @relation("TacheSoumisePar", fields: [soumisParId], references: [id])
+  validePar   Utilisateur? @relation("TacheValideePar", fields: [valideParId], references: [id])
+  historique  HistoriqueTache[]
+
+  // Origines futures (ne pas ajouter tant que non demandé) :
+  // conseilId, controleSCIId, auditId, revueDocumentId…
+  // Extensions : lien Risque, Plan d'action, objectifs (vue Équipe)…
+}
+
+model HistoriqueTache {
+  id             String   @id @default(cuid())
+  tacheId        String
+  modifieParId   String
+  modifieLe      DateTime @default(now())
+  champModifie   String
+  ancienneValeur String?
+  nouvelleValeur String?
+
+  tache      Tache       @relation(fields: [tacheId], references: [id], onDelete: Cascade)
+  modifiePar Utilisateur @relation(fields: [modifieParId], references: [id])
+}
+
+// ─── Contrôle SCI ───────────────────────────────────────────
+
+model ControleSCI {
+  id                      String            @id @default(cuid())
+  nom                     String
+  description             String?
+  processusConcerne       String
+  responsableId           String
+  frequence               FrequenceControle
+  dateDerniereRealisation DateTime?
+  dateProchaineEcheance   DateTime?
+  statut                  StatutControleSCI @default(A_REALISER)
+  commentaires            String?
+
+  // Validation
+  soumisParId    String?
+  valideParId    String?
+  dateSoumission DateTime?
+  dateValidation DateTime?
+
+  // Traçabilité
+  creeParId    String
+  modifieParId String
+  creeLe       DateTime @default(now())
+  modifieLe    DateTime @updatedAt
+
+  responsable Utilisateur @relation("ControleResponsable", fields: [responsableId], references: [id])
+  creePar     Utilisateur @relation("ControleCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur @relation("ControleModifiePar", fields: [modifieParId], references: [id])
+  soumisPar   Utilisateur? @relation("ControleSoumisPar", fields: [soumisParId], references: [id])
+  validePar   Utilisateur? @relation("ControleValidePar", fields: [valideParId], references: [id])
+  preuves     ControleDocument[]
+
+  // Extensions futures : lien Risque, Processus objet…
+}
+
+// ─── Document (métadonnées ; fichier hors base) ─────────────
+
+model Document {
+  id          String   @id @default(cuid())
+  nomFichier  String
+  nomStockage String
+  chemin      String
+  typeMime    String?
+  taille      Int?
+  description String?
+  creeParId   String
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  creePar  Utilisateur         @relation("DocumentCreePar", fields: [creeParId], references: [id])
+  controles ControleDocument[]
+
+  // Extensions futures : ProjetDocument, RisqueDocument, ProcessusDocument…
+}
+
+/// Table de liaison métier Contrôle SCI ↔ Document (preuves)
+model ControleDocument {
+  id            String   @id @default(cuid())
+  controleSCIId String
+  documentId    String
+  typeLien      String   @default("preuve")
+  creeLe        DateTime @default(now())
+
+  controle ControleSCI @relation(fields: [controleSCIId], references: [id], onDelete: Cascade)
+  document Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([controleSCIId, documentId])
+}

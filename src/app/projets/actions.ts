@@ -1,0 +1,184 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
+import {
+  PRIORITE_OPTIONS,
+  STATUT_PROJET_OPTIONS,
+} from "@/lib/catalog";
+import { optDate, optInt, optStr, str } from "@/lib/form";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
+
+const STATUTS = new Set<string>(STATUT_PROJET_OPTIONS.map((o) => o.value));
+const PRIORITES = new Set<string>(PRIORITE_OPTIONS.map((o) => o.value));
+
+function revalidateProjetViews(id?: string) {
+  revalidatePath("/");
+  revalidatePath("/projets");
+  revalidatePath("/backlog");
+  revalidatePath("/taches");
+  if (id) {
+    revalidatePath(`/projets/${id}`);
+    revalidatePath(`/projets/${id}/modifier`);
+  }
+}
+
+async function assertResponsable(id: string) {
+  const user = await prisma.utilisateur.findFirst({
+    where: { id, actif: true },
+  });
+  if (!user) {
+    return null;
+  }
+  return user;
+}
+
+export async function createProjet(formData: FormData) {
+  const current = await getCurrentUser();
+  const nom = str(formData, "nom");
+  if (!nom) {
+    redirectWithError("/projets/nouveau", "Le nom du projet est obligatoire.");
+  }
+
+  const statut = str(formData, "statut") || "A_FAIRE";
+  const priorite = str(formData, "priorite") || "MOYENNE";
+  if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
+    redirectWithError("/projets/nouveau", "Statut ou priorité invalide.");
+  }
+
+  const responsableId = str(formData, "responsableId") || current.id;
+  if (!(await assertResponsable(responsableId))) {
+    redirectWithError("/projets/nouveau", "Responsable introuvable.");
+  }
+
+  const avancement = Math.min(
+    100,
+    Math.max(0, optInt(formData, "avancement") ?? 0),
+  );
+
+  const projet = await prisma.projet.create({
+    data: {
+      nom,
+      description: optStr(formData, "description"),
+      responsableId,
+      dateDebut: optDate(formData, "dateDebut"),
+      dateEcheance: optDate(formData, "dateEcheance"),
+      statut: statut as "A_FAIRE",
+      priorite: priorite as "MOYENNE",
+      avancement,
+      commentaires: optStr(formData, "commentaires"),
+      archive: false,
+      creeParId: current.id,
+      modifieParId: current.id,
+    },
+  });
+
+  revalidateProjetViews(projet.id);
+  redirectWithOk(`/projets/${projet.id}`, "cree");
+}
+
+export async function updateProjet(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) {
+    redirectWithError("/projets", "Identifiant projet manquant.");
+  }
+
+  const existing = await prisma.projet.findUnique({ where: { id } });
+  if (!existing) {
+    redirectWithError("/projets", "Projet introuvable.");
+  }
+
+  const nom = str(formData, "nom");
+  if (!nom) {
+    redirectWithError(
+      `/projets/${id}/modifier`,
+      "Le nom du projet est obligatoire.",
+    );
+  }
+
+  const statut = str(formData, "statut") || "A_FAIRE";
+  const priorite = str(formData, "priorite") || "MOYENNE";
+  if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
+    redirectWithError(`/projets/${id}/modifier`, "Statut ou priorité invalide.");
+  }
+
+  const responsableId = str(formData, "responsableId") || current.id;
+  if (!(await assertResponsable(responsableId))) {
+    redirectWithError(`/projets/${id}/modifier`, "Responsable introuvable.");
+  }
+
+  const avancement = Math.min(
+    100,
+    Math.max(0, optInt(formData, "avancement") ?? 0),
+  );
+
+  await prisma.projet.update({
+    where: { id },
+    data: {
+      nom,
+      description: optStr(formData, "description"),
+      responsableId,
+      dateDebut: optDate(formData, "dateDebut"),
+      dateEcheance: optDate(formData, "dateEcheance"),
+      statut: statut as "A_FAIRE",
+      priorite: priorite as "MOYENNE",
+      avancement,
+      commentaires: optStr(formData, "commentaires"),
+      modifieParId: current.id,
+    },
+  });
+
+  revalidateProjetViews(id);
+  redirectWithOk(`/projets/${id}`, "modifie");
+}
+
+export async function archiveProjet(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/projets", "Identifiant projet manquant.");
+
+  const existing = await prisma.projet.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/projets", "Projet introuvable.");
+
+  await prisma.projet.update({
+    where: { id },
+    data: { archive: true, modifieParId: current.id },
+  });
+
+  revalidateProjetViews(id);
+  redirectWithOk(`/projets/${id}`, "archive");
+}
+
+export async function unarchiveProjet(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/projets", "Identifiant projet manquant.");
+
+  const existing = await prisma.projet.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/projets", "Projet introuvable.");
+
+  await prisma.projet.update({
+    where: { id },
+    data: { archive: false, modifieParId: current.id },
+  });
+
+  revalidateProjetViews(id);
+  redirectWithOk(`/projets/${id}`, "desarchive");
+}
+
+export async function deleteProjet(formData: FormData) {
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/projets", "Identifiant projet manquant.");
+
+  const existing = await prisma.projet.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/projets", "Projet introuvable.");
+
+  // Les tâches liées passent en indépendantes (onDelete: SetNull)
+  await prisma.projet.delete({ where: { id } });
+
+  revalidateProjetViews();
+  redirect("/projets?ok=supprime");
+}
