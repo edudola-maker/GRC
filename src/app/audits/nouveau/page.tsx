@@ -19,7 +19,7 @@ export default async function NouveauAuditPage({
       <BackLink href="/audits" label="← Retour aux audits" />
       <PageHeader
         title="Nouvel audit"
-        description="Créez un audit puis ajoutez des recommandations et des tâches."
+        description="Définissez le titre, le périmètre et le calendrier de la mission."
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
