@@ -59,6 +59,7 @@ export function ConfirmActionButton({
   confirmMessage,
   variant = "ghost",
   pendingLabel = "…",
+  fields,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   id: string;
@@ -66,6 +67,8 @@ export function ConfirmActionButton({
   confirmMessage: string;
   variant?: "primary" | "ghost" | "danger";
   pendingLabel?: string;
+  /** Champs hidden supplémentaires (ex. archive=1/0) */
+  fields?: Record<string, string>;
 }) {
   return (
     <form
@@ -77,6 +80,11 @@ export function ConfirmActionButton({
       }}
     >
       <input type="hidden" name="id" value={id} />
+      {fields
+        ? Object.entries(fields).map(([name, value]) => (
+            <input key={name} type="hidden" name={name} value={value} />
+          ))
+        : null}
       <SubmitButton variant={variant} pendingLabel={pendingLabel}>
         {label}
       </SubmitButton>
