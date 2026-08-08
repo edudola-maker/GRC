@@ -14,7 +14,7 @@ const LINKABLE: TypeObjetMetier[] = [
   "PROCESSUS",
   "PROJET",
   "CONSEIL",
-  "AUDIT",
+  "MISSION",
   "RISQUE",
   "CONTROLE_SCI",
   "DOCUMENT",

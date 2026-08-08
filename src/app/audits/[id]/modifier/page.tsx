@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
-import { AuditForm } from "@/components/EntityForms";
+import { MissionForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { updateAudit } from "../../actions";
+import { updateMission } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,37 +19,55 @@ export default async function ModifierAuditPage({
   const { id } = await params;
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [audit, users] = await Promise.all([
-    prisma.audit.findUnique({ where: { id } }),
+  const [mission, users, types, templates, descriptifs] = await Promise.all([
+    prisma.mission.findUnique({ where: { id } }),
     listUtilisateursActifsForCurrentUnite(),
+    prisma.missionType.findMany({
+      where: { actif: true },
+      orderBy: { ordre: "asc" },
+      select: { id: true, libelle: true },
+    }),
+    prisma.missionTemplate.findMany({
+      where: { actif: true },
+      orderBy: { libelle: "asc" },
+      select: { id: true, libelle: true, typeId: true },
+    }),
+    prisma.missionDescriptifPreset.findMany({
+      where: { actif: true },
+      orderBy: { ordre: "asc" },
+      select: { id: true, libelle: true, typeId: true },
+    }),
   ]);
 
-  if (!audit) notFound();
-  if (audit.archive) {
+  if (!mission) notFound();
+  if (mission.archive) {
     redirect(
-      `/audits/${id}?erreur=${encodeURIComponent("Audit archivé : désarchivez-le pour le modifier.")}`,
+      `/audits/${id}?erreur=${encodeURIComponent("Mission archivée : désarchivez-la pour la modifier.")}`,
     );
   }
 
   return (
     <>
-      <BackLink href={`/audits/${audit.id}`} label="← Retour à la mission" />
-      <PageHeader title="Modifier la mission" description={audit.titre} />
+      <BackLink href={`/audits/${mission.id}`} label="← Retour à la mission" />
+      <PageHeader title="Modifier la mission" description={mission.titre} />
       <FlashBanner erreur={sp.erreur} />
       <div className="panel">
-        <AuditForm
-          action={updateAudit}
+        <MissionForm
+          action={updateMission}
           users={users}
-          values={audit}
-          cancelHref={`/audits/${audit.id}`}
+          types={types}
+          templates={templates}
+          descriptifs={descriptifs}
+          values={mission}
+          cancelHref={`/audits/${mission.id}`}
           submitLabel="Enregistrer"
         />
       </div>
       <ElementsAssocies
         uniteId={user.uniteId}
-        type="AUDIT"
-        id={audit.id}
-        retour={`/audits/${audit.id}/modifier`}
+        type="MISSION"
+        id={mission.id}
+        retour={`/audits/${mission.id}/modifier`}
         editable
       />
     </>

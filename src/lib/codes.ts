@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 const PREFIXES = {
   PROJET: "PRO",
   CONSEIL: "CNS",
-  AUDIT: "AUD",
+  MISSION: "MIS",
+  RECOMMANDATION: "REC",
   RISQUE: "RSK",
   CONTROLE_SCI: "CTL",
   DOCUMENT: "DOC",
@@ -98,8 +99,8 @@ export async function assertNomUnique(
     });
     if (existing) return "Un document actif porte déjà ce nom.";
   }
-  if (type === "AUDIT") {
-    const existing = await prisma.audit.findFirst({
+  if (type === "MISSION") {
+    const existing = await prisma.mission.findFirst({
       where: {
         uniteId,
         titre: n,
@@ -107,7 +108,7 @@ export async function assertNomUnique(
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
     });
-    if (existing) return "Un audit actif porte déjà ce titre.";
+    if (existing) return "Une mission active porte déjà ce titre.";
   }
   if (type === "PROCESSUS") {
     const existing = await prisma.processus.findFirst({

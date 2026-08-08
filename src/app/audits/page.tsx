@@ -9,8 +9,7 @@ import {
 } from "@/components/audits/AuditInventory";
 import { MODULE_HELP } from "@/lib/catalog";
 import {
-  STATUT_AUDIT_LABELS,
-  TYPE_MISSION_LABELS,
+  STATUT_MISSION_LABELS,
   formatDateDot,
   startOfToday,
   urgenceEcheance,
@@ -20,7 +19,7 @@ import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-const AUDIT_STATUTS_CLOS = ["TERMINE", "ANNULE"] as const;
+const MISSION_STATUTS_CLOS = ["TERMINE", "ANNULE"] as const;
 
 export default async function AuditsPage({
   searchParams,
@@ -32,57 +31,59 @@ export default async function AuditsPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [audits, planifies, enCours, termines, recoOuvertes, recoCloturees] =
+  const [missions, planifies, enCours, termines, recoOuvertes, recoCloturees] =
     await Promise.all([
-      prisma.audit.findMany({
+      prisma.mission.findMany({
         where: { uniteId },
         include: {
           responsable: true,
+          type: true,
           _count: {
             select: { taches: true, recommandations: true },
           },
         },
         orderBy: [{ dateDebut: "desc" }, { titre: "asc" }],
       }),
-      prisma.audit.count({
+      prisma.mission.count({
         where: { uniteId, archive: false, statut: "PLANIFIE" },
       }),
-      prisma.audit.count({
+      prisma.mission.count({
         where: {
           uniteId,
           archive: false,
           statut: { in: ["EN_COURS", "EN_REVUE"] },
         },
       }),
-      prisma.audit.count({
+      prisma.mission.count({
         where: { uniteId, archive: false, statut: "TERMINE" },
       }),
       prisma.recommandation.count({
         where: {
+          archive: false,
           statut: { in: ["OUVERTE", "EN_COURS"] },
-          audit: { uniteId, archive: false },
+          mission: { uniteId, archive: false },
         },
       }),
       prisma.recommandation.count({
         where: {
+          archive: false,
           statut: "CLOTUREE",
-          audit: { uniteId, archive: false },
+          mission: { uniteId, archive: false },
         },
       }),
     ]);
 
-  const items: AuditInventoryItem[] = audits.map((a) => {
-    const clos = (AUDIT_STATUTS_CLOS as readonly string[]).includes(a.statut);
+  const items: AuditInventoryItem[] = missions.map((a) => {
+    const clos = (MISSION_STATUTS_CLOS as readonly string[]).includes(a.statut);
     const estActif = !clos && !a.archive;
     const estRetard = Boolean(estActif && a.dateFin && a.dateFin < today);
     return {
       id: a.id,
       code: a.code,
       titre: a.titre,
-      typeMission: a.typeMission,
-      typeMissionLabel: TYPE_MISSION_LABELS[a.typeMission] ?? a.typeMission,
+      typeLabel: a.type.libelle,
       statut: a.statut,
-      statutLabel: STATUT_AUDIT_LABELS[a.statut] ?? a.statut,
+      statutLabel: STATUT_MISSION_LABELS[a.statut] ?? a.statut,
       responsableId: a.responsableId,
       responsableNom: a.responsable.nom,
       tags: a.tags,

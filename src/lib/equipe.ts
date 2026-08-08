@@ -69,7 +69,7 @@ export async function getEquipeOverview(
           statut: { notIn: ["CLOTURE", "ANNULE", "REPONDU"] },
         },
       }),
-      prisma.audit.count({
+      prisma.mission.count({
         where: {
           uniteId,
           archive: false,

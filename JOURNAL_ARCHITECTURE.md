@@ -84,7 +84,7 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Formulaires :** blocs thématiques `FormSection` (un seul Enregistrer). Fiches : `CollapsibleSection`. Cartographie risques repliée par défaut. Zone « À traiter » sobre (plus de jaune global).
 
-**Missions d'assurance :** `Audit.typeMission` (`AUDIT` | `REVUE_PROCESSUS`) — même moteur ; programmes récurrents = roadmap.
+**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — moteur **Type → Template → Instance**. Équipe + rôles de mission (`MissionRole`, ≠ rôle app). Initiales utilisateur (affichage). Sections template repliables. Check-lists / validations structurées (contenu progressif). Recos `REC-xxxx` indépendantes de la clôture ; soft-delete mission. Routes `/audits` temporaires. Éditeur templates / versioning visas / dashboard validations = roadmap.
 
 **Relations :** table générique `LienObjet` + section **Éléments associés** (lecture en consultation, édition sur Modifier).
 

@@ -64,7 +64,7 @@ export default async function TacheDetailPage({
         projet: true,
         conseil: true,
         controleSCI: true,
-        audit: true,
+        mission: true,
         document: true,
         recommandation: true,
         creePar: true,
@@ -161,12 +161,12 @@ export default async function TacheDetailPage({
                 </dd>
               </div>
             ) : null}
-            {tache.audit ? (
+            {tache.mission ? (
               <div>
-                <dt>Audit</dt>
+                <dt>Mission</dt>
                 <dd>
-                  <Link href={`/audits/${tache.audit.id}`}>
-                    {tache.audit.titre}
+                  <Link href={`/audits/${tache.mission.id}`}>
+                    {tache.mission.titre}
                   </Link>
                 </dd>
               </div>

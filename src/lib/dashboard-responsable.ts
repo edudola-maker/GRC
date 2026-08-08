@@ -38,17 +38,17 @@ export async function getDashboardResponsable(uniteId: string) {
     controlesListe,
     risquesListe,
   ] = await Promise.all([
-    prisma.audit.count({
+    prisma.mission.count({
       where: {
         uniteId,
         archive: false,
         statut: { in: ["EN_COURS", "EN_REVUE"] },
       },
     }),
-    prisma.audit.count({
+    prisma.mission.count({
       where: { uniteId, archive: false, statut: "TERMINE" },
     }),
-    prisma.audit.count({
+    prisma.mission.count({
       where: {
         uniteId,
         archive: false,
@@ -151,7 +151,7 @@ export async function getDashboardResponsable(uniteId: string) {
       include: { utilisateur: true },
       orderBy: { utilisateur: { nom: "asc" } },
     }),
-    prisma.audit.findMany({
+    prisma.mission.findMany({
       where: {
         uniteId,
         archive: false,

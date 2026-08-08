@@ -9,7 +9,7 @@ export const tacheActionInclude = {
   projet: true,
   conseil: true,
   controleSCI: true,
-  audit: true,
+  mission: true,
   document: true,
 } satisfies Prisma.TacheInclude;
 
@@ -22,7 +22,7 @@ export function origineAction(t: TacheAction): { label: string; href?: string } 
   if (t.conseil) return { label: t.conseil.objet, href: `/conseils/${t.conseil.id}` };
   if (t.controleSCI)
     return { label: t.controleSCI.nom, href: `/controles-sci/${t.controleSCI.id}` };
-  if (t.audit) return { label: t.audit.titre, href: `/audits/${t.audit.id}` };
+  if (t.mission) return { label: t.mission.titre, href: `/audits/${t.mission.id}` };
   if (t.document) return { label: t.document.nom, href: `/documents/${t.document.id}` };
   return { label: "Action libre" };
 }
@@ -123,13 +123,14 @@ export async function getActionsUnite(
   if (filters.type === "PROJET") where.projetId = { not: null };
   else if (filters.type === "CONSEIL") where.conseilId = { not: null };
   else if (filters.type === "SCI") where.controleSCIId = { not: null };
-  else if (filters.type === "AUDIT") where.auditId = { not: null };
+  else if (filters.type === "MISSION" || filters.type === "AUDIT")
+    where.missionId = { not: null };
   else if (filters.type === "DOCUMENT") where.documentId = { not: null };
   else if (filters.type === "LIBRE") {
     where.projetId = null;
     where.conseilId = null;
     where.controleSCIId = null;
-    where.auditId = null;
+    where.missionId = null;
     where.documentId = null;
   }
 

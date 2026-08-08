@@ -14,6 +14,7 @@ export default async function NouvelleTachePage({
     projetId?: string;
     conseilId?: string;
     controleSCIId?: string;
+    missionId?: string;
     auditId?: string;
     documentId?: string;
     recommandationId?: string;
@@ -24,7 +25,8 @@ export default async function NouvelleTachePage({
   const sp = await searchParams;
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
-  const [users, projets, conseils, controles, audits, documents] =
+  const missionId = sp.missionId ?? sp.auditId;
+  const [users, projets, conseils, controles, missions, documents] =
     await Promise.all([
       listUtilisateursActifsForCurrentUnite(),
       prisma.projet.findMany({
@@ -46,7 +48,7 @@ export default async function NouvelleTachePage({
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),
-      prisma.audit.findMany({
+      prisma.mission.findMany({
         where: { uniteId, archive: false },
         orderBy: { titre: "asc" },
         select: { id: true, titre: true },
@@ -66,8 +68,8 @@ export default async function NouvelleTachePage({
         ? "CONSEIL"
         : sp.controleSCIId
           ? "SCI"
-          : sp.auditId || sp.recommandationId
-            ? "AUDIT"
+          : missionId || sp.recommandationId
+            ? "MISSION"
             : sp.documentId
               ? "DOCUMENT"
               : "AUTRE");
@@ -93,13 +95,13 @@ export default async function NouvelleTachePage({
           projets={projets}
           conseils={conseils.map((c) => ({ id: c.id, nom: c.objet }))}
           controles={controles}
-          audits={audits.map((a) => ({ id: a.id, nom: a.titre }))}
+          missions={missions.map((a) => ({ id: a.id, nom: a.titre }))}
           documents={documents}
           values={{
             projetId: sp.projetId ?? null,
             conseilId: sp.conseilId ?? null,
             controleSCIId: sp.controleSCIId ?? null,
-            auditId: sp.auditId ?? null,
+            missionId: missionId ?? null,
             documentId: sp.documentId ?? null,
             recommandationId: sp.recommandationId ?? null,
             categorie,

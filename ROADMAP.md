@@ -135,16 +135,23 @@ Architecture générique `LienObjet` : tout objet métier peut être lié librem
 
 **Consultation vs modification :** par défaut une fiche est en consultation ; les liens et infos structurantes se modifient uniquement après **Modifier** → Enregistrer / Annuler (prépare droits, versioning, validation).
 
-### 5ter. Missions d'assurance (évolution d’Audits)
+### 5ter. Missions (moteur générique — nom de module provisoire)
 
-Le module Audits évolue progressivement vers **Missions d'assurance** :
+Objet technique `Mission` (codes **MIS-xxxx**). Chaîne cible :
 
-- types : **Audit** · **Revue de processus** ;
-- moteur commun : planification, travaux, rapport, recommandations, suivi ;
-- templates différenciés par type (plus tard).
+**Type de mission → Template → Instance** (sections / workflow).
 
-**Roadmap (prochains sprints) — programmes récurrents :**  
-ex. programme de revue des processus avec rotation tous les 3 ans ; chaque occurrence génère automatiquement une Mission d'assurance de type Revue de processus. À concevoir sans développer maintenant.
+Socle livré : types & templates seedés, équipe + rôles de mission, initiales utilisateur, squelette repliable (Vue d’ensemble + Planification + Substantif + Recommandations + Rapport + Suivi), recommandations **REC-xxxx** indépendantes de la clôture, tables check-list / validation (contenu métier progressif). Soft-delete / archivage privilégié.
+
+**Roadmap — Éditeur (key user) :** administrer les templates (sections, ordre, champs, rôles, check-lists qualité, validations obligatoires, livrables) sans modifier le code.
+
+**Roadmap — versioning des validations :** invalider les visas si l’élément validé change (`contenuVersion` / statut obsolète).
+
+**Roadmap — Dashboard responsable :** agréger les validations en attente.
+
+**Roadmap — programmes récurrents :** ex. revue des processus tous les 3 ans → génération automatique d’instances.
+
+**Roadmap — routes :** migrer `/audits` vers un chemin aligné sur le nom définitif du module.
 
 ### 5quater. Export Excel (roadmap)
 

@@ -11,7 +11,7 @@ import {
 } from "@/lib/catalog";
 import {
   CATEGORIE_RISQUE_LABELS,
-  STATUT_AUDIT_LABELS,
+  STATUT_MISSION_LABELS,
   STATUT_CONSEIL_LABELS,
   STATUT_CONTROLE_LABELS,
   STATUT_PROJET_LABELS,
@@ -214,7 +214,7 @@ export default async function DashboardResponsablePage({
               rag: ragEcheance(a.dateFin),
               href: `/audits/${a.id}`,
               title: a.titre,
-              meta: `${a.responsable.nom} · Audit · ${STATUT_AUDIT_LABELS[a.statut]}`,
+              meta: `${a.responsable.nom} · Mission · ${STATUT_MISSION_LABELS[a.statut]}`,
               date: a.dateFin,
             })),
             ...data.operationnel.conseils.map((c) => ({
@@ -393,7 +393,7 @@ export default async function DashboardResponsablePage({
               <option value="">Toutes</option>
               <option value="PROJET">Projet</option>
               <option value="CONSEIL">Conseil</option>
-              <option value="AUDIT">Audit</option>
+              <option value="MISSION">Mission</option>
               <option value="SCI">Contrôle SCI</option>
               <option value="DOCUMENT">Document</option>
               <option value="LIBRE">Action libre</option>

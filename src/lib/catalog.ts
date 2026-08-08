@@ -88,10 +88,8 @@ export const CATEGORIE_RISQUE_OPTIONS = [
   { value: "SYSTEME_INFORMATION", label: "Système d'information" },
 ] as const;
 
-export const TYPE_MISSION_OPTIONS = [
-  { value: "AUDIT", label: "Audit" },
-  { value: "REVUE_PROCESSUS", label: "Revue de processus" },
-] as const;
+/** @deprecated Les types de mission viennent de MissionType (DB). */
+export const TYPE_MISSION_OPTIONS = [] as const;
 
 export const TYPE_DOCUMENT_OPTIONS = [
   { value: "DIRECTIVE", label: "Directive" },
@@ -111,13 +109,16 @@ export const STATUT_DOCUMENT_OPTIONS = [
   { value: "ARCHIVE", label: "Archivé" },
 ] as const;
 
-export const STATUT_AUDIT_OPTIONS = [
+export const STATUT_MISSION_OPTIONS = [
   { value: "PLANIFIE", label: "Planifié" },
   { value: "EN_COURS", label: "En cours" },
   { value: "EN_REVUE", label: "En revue" },
   { value: "TERMINE", label: "Terminé" },
   { value: "ANNULE", label: "Annulé" },
 ] as const;
+
+/** @deprecated Utiliser STATUT_MISSION_OPTIONS */
+export const STATUT_AUDIT_OPTIONS = STATUT_MISSION_OPTIONS;
 
 export const STATUT_PROCESSUS_OPTIONS = [
   { value: "ACTIF", label: "Actif" },
@@ -143,9 +144,10 @@ export const CATEGORIE_TACHE_OPTIONS = [
   { value: "PROJET", label: "Projet" },
   { value: "CONSEIL", label: "Conseil" },
   { value: "SCI", label: "Contrôle SCI" },
-  { value: "AUDIT", label: "Audit" },
+  { value: "MISSION", label: "Mission" },
   { value: "DOCUMENT", label: "Document" },
-  { value: "LIBRE", label: "Libre" },
+  { value: "ADMINISTRATIF", label: "Administratif" },
+  { value: "AUTRE", label: "Autre" },
 ] as const;
 
 export const STATUT_RECO_OPTIONS = [
@@ -277,19 +279,27 @@ export const MODULE_HELP = {
     ],
   },
   audits: {
-    title: "Comprendre les Missions d'assurance",
+    title: "Comprendre le module Missions",
     sections: [
       {
         heading: "À quoi ça sert ?",
-        body: "Missions d’assurance : Audit ou Revue de processus. Même moteur — planification, travaux, rapport, recommandations et suivi. Le type pourra disposer de templates dédiés plus tard.",
+        body: "Travaux structurés (audits, revues…) via un moteur unique : Type → Template → Instance. Le nom du module pourra encore évoluer.",
       },
       {
         heading: "Que saisir ?",
-        body: "Titre, type de mission, périmètre, responsable, statut et calendrier. Les recommandations et tâches de travaux se gèrent sur la fiche.",
+        body: "Type, intitulé, descriptif (liste standard ou « Mission spécifique » libre), unité, dates, équipe avec rôles de mission. Codes MIS-xxxx.",
       },
       {
-        heading: "Lien avec les autres objets",
-        body: "Une mission peut être liée à des processus, risques, contrôles ou documents. Les programmes récurrents (ex. revue tous les 3 ans) sont prévus en roadmap.",
+        heading: "Équipe & initiales",
+        body: "Les rôles (ex. Responsable de mandat, Auditeur) sont propres à la mission. Les initiales (JD, TZ…) sont un affichage compact — jamais l’identifiant technique.",
+      },
+      {
+        heading: "Check-lists ≠ tâches",
+        body: "Les check-lists qualité confirment une exigence méthodologique. Les tâches sont du travail opérationnel (Dashboard collaborateur).",
+      },
+      {
+        heading: "Recommandations",
+        body: "Objets REC-xxxx suivis dans le temps, indépendants de la clôture / archivage de la mission.",
       },
     ],
   },

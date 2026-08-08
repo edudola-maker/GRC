@@ -3,9 +3,9 @@ import { addDays, startOfToday } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 
 /** Familles visibles dans le calendrier (vue synthétique). */
-export type PlanningKind = "PROJET" | "AUDIT" | "TACHE";
+export type PlanningKind = "PROJET" | "MISSION" | "TACHE";
 
-export const PLANNING_KINDS: PlanningKind[] = ["PROJET", "AUDIT", "TACHE"];
+export const PLANNING_KINDS: PlanningKind[] = ["PROJET", "MISSION", "TACHE"];
 
 export type PlanningBand = {
   id: string;
@@ -20,7 +20,7 @@ export type PlanningBand = {
 
 export const PLANNING_KIND_LABELS: Record<PlanningKind, string> = {
   PROJET: "Projet",
-  AUDIT: "Audit",
+  MISSION: "Mission",
   TACHE: "Tâche",
 };
 
@@ -152,7 +152,7 @@ export function parsePlanningFilters(
 
 /**
  * Grandes plages de travail du collaborateur.
- * Familles calendrier : Projet | Audit | Tâche (conseils, SCI, revues, actions…).
+ * Familles calendrier : Projet | Mission | Tâche (conseils, SCI, revues, actions…).
  */
 export async function getPlanningCollaborateur(
   utilisateurId: string,
@@ -167,7 +167,7 @@ export async function getPlanningCollaborateur(
   const window = planningWindow(weeks, weekOffset);
   const { start: winStart, end: winEnd } = window;
 
-  const [projets, audits, conseils, documents, controles, actions] =
+  const [projets, missions, conseils, documents, controles, actions] =
     await Promise.all([
       prisma.projet.findMany({
         where: {
@@ -187,7 +187,7 @@ export async function getPlanningCollaborateur(
           dateEcheance: true,
         },
       }),
-      prisma.audit.findMany({
+      prisma.mission.findMany({
         where: {
           uniteId,
           archive: false,
@@ -261,7 +261,7 @@ export async function getPlanningCollaborateur(
           dateEcheance: { not: null },
           // Éviter de doubler les tâches déjà représentées via leur objet métier
           projetId: null,
-          auditId: null,
+          missionId: null,
         },
         select: {
           id: true,
@@ -303,18 +303,18 @@ export async function getPlanningCollaborateur(
     });
   }
 
-  for (const a of audits) {
+  for (const a of missions) {
     const s = a.dateDebut ?? a.dateFin;
     const e = a.dateFin ?? a.dateDebut;
     if (!s || !e) continue;
     pushBand({
-      id: `audit-${a.id}`,
-      kind: "AUDIT",
+      id: `mission-${a.id}`,
+      kind: "MISSION",
       title: `${a.code} — ${a.titre}`,
       href: `/audits/${a.id}`,
       start: new Date(s),
       end: new Date(e),
-      source: "Audit",
+      source: "Mission",
     });
   }
 

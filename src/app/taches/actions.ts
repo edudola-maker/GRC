@@ -22,7 +22,7 @@ function revalidateTacheViews(
     projetId?: string | null;
     conseilId?: string | null;
     controleSCIId?: string | null;
-    auditId?: string | null;
+    missionId?: string | null;
     documentId?: string | null;
   },
 ) {
@@ -35,7 +35,7 @@ function revalidateTacheViews(
   if (links?.controleSCIId) {
     extra.push(`/controles-sci/${links.controleSCIId}`);
   }
-  if (links?.auditId) extra.push(`/audits/${links.auditId}`);
+  if (links?.missionId) extra.push(`/audits/${links.missionId}`);
   if (links?.documentId) extra.push(`/documents/${links.documentId}`);
   revalidateApp(extra);
 }
@@ -73,7 +73,7 @@ async function assertProjetOptional(projetId: string | null) {
 async function assertOptionalLinks(links: {
   conseilId: string | null;
   controleSCIId: string | null;
-  auditId: string | null;
+  missionId: string | null;
   documentId: string | null;
   recommandationId: string | null;
 }) {
@@ -89,9 +89,9 @@ async function assertOptionalLinks(links: {
     });
     if (!c) return "Contrôle SCI lié introuvable.";
   }
-  if (links.auditId) {
-    const a = await prisma.audit.findUnique({ where: { id: links.auditId } });
-    if (!a) return "Audit lié introuvable.";
+  if (links.missionId) {
+    const a = await prisma.mission.findUnique({ where: { id: links.missionId } });
+    if (!a) return "Mission liée introuvable.";
   }
   if (links.documentId) {
     const d = await prisma.document.findUnique({
@@ -112,7 +112,7 @@ function readLinks(formData: FormData) {
   return {
     conseilId: optStr(formData, "conseilId"),
     controleSCIId: optStr(formData, "controleSCIId"),
-    auditId: optStr(formData, "auditId"),
+    missionId: optStr(formData, "missionId") ?? optStr(formData, "auditId"),
     documentId: optStr(formData, "documentId"),
     recommandationId: optStr(formData, "recommandationId"),
   };
@@ -306,7 +306,7 @@ export async function updateTache(formData: FormData) {
     projetId: projetId ?? existing.projetId,
     conseilId: links.conseilId ?? existing.conseilId,
     controleSCIId: links.controleSCIId ?? existing.controleSCIId,
-    auditId: links.auditId ?? existing.auditId,
+    missionId: links.missionId ?? existing.missionId,
     documentId: links.documentId ?? existing.documentId,
   });
   redirectWithOk(`/taches/${id}`, "modifie");

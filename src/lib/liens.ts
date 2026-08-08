@@ -22,7 +22,7 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
       return `/projets/${id}`;
     case "CONSEIL":
       return `/conseils/${id}`;
-    case "AUDIT":
+    case "MISSION":
       return `/audits/${id}`;
     case "RISQUE":
       return `/risques/${id}`;
@@ -69,8 +69,8 @@ async function resolveObjet(
           }
         : null;
     }
-    case "AUDIT": {
-      const o = await prisma.audit.findFirst({
+    case "MISSION": {
+      const o = await prisma.mission.findFirst({
         where: { id, uniteId },
         select: { id: true, code: true, titre: true },
       });
@@ -202,8 +202,8 @@ export async function listCandidatsLien(
         .filter((r) => r.id !== excludeId)
         .map((r) => ({ id: r.id, label: `${r.code} — ${r.objet}` }));
     }
-    case "AUDIT": {
-      const rows = await prisma.audit.findMany({
+    case "MISSION": {
+      const rows = await prisma.mission.findMany({
         where: { uniteId, archive: false },
         select: { id: true, code: true, titre: true },
         orderBy: { titre: "asc" },

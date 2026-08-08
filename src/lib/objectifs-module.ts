@@ -12,7 +12,7 @@ import { startOfToday } from "@/lib/labels";
 export const MODULE_METIER_LABELS: Record<ModuleMetier, string> = {
   PROJET: "Projets",
   CONSEIL: "Conseils",
-  AUDIT: "Audits",
+  MISSION: "Missions",
   RISQUE: "Risques",
   CONTROLE_SCI: "Contrôles SCI",
   DOCUMENT: "Documents",
@@ -28,11 +28,11 @@ export async function calculerIndicateur(
 
   switch (indicateurCle) {
     case "audits_realises":
-      return prisma.audit.count({
+      return prisma.mission.count({
         where: { uniteId, archive: false, statut: "TERMINE" },
       });
     case "audits_planifies":
-      return prisma.audit.count({
+      return prisma.mission.count({
         where: {
           uniteId,
           archive: false,

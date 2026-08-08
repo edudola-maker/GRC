@@ -3,6 +3,7 @@ import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { addBusinessDays } from "../src/lib/dates";
+import { deriveInitiales } from "../src/lib/initiales";
 
 const databaseUrl = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
 const filePath = databaseUrl.startsWith("file:")
@@ -28,10 +29,15 @@ async function main() {
   await prisma.journalEvenement.deleteMany();
   await prisma.historiqueTache.deleteMany();
   await prisma.tache.deleteMany();
+  await prisma.missionValidationVisa.deleteMany();
+  await prisma.missionValidationPoint.deleteMany();
+  await prisma.missionChecklistItem.deleteMany();
   await prisma.recommandation.deleteMany();
-  await prisma.auditDocument.deleteMany();
-  await prisma.auditMembre.deleteMany();
-  await prisma.audit.deleteMany();
+  await prisma.missionDocument.deleteMany();
+  await prisma.missionMembreRole.deleteMany();
+  await prisma.missionMembre.deleteMany();
+  await prisma.mission.deleteMany();
+  await prisma.lienObjet.deleteMany();
   await prisma.risqueControle.deleteMany();
   await prisma.risque.deleteMany();
   await prisma.controleDocument.deleteMany();
@@ -46,6 +52,7 @@ async function main() {
   await prisma.parametreFonctionnel.deleteMany();
   await prisma.referentielValeur.deleteMany();
   await prisma.projet.deleteMany();
+  await prisma.processus.deleteMany();
   await prisma.sequenceCode.deleteMany();
   await prisma.utilisateur.deleteMany();
   await prisma.unite.deleteMany();
@@ -88,10 +95,81 @@ async function main() {
     ],
   });
 
+
+  // Types / templates / rôles mission (ids fixes de la migration — upsert)
+  const missionTypes = [
+    { id: "mtype_audit_general", code: "AUDIT_GENERAL", libelle: "Audit général", description: "Mission d'audit général structurée", ordre: 1 },
+    { id: "mtype_audit_cible", code: "AUDIT_CIBLE", libelle: "Audit ciblé / spécifique", description: "Audit à périmètre restreint", ordre: 2 },
+    { id: "mtype_revue_processus", code: "REVUE_PROCESSUS", libelle: "Revue de processus", description: "Revue méthodologique d'un processus", ordre: 3 },
+    { id: "mtype_audit_interne", code: "AUDIT_INTERNE", libelle: "Audit interne", description: "Mission relevant de l'audit interne", ordre: 4 },
+  ] as const;
+  for (const t of missionTypes) {
+    await prisma.missionType.upsert({
+      where: { code: t.code },
+      create: { ...t, actif: true },
+      update: { libelle: t.libelle, description: t.description, actif: true, ordre: t.ordre },
+    });
+  }
+
+  const emptyDef = {
+    sections: [
+      { key: "VUE_ENSEMBLE", title: "Vue d'ensemble", order: 0, defaultOpen: true },
+      { key: "PLANIFICATION", title: "1. Planification", order: 1, defaultOpen: true },
+      { key: "SUBSTANTIF", title: "2. Substantif", order: 2, defaultOpen: false },
+      { key: "RECOMMANDATIONS", title: "3. Recommandations", order: 3, defaultOpen: false },
+      { key: "RAPPORT", title: "4. Rapport", order: 4, defaultOpen: false },
+      { key: "SUIVI", title: "5. Suivi des recommandations", order: 5, defaultOpen: false },
+    ],
+    roleCodes: ["RESPONSABLE_MANDAT", "AUDITEUR", "RESPONSABLE_UNITE"],
+    checklistDefs: [],
+    validationDefs: [],
+  };
+
+  const templates = [
+    { id: "mtpl_audit_general_v1", code: "AUDIT_GENERAL_V1", libelle: "Audit général — structure standard", typeId: "mtype_audit_general", description: "Structure standard" },
+    { id: "mtpl_revue_processus_v1", code: "REVUE_PROCESSUS_V1", libelle: "Revue de processus — structure standard", typeId: "mtype_revue_processus", description: null as string | null },
+    { id: "mtpl_audit_cible_v1", code: "AUDIT_CIBLE_V1", libelle: "Audit ciblé — structure standard", typeId: "mtype_audit_cible", description: null as string | null },
+    { id: "mtpl_audit_interne_v1", code: "AUDIT_INTERNE_V1", libelle: "Audit interne — structure standard", typeId: "mtype_audit_interne", description: null as string | null },
+  ];
+  for (const t of templates) {
+    await prisma.missionTemplate.upsert({
+      where: { code: t.code },
+      create: { ...t, actif: true, definition: emptyDef },
+      update: { libelle: t.libelle, typeId: t.typeId, description: t.description, actif: true, definition: emptyDef },
+    });
+  }
+
+  const descriptifs = [
+    { id: "mdesc_subventions", typeId: "mtype_audit_general", libelle: "Audit de conformité des subventions", ordre: 1 },
+    { id: "mdesc_achats", typeId: "mtype_audit_general", libelle: "Audit du cycle Achats", ordre: 2 },
+    { id: "mdesc_paie", typeId: "mtype_audit_general", libelle: "Audit du processus Paie", ordre: 3 },
+  ];
+  for (const d of descriptifs) {
+    await prisma.missionDescriptifPreset.upsert({
+      where: { id: d.id },
+      create: { ...d, actif: true },
+      update: { typeId: d.typeId, libelle: d.libelle, actif: true, ordre: d.ordre },
+    });
+  }
+
+  const roles = [
+    { id: "mrole_resp_mandat", code: "RESPONSABLE_MANDAT", libelle: "Responsable de mandat", ordre: 1 },
+    { id: "mrole_auditeur", code: "AUDITEUR", libelle: "Auditeur", ordre: 2 },
+    { id: "mrole_resp_unite", code: "RESPONSABLE_UNITE", libelle: "Responsable d'unité", ordre: 3 },
+  ];
+  for (const r of roles) {
+    await prisma.missionRole.upsert({
+      where: { code: r.code },
+      create: { ...r, actif: true },
+      update: { libelle: r.libelle, actif: true, ordre: r.ordre },
+    });
+  }
+
   const alice = await prisma.utilisateur.create({
     data: {
       uniteId,
       nom: "Alice Martin",
+      initiales: deriveInitiales("Alice Martin"),
       email: "alice.martin@exemple.fr",
       motDePasse: "demo-hash-alice",
       role: "RESPONSABLE",
@@ -101,6 +179,7 @@ async function main() {
     data: {
       uniteId,
       nom: "Bernard Dupont",
+      initiales: deriveInitiales("Bernard Dupont"),
       email: "bernard.dupont@exemple.fr",
       motDePasse: "demo-hash-bernard",
       role: "COLLABORATEUR",
@@ -110,6 +189,7 @@ async function main() {
     data: {
       uniteId,
       nom: "Claire Bernard",
+      initiales: deriveInitiales("Claire Bernard"),
       email: "claire.bernard@exemple.fr",
       motDePasse: "demo-hash-claire",
       role: "COLLABORATEUR",
@@ -123,7 +203,8 @@ async function main() {
       { uniteId, prefixe: "RSK", dernier: 2 },
       { uniteId, prefixe: "CTL", dernier: 3 },
       { uniteId, prefixe: "DOC", dernier: 2 },
-      { uniteId, prefixe: "AUD", dernier: 2 },
+      { uniteId, prefixe: "MIS", dernier: 2 },
+      { uniteId, prefixe: "REC", dernier: 1 },
     ],
   });
 
@@ -601,13 +682,15 @@ async function main() {
     },
   });
 
-  const audit = await prisma.audit.create({
+  const mission = await prisma.mission.create({
     data: {
       uniteId,
-      code: "AUD-0001",
+      code: "MIS-0001",
       titre: "Audit interne — processus Achats",
-      perimetre: "Cycle Achats 2026",
-      taxinomie: "ACHATS",
+      typeId: "mtype_audit_general",
+      templateId: "mtpl_audit_general_v1",
+      descriptifPresetId: "mdesc_achats",
+      nature: "Cycle Achats 2026",
       tags: "audit, achats",
       responsableId: alice.id,
       dateDebut: daysFromNow(-20),
@@ -615,13 +698,36 @@ async function main() {
       statut: "EN_COURS",
       creeParId: alice.id,
       modifieParId: alice.id,
-      membres: { create: [{ utilisateurId: bernard.id }] },
+      membres: {
+        create: [
+          {
+            utilisateurId: alice.id,
+            roles: {
+              create: [{ roleId: "mrole_resp_mandat" }],
+            },
+          },
+          {
+            utilisateurId: bernard.id,
+            roles: {
+              create: [{ roleId: "mrole_auditeur" }],
+            },
+          },
+          {
+            utilisateurId: claire.id,
+            roles: {
+              create: [{ roleId: "mrole_resp_unite" }],
+            },
+          },
+        ],
+      },
     },
   });
 
   const reco = await prisma.recommandation.create({
     data: {
-      auditId: audit.id,
+      uniteId,
+      code: "REC-0001",
+      missionId: mission.id,
       titre: "Formaliser le contrôle a posteriori des bons de commande",
       description: "Mettre en place un échantillon mensuel.",
       responsableId: bernard.id,
@@ -635,24 +741,25 @@ async function main() {
       uniteId,
       titre: "Mettre en place l'échantillon mensuel BDC",
       responsableId: bernard.id,
-      auditId: audit.id,
+      missionId: mission.id,
       recommandationId: reco.id,
       dateEcheance: daysFromNow(25),
       statut: "A_FAIRE",
       priorite: "HAUTE",
-      categorie: "AUDIT",
+      categorie: "MISSION",
       creeParId: alice.id,
       modifieParId: alice.id,
     },
   });
 
-  await prisma.audit.create({
+  await prisma.mission.create({
     data: {
       uniteId,
-      code: "AUD-0002",
+      code: "MIS-0002",
       titre: "Revue qualité — Paie",
-      perimetre: "Processus Paie",
-      taxinomie: "RESSOURCES_HUMAINES",
+      typeId: "mtype_revue_processus",
+      templateId: "mtpl_revue_processus_v1",
+      nature: "Processus Paie",
       responsableId: claire.id,
       dateDebut: daysFromNow(60),
       dateFin: daysFromNow(90),
@@ -702,9 +809,9 @@ async function main() {
     data: [
       {
         uniteId,
-        module: "AUDIT",
+        module: "MISSION",
         annee,
-        libelle: "Audits réalisés",
+        libelle: "Missions réalisées",
         indicateurCle: "audits_realises",
         cibleNumerique: 4,
         uniteMesure: "missions",
@@ -762,6 +869,7 @@ async function main() {
     data: {
       uniteId: uniteFinance.id,
       nom: "Denis Leroy",
+      initiales: deriveInitiales("Denis Leroy"),
       email: "denis.leroy@exemple.fr",
       motDePasse: "demo-hash-denis",
       role: "RESPONSABLE",
@@ -774,7 +882,8 @@ async function main() {
       { uniteId: uniteFinance.id, prefixe: "RSK", dernier: 0 },
       { uniteId: uniteFinance.id, prefixe: "CTL", dernier: 0 },
       { uniteId: uniteFinance.id, prefixe: "DOC", dernier: 0 },
-      { uniteId: uniteFinance.id, prefixe: "AUD", dernier: 0 },
+      { uniteId: uniteFinance.id, prefixe: "MIS", dernier: 0 },
+      { uniteId: uniteFinance.id, prefixe: "REC", dernier: 0 },
     ],
   });
   await prisma.projet.create({

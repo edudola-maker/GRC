@@ -19,8 +19,7 @@ export type AuditInventoryItem = {
   id: string;
   code: string;
   titre: string;
-  typeMission: string;
-  typeMissionLabel: string;
+  typeLabel: string;
   statut: string;
   statutLabel: string;
   responsableId: string;
@@ -232,7 +231,7 @@ export function AuditInventory({
                 primary={[
                   { value: a.code, emphasis: "code" },
                   { value: a.titre, emphasis: "title" },
-                  { value: a.typeMissionLabel },
+                  { value: a.typeLabel },
                   { value: a.statutLabel, badgeTone: toneFromStatut(a.statut) },
                 ]}
                 secondary={[

@@ -11,7 +11,7 @@ const TYPES = new Set<string>([
   "PROCESSUS",
   "PROJET",
   "CONSEIL",
-  "AUDIT",
+  "MISSION",
   "RISQUE",
   "CONTROLE_SCI",
   "DOCUMENT",

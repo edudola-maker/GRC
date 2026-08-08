@@ -102,7 +102,7 @@ export const FREQUENCE_REVUE_LABELS: Record<string, string> = {
   PONCTUELLE: "Ponctuelle",
 };
 
-export const STATUT_AUDIT_LABELS: Record<string, string> = {
+export const STATUT_MISSION_LABELS: Record<string, string> = {
   PLANIFIE: "Planifié",
   EN_COURS: "En cours",
   EN_REVUE: "En revue",
@@ -110,15 +110,13 @@ export const STATUT_AUDIT_LABELS: Record<string, string> = {
   ANNULE: "Annulé",
 };
 
-export const TYPE_MISSION_LABELS: Record<string, string> = {
-  AUDIT: "Audit",
-  REVUE_PROCESSUS: "Revue de processus",
-};
+/** @deprecated Utiliser STATUT_MISSION_LABELS */
+export const STATUT_AUDIT_LABELS = STATUT_MISSION_LABELS;
 
 export const TYPE_OBJET_LABELS: Record<string, string> = {
   PROJET: "Projet",
   CONSEIL: "Conseil",
-  AUDIT: "Mission d'assurance",
+  MISSION: "Mission d'assurance",
   RISQUE: "Risque",
   CONTROLE_SCI: "Contrôle SCI",
   DOCUMENT: "Document",
@@ -158,7 +156,7 @@ export const CATEGORIE_TACHE_LABELS: Record<string, string> = {
   PROJET: "Projet",
   ADMINISTRATIF: "Administratif",
   SCI: "SCI",
-  AUDIT: "Audit",
+  MISSION: "Mission",
   DOCUMENT: "Document",
   AUTRE: "Autre",
 };

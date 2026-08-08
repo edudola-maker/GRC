@@ -20,7 +20,7 @@ export default async function ModifierTachePage({
   const sp = await searchParams;
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
-  const [tache, users, projets, conseils, controles, audits, documents] =
+  const [tache, users, projets, conseils, controles, missions, documents] =
     await Promise.all([
       prisma.tache.findUnique({ where: { id } }),
       listUtilisateursActifsForCurrentUnite(),
@@ -43,7 +43,7 @@ export default async function ModifierTachePage({
         orderBy: { nom: "asc" },
         select: { id: true, nom: true },
       }),
-      prisma.audit.findMany({
+      prisma.mission.findMany({
         where: { uniteId, archive: false },
         orderBy: { titre: "asc" },
         select: { id: true, titre: true },
@@ -86,7 +86,7 @@ export default async function ModifierTachePage({
           projets={projetsOptions}
           conseils={conseils.map((c) => ({ id: c.id, nom: c.objet }))}
           controles={controles}
-          audits={audits.map((a) => ({ id: a.id, nom: a.titre }))}
+          missions={missions.map((a) => ({ id: a.id, nom: a.titre }))}
           documents={documents}
           values={tache}
           cancelHref={`/taches/${tache.id}`}

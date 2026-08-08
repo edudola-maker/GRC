@@ -38,20 +38,20 @@ export async function getPilotageDashboard(uniteId: string) {
     validationsTaches,
     validationsControles,
   ] = await Promise.all([
-    prisma.audit.count({
+    prisma.mission.count({
       where: {
         uniteId,
         archive: false,
         statut: { in: ["EN_COURS", "EN_REVUE"] },
       },
     }),
-    prisma.audit.count({
+    prisma.mission.count({
       where: { uniteId, archive: false, statut: "TERMINE" },
     }),
     prisma.recommandation.count({
       where: {
         statut: { in: ["OUVERTE", "EN_COURS"] },
-        audit: { uniteId, archive: false },
+        mission: { uniteId, archive: false },
       },
     }),
     prisma.conseil.count({

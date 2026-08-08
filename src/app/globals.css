@@ -1756,6 +1756,92 @@ a {
   padding: 0.85rem 0.95rem 1rem;
 }
 
+/* Initiales — langage visuel compact (≠ identifiant technique) */
+.initiales-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.35rem;
+  border-radius: 6px;
+  background: #e8efeb;
+  border: 1px solid #c5d0cb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.mission-equipe__list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.mission-equipe__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.85rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-panel);
+}
+
+.mission-equipe__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 10rem;
+}
+
+.mission-equipe__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1 1 14rem;
+}
+
+.mission-equipe__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: center;
+}
+
+.mission-equipe__role-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.mission-equipe__role-fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  margin: 0.65rem 0;
+}
+
+.mission-equipe__role-fieldset legend {
+  padding: 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.mission-equipe__add {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--line);
+}
+
 .tag-list {
   display: inline-flex;
   flex-wrap: wrap;

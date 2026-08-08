@@ -6,10 +6,10 @@ import {
   FREQUENCE_CONTROLE_OPTIONS,
   FREQUENCE_REVUE_OPTIONS,
   PRIORITE_OPTIONS,
-  STATUT_AUDIT_OPTIONS,
   STATUT_CONSEIL_OPTIONS,
   STATUT_CONTROLE_OPTIONS,
   STATUT_DOCUMENT_OPTIONS,
+  STATUT_MISSION_OPTIONS,
   STATUT_PROCESSUS_OPTIONS,
   STATUT_PROJET_OPTIONS,
   STATUT_RISQUE_OPTIONS,
@@ -17,7 +17,6 @@ import {
   STRATEGIE_RISQUE_OPTIONS,
   TYPE_CONTROLE_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
-  TYPE_MISSION_OPTIONS,
 } from "@/lib/catalog";
 import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
@@ -50,7 +49,7 @@ type TacheValues = {
   projetId?: string | null;
   conseilId?: string | null;
   controleSCIId?: string | null;
-  auditId?: string | null;
+  missionId?: string | null;
   documentId?: string | null;
   recommandationId?: string | null;
   dateEcheance?: Date | string | null;
@@ -131,12 +130,14 @@ type DocumentValues = {
   reference?: string | null;
 };
 
-type AuditValues = {
+type MissionValues = {
   id?: string;
   titre?: string;
-  typeMission?: string;
-  perimetre?: string | null;
-  taxinomie?: string | null;
+  typeId?: string;
+  templateId?: string | null;
+  descriptifPresetId?: string | null;
+  descriptifLibre?: string | null;
+  nature?: string | null;
   tags?: string | null;
   responsableId?: string;
   dateDebut?: Date | string | null;
@@ -144,6 +145,10 @@ type AuditValues = {
   statut?: string;
   commentaires?: string | null;
 };
+
+type MissionTypeOpt = { id: string; libelle: string };
+type MissionTemplateOpt = { id: string; libelle: string; typeId: string };
+type MissionDescriptifOpt = { id: string; libelle: string; typeId: string };
 
 type ProcessusValues = {
   id?: string;
@@ -331,6 +336,7 @@ export function TacheForm({
   defaultCategorie,
   conseils,
   controles,
+  missions,
   audits,
   documents,
 }: {
@@ -343,9 +349,12 @@ export function TacheForm({
   defaultCategorie?: string;
   conseils?: Opt[];
   controles?: Opt[];
+  missions?: Opt[];
+  /** @deprecated Utiliser `missions` */
   audits?: Opt[];
   documents?: Opt[];
 }) {
+  const missionOptions = missions ?? audits;
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
@@ -366,8 +375,8 @@ export function TacheForm({
           value={values.controleSCIId}
         />
       ) : null}
-      {!audits && values?.auditId ? (
-        <input type="hidden" name="auditId" value={values.auditId} />
+      {!missionOptions && values?.missionId ? (
+        <input type="hidden" name="missionId" value={values.missionId} />
       ) : null}
       {!documents && values?.documentId ? (
         <input type="hidden" name="documentId" value={values.documentId} />
@@ -483,7 +492,7 @@ export function TacheForm({
         </Field>
       </div>
 
-      {(conseils || controles || audits || documents) && (
+      {(conseils || controles || missionOptions || documents) && (
         <div className="form-grid">
           {conseils ? (
             <Field label="Conseil lié" htmlFor="conseilId">
@@ -517,15 +526,15 @@ export function TacheForm({
               </select>
             </Field>
           ) : null}
-          {audits ? (
-            <Field label="Audit lié" htmlFor="auditId">
+          {missionOptions ? (
+            <Field label="Mission liée" htmlFor="missionId">
               <select
-                id="auditId"
-                name="auditId"
-                defaultValue={values?.auditId ?? ""}
+                id="missionId"
+                name="missionId"
+                defaultValue={values?.missionId ?? ""}
               >
                 <option value="">Aucun</option>
-                {audits.map((a) => (
+                {missionOptions.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.nom}
                   </option>
@@ -1276,19 +1285,33 @@ export function DocumentForm({
   );
 }
 
-export function AuditForm({
+export function MissionForm({
   action,
   users,
   values,
   cancelHref,
   submitLabel,
+  types,
+  templates,
+  descriptifs,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
-  values?: AuditValues;
+  values?: MissionValues;
   cancelHref: string;
   submitLabel: string;
+  types: MissionTypeOpt[];
+  templates?: MissionTemplateOpt[];
+  descriptifs?: MissionDescriptifOpt[];
 }) {
+  const defaultTypeId = values?.typeId ?? types[0]?.id ?? "";
+  const templatesForType = (templates ?? []).filter(
+    (t) => !defaultTypeId || t.typeId === defaultTypeId,
+  );
+  const descriptifsForType = (descriptifs ?? []).filter(
+    (d) => !defaultTypeId || d.typeId === defaultTypeId,
+  );
+
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
@@ -1304,26 +1327,73 @@ export function AuditForm({
           />
         </Field>
 
-        <Field label="Type de mission *" htmlFor="typeMission">
+        <Field label="Type de mission *" htmlFor="typeId">
           <select
-            id="typeMission"
-            name="typeMission"
-            defaultValue={values?.typeMission ?? "AUDIT"}
+            id="typeId"
+            name="typeId"
+            required
+            defaultValue={defaultTypeId}
           >
-            {TYPE_MISSION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+            {types.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.libelle}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="Périmètre" htmlFor="perimetre">
+        {templates && templates.length > 0 ? (
+          <Field label="Template" htmlFor="templateId">
+            <select
+              id="templateId"
+              name="templateId"
+              defaultValue={values?.templateId ?? templatesForType[0]?.id ?? ""}
+            >
+              {templatesForType.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.libelle}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+
+        {descriptifs && descriptifs.length > 0 ? (
+          <Field
+            label="Descriptif standard"
+            htmlFor="descriptifPresetId"
+            hint="Ou laissez vide et saisissez un descriptif libre."
+          >
+            <select
+              id="descriptifPresetId"
+              name="descriptifPresetId"
+              defaultValue={values?.descriptifPresetId ?? ""}
+            >
+              <option value="">Mission spécifique (libre)</option>
+              {descriptifsForType.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.libelle}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+
+        <Field label="Descriptif libre" htmlFor="descriptifLibre">
           <textarea
-            id="perimetre"
-            name="perimetre"
+            id="descriptifLibre"
+            name="descriptifLibre"
+            rows={2}
+            defaultValue={values?.descriptifLibre ?? ""}
+          />
+        </Field>
+
+        <Field label="Nature / périmètre" htmlFor="nature">
+          <textarea
+            id="nature"
+            name="nature"
             rows={3}
-            defaultValue={values?.perimetre ?? ""}
+            defaultValue={values?.nature ?? ""}
           />
         </Field>
       </FormSection>
@@ -1350,7 +1420,7 @@ export function AuditForm({
               name="statut"
               defaultValue={values?.statut ?? "PLANIFIE"}
             >
-              {STATUT_AUDIT_OPTIONS.map((o) => (
+              {STATUT_MISSION_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -1400,6 +1470,9 @@ export function AuditForm({
     </form>
   );
 }
+
+/** @deprecated Utiliser MissionForm */
+export const AuditForm = MissionForm;
 
 export function ProcessusForm({
   action,

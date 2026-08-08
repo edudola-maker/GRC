@@ -96,7 +96,7 @@ enum TypeControle {
 enum TypeObjetMetier {
   PROJET
   CONSEIL
-  AUDIT
+  MISSION
   RISQUE
   CONTROLE_SCI
   DOCUMENT
@@ -107,12 +107,6 @@ enum TypeObjetMetier {
 enum StatutProcessus {
   ACTIF
   SUSPENDU
-}
-
-/// Type de mission d'assurance (évolution progressive du module Audits).
-enum TypeMissionAssurance {
-  AUDIT
-  REVUE_PROCESSUS
 }
 
 enum StatutDocument {
@@ -130,12 +124,25 @@ enum FrequenceRevue {
   PONCTUELLE
 }
 
-enum StatutAudit {
+enum StatutMission {
   PLANIFIE
   EN_COURS
   EN_REVUE
   TERMINE
   ANNULE
+}
+
+enum StatutValidationMission {
+  BROUILLON
+  SOUMIS
+  VALIDE
+  RETOUR
+  OBSOLETE
+}
+
+enum NiveauVisa {
+  REVU
+  VALIDE
 }
 
 enum StatutRecommandation {
@@ -165,7 +172,7 @@ enum CategorieTache {
   PROJET
   ADMINISTRATIF
   SCI
-  AUDIT
+  MISSION
   DOCUMENT
   AUTRE
 }
@@ -178,7 +185,7 @@ enum RoleUtilisateur {
 enum ModuleMetier {
   PROJET
   CONSEIL
-  AUDIT
+  MISSION
   RISQUE
   CONTROLE_SCI
   DOCUMENT
@@ -206,8 +213,9 @@ model Unite {
   controlesSCI     ControleSCI[]
   risques          Risque[]
   documents        Document[]
-  audits           Audit[]
+  missions         Mission[]
   processus        Processus[]
+  recommandations  Recommandation[]
   objectifsAnnuels ObjectifAnnuel[]
   objectifsModule  ObjectifModule[]
   sequences        SequenceCode[]
@@ -222,6 +230,8 @@ model Utilisateur {
   id         String           @id @default(cuid())
   uniteId    String
   nom        String
+  /// Représentation visuelle compacte (ex. JD) — jamais l’identifiant technique.
+  initiales  String?
   email      String           @unique
   motDePasse String
   role       RoleUtilisateur  @default(COLLABORATEUR)
@@ -236,7 +246,7 @@ model Utilisateur {
   conseilsResponsable     Conseil[]          @relation("ConseilResponsable")
   risquesResponsable      Risque[]           @relation("RisqueResponsable")
   documentsResponsable    Document[]         @relation("DocumentResponsable")
-  auditsResponsable       Audit[]            @relation("AuditResponsable")
+  missionsResponsable     Mission[]          @relation("MissionResponsable")
   processusResponsable    Processus[]        @relation("ProcessusResponsable")
   recommandationsResp     Recommandation[]   @relation("RecoResponsable")
 
@@ -252,19 +262,23 @@ model Utilisateur {
   risquesModifies         Risque[]           @relation("RisqueModifiePar")
   documentsCrees          Document[]         @relation("DocumentCreePar")
   documentsModifies       Document[]         @relation("DocumentModifiePar")
-  auditsCrees             Audit[]            @relation("AuditCreePar")
-  auditsModifies          Audit[]            @relation("AuditModifiePar")
+  missionsCrees           Mission[]          @relation("MissionCreePar")
+  missionsModifiees       Mission[]          @relation("MissionModifiePar")
   processusCrees          Processus[]        @relation("ProcessusCreePar")
   processusModifies       Processus[]        @relation("ProcessusModifiePar")
   historiquesTache        HistoriqueTache[]
   objectifs               ObjectifAnnuel[]
   projetMembres           ProjetMembre[]
-  auditMembres            AuditMembre[]
+  missionMembres          MissionMembre[]
 
   tachesSoumises          Tache[]            @relation("TacheSoumisePar")
   tachesValidees          Tache[]            @relation("TacheValideePar")
   controlesSoumis         ControleSCI[]      @relation("ControleSoumisPar")
   controlesValides        ControleSCI[]      @relation("ControleValidePar")
+  checklistFaites         MissionChecklistItem[] @relation("ChecklistFaitPar")
+  validationsPreparees    MissionValidationPoint[] @relation("ValidationPreparePar")
+  validationsSoumises     MissionValidationPoint[] @relation("ValidationSoumisPar")
+  visasMission            MissionValidationVisa[]
   journalEvenements       JournalEvenement[]
 }
 
@@ -386,7 +400,7 @@ model Tache {
   projetId       String?
   conseilId      String?
   controleSCIId  String?
-  auditId        String?
+  missionId      String?
   documentId     String?
   recommandationId String?
   dateCreation   DateTime       @default(now())
@@ -412,7 +426,7 @@ model Tache {
   projet         Projet?         @relation(fields: [projetId], references: [id], onDelete: SetNull)
   conseil        Conseil?        @relation(fields: [conseilId], references: [id], onDelete: SetNull)
   controleSCI    ControleSCI?    @relation(fields: [controleSCIId], references: [id], onDelete: SetNull)
-  audit          Audit?          @relation(fields: [auditId], references: [id], onDelete: SetNull)
+  mission        Mission?        @relation(fields: [missionId], references: [id], onDelete: SetNull)
   document       Document?       @relation(fields: [documentId], references: [id], onDelete: SetNull)
   recommandation Recommandation? @relation(fields: [recommandationId], references: [id], onDelete: SetNull)
   creePar        Utilisateur     @relation("TacheCreePar", fields: [creeParId], references: [id])
@@ -589,88 +603,234 @@ model Document {
   modifiePar  Utilisateur?       @relation("DocumentModifiePar", fields: [modifieParId], references: [id])
   controles   ControleDocument[]
   projets     ProjetDocument[]
-  audits      AuditDocument[]
+  missions   MissionDocument[]
   tachesRevue Tache[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
 }
 
-// ─── Audit ──────────────────────────────────────────────────
+// ─── Mission (moteur générique : Type → Template → Instance) ─
 
-model Audit {
-  id            String               @id @default(cuid())
-  uniteId       String
-  code          String
-  titre         String
-  /// Audit ou Revue de processus — même moteur (planif / travaux / reco).
-  typeMission   TypeMissionAssurance @default(AUDIT)
-  perimetre     String?
-  taxinomie     String?
-  tags          String?
-  responsableId String
-  dateDebut     DateTime?
-  dateFin       DateTime?
-  statut        StatutAudit          @default(PLANIFIE)
-  commentaires  String?
-  archive       Boolean              @default(false)
-  creeParId     String
-  modifieParId  String
-  creeLe        DateTime             @default(now())
-  modifieLe     DateTime             @updatedAt
-  meta          Json?
+/// Types paramétrables (seed / futur Éditeur).
+model MissionType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  libelle     String
+  description String?
+  actif       Boolean  @default(true)
+  ordre       Int      @default(0)
+  creeLe      DateTime @default(now())
 
-  unite           Unite            @relation(fields: [uniteId], references: [id])
-  responsable     Utilisateur      @relation("AuditResponsable", fields: [responsableId], references: [id])
-  creePar         Utilisateur      @relation("AuditCreePar", fields: [creeParId], references: [id])
-  modifiePar      Utilisateur      @relation("AuditModifiePar", fields: [modifieParId], references: [id])
-  membres         AuditMembre[]
-  taches          Tache[]
-  documents       AuditDocument[]
-  recommandations Recommandation[]
+  templates   MissionTemplate[]
+  descriptifs MissionDescriptifPreset[]
+  missions    Mission[]
+}
+
+/// Template méthodologique (sections, rôles, check-lists, validations).
+model MissionTemplate {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  libelle     String
+  typeId      String
+  description String?
+  actif       Boolean  @default(true)
+  /// { sections, roleCodes, checklistDefs, validationDefs }
+  definition  Json
+  creeLe      DateTime @default(now())
+
+  type     MissionType @relation(fields: [typeId], references: [id])
+  missions Mission[]
+}
+
+/// Descriptifs standardisés par type (+ option « Mission spécifique » en UI).
+model MissionDescriptifPreset {
+  id          String   @id @default(cuid())
+  typeId      String
+  libelle     String
+  description String?
+  actif       Boolean  @default(true)
+  ordre       Int      @default(0)
+
+  type     MissionType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  missions Mission[]
+
+  @@index([typeId, actif])
+}
+
+/// Rôles *dans* une mission (≠ RoleUtilisateur applicatif).
+model MissionRole {
+  id      String  @id @default(cuid())
+  code    String  @unique
+  libelle String
+  actif   Boolean @default(true)
+  ordre   Int     @default(0)
+
+  membreRoles MissionMembreRole[]
+}
+
+model Mission {
+  id                 String        @id @default(cuid())
+  uniteId            String
+  code               String
+  titre              String
+  typeId             String
+  templateId         String
+  descriptifPresetId String?
+  /// Texte libre si « Mission spécifique » (pas de preset).
+  descriptifLibre    String?
+  /// Nature / périmètre complémentaire.
+  nature             String?
+  tags               String?
+  responsableId      String
+  dateDebut          DateTime?
+  dateFin            DateTime?
+  statut             StatutMission @default(PLANIFIE)
+  commentaires       String?
+  /// Soft-delete / historique — pas de suppression physique des missions suivies.
+  archive            Boolean       @default(false)
+  creeParId          String
+  modifieParId       String
+  creeLe             DateTime      @default(now())
+  modifieLe          DateTime      @updatedAt
+  meta               Json?
+
+  unite            Unite                    @relation(fields: [uniteId], references: [id])
+  type             MissionType              @relation(fields: [typeId], references: [id])
+  template         MissionTemplate          @relation(fields: [templateId], references: [id])
+  descriptifPreset MissionDescriptifPreset? @relation(fields: [descriptifPresetId], references: [id], onDelete: SetNull)
+  responsable      Utilisateur              @relation("MissionResponsable", fields: [responsableId], references: [id])
+  creePar          Utilisateur              @relation("MissionCreePar", fields: [creeParId], references: [id])
+  modifiePar       Utilisateur              @relation("MissionModifiePar", fields: [modifieParId], references: [id])
+  membres          MissionMembre[]
+  taches           Tache[]
+  documents        MissionDocument[]
+  recommandations  Recommandation[]
+  checklistItems   MissionChecklistItem[]
+  validationPoints MissionValidationPoint[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
 }
 
-model AuditMembre {
+model MissionMembre {
   id            String @id @default(cuid())
-  auditId       String
+  missionId     String
   utilisateurId String
 
-  audit       Audit       @relation(fields: [auditId], references: [id], onDelete: Cascade)
-  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id])
+  mission     Mission             @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur         @relation(fields: [utilisateurId], references: [id])
+  roles       MissionMembreRole[]
 
-  @@unique([auditId, utilisateurId])
+  @@unique([missionId, utilisateurId])
 }
 
-model AuditDocument {
+model MissionMembreRole {
+  id      String @id @default(cuid())
+  membreId String
+  roleId   String
+
+  membre MissionMembre @relation(fields: [membreId], references: [id], onDelete: Cascade)
+  role   MissionRole   @relation(fields: [roleId], references: [id])
+
+  @@unique([membreId, roleId])
+}
+
+model MissionDocument {
   id         String   @id @default(cuid())
-  auditId    String
+  missionId  String
   documentId String
   creeLe     DateTime @default(now())
 
-  audit    Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  mission  Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  @@unique([auditId, documentId])
+  @@unique([missionId, documentId])
 }
 
+/// Recommandation suivie dans le temps (REC-xxxx) — survivit à la clôture / archivage mission.
 model Recommandation {
   id            String               @id @default(cuid())
-  auditId       String
+  uniteId       String
+  code          String
+  missionId     String
   titre         String
   description   String?
   responsableId String?
   dateEcheance  DateTime?
   statut        StatutRecommandation @default(OUVERTE)
   commentaires  String?
+  archive       Boolean              @default(false)
   creeLe        DateTime             @default(now())
   modifieLe     DateTime             @updatedAt
 
-  audit       Audit        @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  /// Restrict : une mission avec historique s’archive, elle ne se supprime pas.
+  unite       Unite        @relation(fields: [uniteId], references: [id])
+  mission     Mission      @relation(fields: [missionId], references: [id], onDelete: Restrict)
   responsable Utilisateur? @relation("RecoResponsable", fields: [responsableId], references: [id])
   taches      Tache[]
+
+  @@unique([uniteId, code])
+  @@index([missionId, statut])
+}
+
+/// Check-list méthodologique / qualité (≠ tâche opérationnelle).
+model MissionChecklistItem {
+  id        String    @id @default(cuid())
+  missionId String
+  sectionKey String
+  code      String
+  libelle   String
+  fait      Boolean   @default(false)
+  faitParId String?
+  faitLe    DateTime?
+  ordre     Int       @default(0)
+
+  mission Mission      @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  faitPar Utilisateur? @relation("ChecklistFaitPar", fields: [faitParId], references: [id])
+
+  @@unique([missionId, code])
+  @@index([missionId, sectionKey])
+}
+
+/// Point de validation / contrôle qualité (Préparer → Soumettre → Valider).
+model MissionValidationPoint {
+  id             String                  @id @default(cuid())
+  missionId      String
+  sectionKey     String
+  code           String
+  libelle        String
+  statut         StatutValidationMission @default(BROUILLON)
+  /// Incrémenté si l’élément validé est modifié de façon significative → visas obsolètes.
+  contenuVersion Int                     @default(1)
+  prepareParId   String?
+  prepareLe      DateTime?
+  soumisParId    String?
+  soumisLe       DateTime?
+
+  mission    Mission                 @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  preparePar Utilisateur?            @relation("ValidationPreparePar", fields: [prepareParId], references: [id])
+  soumisPar  Utilisateur?            @relation("ValidationSoumisPar", fields: [soumisParId], references: [id])
+  visas      MissionValidationVisa[]
+
+  @@unique([missionId, code])
+  @@index([missionId, sectionKey, statut])
+}
+
+model MissionValidationVisa {
+  id            String     @id @default(cuid())
+  pointId       String
+  utilisateurId String
+  niveau        NiveauVisa
+  date          DateTime   @default(now())
+  /// Version du point au moment du visa.
+  versionVisee  Int        @default(1)
+  commentaire   String?
+
+  point       MissionValidationPoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur            @relation(fields: [utilisateurId], references: [id])
+
+  @@index([pointId, niveau])
 }
 
 // ─── Objectifs annuels (collaborateur) ───────────────────────
