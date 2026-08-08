@@ -5,6 +5,7 @@ import {
   ECHELLE_RISQUE,
   FREQUENCE_CONTROLE_OPTIONS,
   FREQUENCE_REVUE_OPTIONS,
+  NIVEAU_CONFIDENTIALITE_OPTIONS,
   PRIORITE_OPTIONS,
   STATUT_CONSEIL_OPTIONS,
   STATUT_CONTROLE_OPTIONS,
@@ -74,6 +75,7 @@ type ConseilValues = {
   dateReponse?: Date | string | null;
   dateCloture?: Date | string | null;
   commentaires?: string | null;
+  raisonnement?: string | null;
 };
 
 type ControleValues = {
@@ -110,6 +112,7 @@ type RisqueValues = {
   strategie?: string | null;
   statut?: string;
   commentaires?: string | null;
+  justificationEvaluation?: string | null;
 };
 
 type DocumentValues = {
@@ -128,6 +131,8 @@ type DocumentValues = {
   statut?: string;
   description?: string | null;
   reference?: string | null;
+  contientDonneesPersonnelles?: boolean;
+  niveauConfidentialite?: string;
 };
 
 type MissionValues = {
@@ -144,6 +149,9 @@ type MissionValues = {
   dateFin?: Date | string | null;
   statut?: string;
   commentaires?: string | null;
+  analyseTravaux?: string | null;
+  contientDonneesPersonnelles?: boolean;
+  niveauConfidentialite?: string;
 };
 
 type MissionTypeOpt = { id: string; libelle: string };
@@ -160,6 +168,8 @@ type ProcessusValues = {
   criticite?: number | null;
   reference?: string | null;
   parentId?: string | null;
+  contientDonneesPersonnelles?: boolean;
+  niveauConfidentialite?: string;
 };
 
 function Field({
@@ -714,6 +724,17 @@ export function ConseilForm({
         </Field>
       </FormSection>
 
+      <FormSection title="Réflexion / analyse" defaultOpen={false}>
+        <Field label="Raisonnement / analyse" htmlFor="raisonnement">
+          <textarea
+            id="raisonnement"
+            name="raisonnement"
+            rows={4}
+            defaultValue={values?.raisonnement ?? ""}
+          />
+        </Field>
+      </FormSection>
+
       <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Ex. LSubv, gouvernance">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
@@ -1057,6 +1078,18 @@ export function RisqueForm({
             </select>
           </Field>
         </div>
+
+        <Field
+          label="Justification de l'évaluation / traitement"
+          htmlFor="justificationEvaluation"
+        >
+          <textarea
+            id="justificationEvaluation"
+            name="justificationEvaluation"
+            rows={3}
+            defaultValue={values?.justificationEvaluation ?? ""}
+          />
+        </Field>
       </FormSection>
 
       <FormSection title="Pilotage">
@@ -1269,6 +1302,31 @@ export function DocumentForm({
         </div>
       </FormSection>
 
+      <FormSection title="Protection des données (LPD)" defaultOpen={false}>
+        <label className="check-field">
+          <input
+            type="checkbox"
+            name="contientDonneesPersonnelles"
+            value="1"
+            defaultChecked={values?.contientDonneesPersonnelles ?? false}
+          />
+          Contient des données personnelles
+        </label>
+        <Field label="Niveau de confidentialité" htmlFor="niveauConfidentialite">
+          <select
+            id="niveauConfidentialite"
+            name="niveauConfidentialite"
+            defaultValue={values?.niveauConfidentialite ?? "INTERNE"}
+          >
+            {NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </FormSection>
+
       <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
@@ -1455,6 +1513,42 @@ export function MissionForm({
         </Field>
       </FormSection>
 
+      <FormSection title="Réflexion / analyse" defaultOpen={false}>
+        <Field label="Réflexion / analyse" htmlFor="analyseTravaux">
+          <textarea
+            id="analyseTravaux"
+            name="analyseTravaux"
+            rows={4}
+            defaultValue={values?.analyseTravaux ?? ""}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Protection des données (LPD)" defaultOpen={false}>
+        <label className="check-field">
+          <input
+            type="checkbox"
+            name="contientDonneesPersonnelles"
+            value="1"
+            defaultChecked={values?.contientDonneesPersonnelles ?? false}
+          />
+          Contient des données personnelles
+        </label>
+        <Field label="Niveau de confidentialité" htmlFor="niveauConfidentialite">
+          <select
+            id="niveauConfidentialite"
+            name="niveauConfidentialite"
+            defaultValue={values?.niveauConfidentialite ?? "INTERNE"}
+          >
+            {NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </FormSection>
+
       <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
@@ -1593,6 +1687,31 @@ export function ProcessusForm({
             </Field>
           ) : null}
         </div>
+      </FormSection>
+
+      <FormSection title="Protection des données (LPD)" defaultOpen={false}>
+        <label className="check-field">
+          <input
+            type="checkbox"
+            name="contientDonneesPersonnelles"
+            value="1"
+            defaultChecked={values?.contientDonneesPersonnelles ?? false}
+          />
+          Contient des données personnelles
+        </label>
+        <Field label="Niveau de confidentialité" htmlFor="niveauConfidentialite">
+          <select
+            id="niveauConfidentialite"
+            name="niveauConfidentialite"
+            defaultValue={values?.niveauConfidentialite ?? "INTERNE"}
+          >
+            {NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
       </FormSection>
 
       <FormSection title="Tags" defaultOpen={false}>

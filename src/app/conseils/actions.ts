@@ -64,6 +64,7 @@ export async function createConseil(formData: FormData) {
       dateReponse: optDate(formData, "dateReponse"),
       dateCloture: optDate(formData, "dateCloture"),
       commentaires: optStr(formData, "commentaires"),
+      raisonnement: optStr(formData, "raisonnement"),
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
@@ -166,6 +167,7 @@ export async function updateConseil(formData: FormData) {
       dateReponse,
       dateCloture,
       commentaires: optStr(formData, "commentaires"),
+      raisonnement: optStr(formData, "raisonnement"),
       modifieParId: current.id,
     },
   });

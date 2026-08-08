@@ -117,6 +117,13 @@ export const STATUT_MISSION_OPTIONS = [
   { value: "ANNULE", label: "Annulé" },
 ] as const;
 
+export const NIVEAU_CONFIDENTIALITE_OPTIONS = [
+  { value: "PUBLIC", label: "Public" },
+  { value: "INTERNE", label: "Interne" },
+  { value: "CONFIDENTIEL", label: "Confidentiel" },
+  { value: "SENSIBLE", label: "Sensible" },
+] as const;
+
 /** @deprecated Utiliser STATUT_MISSION_OPTIONS */
 export const STATUT_AUDIT_OPTIONS = STATUT_MISSION_OPTIONS;
 

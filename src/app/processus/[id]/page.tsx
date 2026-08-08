@@ -13,7 +13,11 @@ import {
   deleteProcessus,
   unarchiveProcessus,
 } from "../actions";
-import { STATUT_PROCESSUS_LABELS, formatDate } from "@/lib/labels";
+import {
+  NIVEAU_CONFIDENTIALITE_LABELS,
+  STATUT_PROCESSUS_LABELS,
+  formatDate,
+} from "@/lib/labels";
 import { listLiensFor } from "@/lib/liens";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
@@ -134,6 +138,19 @@ export default async function ProcessusDetailPage({
               ) : (
                 (processus.reference ?? "—")
               )}
+            </dd>
+          </div>
+          <div>
+            <dt>Données personnelles</dt>
+            <dd>
+              {processus.contientDonneesPersonnelles ? "Oui" : "Non"}
+            </dd>
+          </div>
+          <div>
+            <dt>Niveau de confidentialité</dt>
+            <dd>
+              {NIVEAU_CONFIDENTIALITE_LABELS[processus.niveauConfidentialite] ??
+                processus.niveauConfidentialite}
             </dd>
           </div>
         </dl>

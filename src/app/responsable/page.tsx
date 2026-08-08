@@ -129,8 +129,7 @@ export default async function DashboardResponsablePage({
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <section className="section" aria-label="Vue synthétique">
-        <h2 className="section__title">Vue synthétique</h2>
+      <CollapsibleSection title="Vue synthétique" defaultOpen>
         <div className="kpi-domains">
           <article className="kpi-domain">
             <h3>Audits</h3>
@@ -170,10 +169,12 @@ export default async function DashboardResponsablePage({
             </p>
           </article>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section className="section" aria-label="Vue opérationnelle">
-        <h2 className="section__title">Que fait actuellement l&apos;unité ?</h2>
+      <CollapsibleSection
+        title="Que fait actuellement l'unité ?"
+        defaultOpen
+      >
         <div className="filter-bar">
           <Link
             href="/responsable"
@@ -283,13 +284,12 @@ export default async function DashboardResponsablePage({
             </CollapsibleSection>
           );
         })()}
-      </section>
+      </CollapsibleSection>
 
-      <section className="section" aria-label="Objectifs modules">
-        <CollapsibleSection
-          title={`Objectifs modules ${data.meta.annee} — vision consolidée`}
-          defaultOpen
-        >
+      <CollapsibleSection
+        title={`Objectifs modules ${data.meta.annee} — vision consolidée`}
+        defaultOpen
+      >
           <p className="muted" style={{ marginBottom: "0.75rem" }}>
             Chaque module définit ses cibles ; ce tableau de bord les agrège
             uniquement.
@@ -322,13 +322,12 @@ export default async function DashboardResponsablePage({
               ))}
             </ul>
           )}
-        </CollapsibleSection>
-      </section>
+      </CollapsibleSection>
 
-      <section className="section" aria-label="Objectifs annuels">
-        <h2 className="section__title">
-          Objectifs collaborateurs {data.meta.annee}
-        </h2>
+      <CollapsibleSection
+        title={`Objectifs collaborateurs ${data.meta.annee}`}
+        defaultOpen
+      >
         <div className="stats-grid" style={{ marginBottom: "1rem" }}>
           <Stat
             label="Audits réalisés / planifiés"
@@ -349,7 +348,7 @@ export default async function DashboardResponsablePage({
         <CollapsibleSection
           title="Détail par collaborateur"
           badge={data.objectifs.length}
-          defaultOpen
+          defaultOpen={false}
         >
           {data.objectifs.length === 0 ? (
             <p className="empty">Aucun objectif annuel collaborateur renseigné.</p>
@@ -371,19 +370,18 @@ export default async function DashboardResponsablePage({
             </ul>
           )}
         </CollapsibleSection>
-      </section>
+      </CollapsibleSection>
 
-      <section className="section" aria-label="Monitoring des actions">
-        <h2 className="section__title">
-          Actions de l&apos;unité
-          <span className="bucket-count">{s.actionsOuvertes}</span>
-          {s.actionsEnRetard > 0 ? (
-            <span className="bucket-count bucket-count--danger">
-              {s.actionsEnRetard} en retard
-            </span>
-          ) : null}
-        </h2>
-
+      <CollapsibleSection
+        title="Actions de l'unité"
+        defaultOpen
+        badge={
+          <>
+            {s.actionsOuvertes}
+            {s.actionsEnRetard > 0 ? ` · ${s.actionsEnRetard} en retard` : ""}
+          </>
+        }
+      >
         <form className="filter-bar filter-bar--form" method="get">
           <label className="field">
             <span className="field__label">Collaborateur</span>
@@ -448,27 +446,21 @@ export default async function DashboardResponsablePage({
           </Link>
         </form>
 
-        <CollapsibleSection
-          title="Liste des actions"
-          badge={monitoring.actions.length}
-          defaultOpen
-        >
-          {monitoring.actions.length === 0 ? (
-            <p className="empty">Aucune action ouverte pour ces filtres.</p>
-          ) : (
-            <ul className="entity-list">
-              {monitoring.actions.map((t) => (
-                <ActionRow
-                  key={t.id}
-                  tache={t}
-                  retour={retour}
-                  showResponsable
-                />
-              ))}
-            </ul>
-          )}
-        </CollapsibleSection>
-      </section>
+        {monitoring.actions.length === 0 ? (
+          <p className="empty">Aucune action ouverte pour ces filtres.</p>
+        ) : (
+          <ul className="entity-list">
+            {monitoring.actions.map((t) => (
+              <ActionRow
+                key={t.id}
+                tache={t}
+                retour={retour}
+                showResponsable
+              />
+            ))}
+          </ul>
+        )}
+      </CollapsibleSection>
     </>
   );
 }

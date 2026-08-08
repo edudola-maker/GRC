@@ -109,6 +109,14 @@ enum StatutProcessus {
   SUSPENDU
 }
 
+/// Classification LPD / confidentialité (socle — règles avancées en roadmap).
+enum NiveauConfidentialite {
+  PUBLIC
+  INTERNE
+  CONFIDENTIEL
+  SENSIBLE
+}
+
 enum StatutDocument {
   BROUILLON
   EN_VIGUEUR
@@ -372,6 +380,8 @@ model Conseil {
   dateReponse       DateTime?
   dateCloture       DateTime?
   commentaires      String?
+  /// Raisonnement ayant conduit à l’avis (≠ journal d’activité).
+  raisonnement      String?
   archive           Boolean       @default(false)
   creeParId         String
   modifieParId      String
@@ -535,6 +545,8 @@ model Risque {
   strategie     StrategieRisque?
   statut        StatutRisque     @default(IDENTIFIE)
   commentaires  String?
+  /// Justification de l’évaluation / du traitement retenu (≠ journal).
+  justificationEvaluation String?
   archive       Boolean          @default(false)
   creeParId     String
   modifieParId  String
@@ -590,6 +602,9 @@ model Document {
   chemin            String?
   typeMime          String?
   taille            Int?
+  /// LPD by design — socle (droits fins / rétention = roadmap).
+  contientDonneesPersonnelles Boolean @default(false)
+  niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
   archive           Boolean         @default(false)
   creeParId         String
   modifieParId      String?
@@ -637,6 +652,9 @@ model MissionTemplate {
   actif       Boolean  @default(true)
   /// { sections, roleCodes, checklistDefs, validationDefs }
   definition  Json
+  /// LPD by design — le template peut préqualifier les instances.
+  contientDonneesPersonnelles Boolean @default(false)
+  niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
   creeLe      DateTime @default(now())
 
   type     MissionType @relation(fields: [typeId], references: [id])
@@ -687,6 +705,11 @@ model Mission {
   dateFin            DateTime?
   statut             StatutMission @default(PLANIFIE)
   commentaires       String?
+  /// Analyses / réflexions relatives aux travaux (≠ journal d’activité).
+  analyseTravaux     String?
+  /// LPD by design — socle.
+  contientDonneesPersonnelles Boolean @default(false)
+  niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
   /// Soft-delete / historique — pas de suppression physique des missions suivies.
   archive            Boolean       @default(false)
   creeParId          String
@@ -926,6 +949,9 @@ model Processus {
   /// Lien Confluence (documentation) — pas une GED
   reference     String?
   parentId      String?
+  /// LPD by design — socle.
+  contientDonneesPersonnelles Boolean @default(false)
+  niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
   archive       Boolean         @default(false)
   creeParId     String
   modifieParId  String

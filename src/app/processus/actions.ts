@@ -2,7 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
-import { STATUT_PROCESSUS_OPTIONS } from "@/lib/catalog";
+import {
+  NIVEAU_CONFIDENTIALITE_OPTIONS,
+  STATUT_PROCESSUS_OPTIONS,
+} from "@/lib/catalog";
 import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +14,20 @@ import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
 const STATUTS = new Set(STATUT_PROCESSUS_OPTIONS.map((o) => o.value));
+const NIVEAUX_CONF = new Set<string>(
+  NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => o.value),
+);
+
+function parseLpd(formData: FormData) {
+  const niveau = optStr(formData, "niveauConfidentialite") ?? "INTERNE";
+  return {
+    contientDonneesPersonnelles:
+      str(formData, "contientDonneesPersonnelles") === "1",
+    niveauConfidentialite: (NIVEAUX_CONF.has(niveau)
+      ? niveau
+      : "INTERNE") as "INTERNE",
+  };
+}
 
 export async function createProcessus(formData: FormData) {
   const current = await getCurrentUser();
@@ -41,6 +58,7 @@ export async function createProcessus(formData: FormData) {
     redirectWithError(fallback, "Criticité invalide (1–5).");
   }
 
+  const lpd = parseLpd(formData);
   const processus = await prisma.processus.create({
     data: {
       code: await nextCode("PROCESSUS", uniteId),
@@ -53,6 +71,8 @@ export async function createProcessus(formData: FormData) {
       criticite: criticite ?? null,
       reference: optStr(formData, "reference"),
       parentId: parentId ?? null,
+      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+      niveauConfidentialite: lpd.niveauConfidentialite,
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
@@ -118,6 +138,7 @@ export async function updateProcessus(formData: FormData) {
     redirectWithError(`/processus/${id}/modifier`, "Criticité invalide (1–5).");
   }
 
+  const lpd = parseLpd(formData);
   await prisma.processus.update({
     where: { id },
     data: {
@@ -129,6 +150,8 @@ export async function updateProcessus(formData: FormData) {
       criticite: criticite ?? null,
       reference: optStr(formData, "reference"),
       parentId,
+      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+      niveauConfidentialite: lpd.niveauConfidentialite,
       modifieParId: current.id,
     },
   });

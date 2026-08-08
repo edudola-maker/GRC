@@ -84,7 +84,7 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Formulaires :** blocs thématiques `FormSection` (un seul Enregistrer). **Toutes les grandes box** (fiches, dashboards, inventaires, KPI zone, À traiter, formulaires) passent par le composant transversal `CollapsibleSection` (titre + ▾/▸). Cartographie risques repliée par défaut. Zone « À traiter » sobre (plus de jaune global).
 
-**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — moteur **Type → Template → Instance**. Équipe + rôles de mission (`MissionRole`, ≠ rôle app). Initiales utilisateur (affichage). Sections template repliables. Check-lists / validations structurées (contenu progressif). Recos `REC-xxxx` indépendantes de la clôture ; soft-delete mission. Routes `/audits` temporaires. Éditeur templates / versioning visas / dashboard validations = roadmap.
+**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — moteur **Type → Template → Instance**. Édition **par section** (`?edit=`) : lecture seule par défaut ; Vue d’ensemble = infos générales ; Planification = équipe/docs. Plus de Modifier global ni d’édition inline hors mode section. Recos `REC-xxxx` ; soft-delete. **LPD** socle sur Mission/Template/Document/Processus. **Réflexion** : `analyseTravaux` (Mission), `justificationEvaluation` (Risque), `raisonnement` (Conseil) ≠ journal. Routes `/audits` temporaires. Roadmap : Éditeur, invalidation visas, modèles de tâches, LPD avancé.
 
 **Relations :** table générique `LienObjet` + section **Éléments associés** (lecture en consultation, édition sur Modifier).
 

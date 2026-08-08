@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import {
   FREQUENCE_REVUE_OPTIONS,
+  NIVEAU_CONFIDENTIALITE_OPTIONS,
   STATUT_DOCUMENT_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
 } from "@/lib/catalog";
@@ -21,6 +22,20 @@ const STATUTS = new Set<string>(STATUT_DOCUMENT_OPTIONS.map((o) => o.value));
 const FREQUENCES = new Set<string>(
   FREQUENCE_REVUE_OPTIONS.map((o) => o.value),
 );
+const NIVEAUX_CONF = new Set<string>(
+  NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => o.value),
+);
+
+function parseLpd(formData: FormData) {
+  const niveau = optStr(formData, "niveauConfidentialite") ?? "INTERNE";
+  return {
+    contientDonneesPersonnelles:
+      str(formData, "contientDonneesPersonnelles") === "1",
+    niveauConfidentialite: (NIVEAUX_CONF.has(niveau)
+      ? niveau
+      : "INTERNE") as "INTERNE",
+  };
+}
 
 async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
@@ -75,6 +90,7 @@ export async function createDocument(formData: FormData) {
   const nomErr = await assertNomUnique("DOCUMENT", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
+  const lpd = parseLpd(formData);
   const document = await prisma.document.create({
     data: {
       code: await nextCode("DOCUMENT", uniteId),
@@ -94,6 +110,8 @@ export async function createDocument(formData: FormData) {
       description: optStr(formData, "description"),
       reference: optStr(formData, "reference"),
       nomFichier: optStr(formData, "nomFichier"),
+      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+      niveauConfidentialite: lpd.niveauConfidentialite,
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
@@ -149,6 +167,7 @@ export async function updateDocument(formData: FormData) {
     frequenceRevue,
   );
 
+  const lpd = parseLpd(formData);
   await prisma.document.update({
     where: { id },
     data: {
@@ -168,6 +187,8 @@ export async function updateDocument(formData: FormData) {
       statut: statut as "BROUILLON",
       description: optStr(formData, "description"),
       reference: optStr(formData, "reference"),
+      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+      niveauConfidentialite: lpd.niveauConfidentialite,
       modifieParId: current.id,
     },
   });

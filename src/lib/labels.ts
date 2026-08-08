@@ -95,6 +95,13 @@ export const STATUT_DOCUMENT_LABELS: Record<string, string> = {
   ARCHIVE: "Archivé",
 };
 
+export const NIVEAU_CONFIDENTIALITE_LABELS: Record<string, string> = {
+  PUBLIC: "Public",
+  INTERNE: "Interne",
+  CONFIDENTIEL: "Confidentiel",
+  SENSIBLE: "Sensible",
+};
+
 export const FREQUENCE_REVUE_LABELS: Record<string, string> = {
   ANNUELLE: "Annuelle",
   BIANNUELLE: "Tous les 2 ans",

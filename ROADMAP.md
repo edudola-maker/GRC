@@ -141,17 +141,31 @@ Objet technique `Mission` (codes **MIS-xxxx**). Chaîne cible :
 
 **Type de mission → Template → Instance** (sections / workflow).
 
-Socle livré : types & templates seedés, équipe + rôles de mission, initiales utilisateur, squelette repliable (Vue d’ensemble + Planification + Substantif + Recommandations + Rapport + Suivi), recommandations **REC-xxxx** indépendantes de la clôture, tables check-list / validation (contenu métier progressif). Soft-delete / archivage privilégié.
+Socle livré : types & templates seedés, équipe + rôles, initiales, sections repliables, **édition indépendante par section** (lecture seule par défaut ; Vue d’ensemble = infos générales), recommandations **REC-xxxx**, check-lists / validations (structure), soft-delete. LPD by design minimal (`contientDonneesPersonnelles`, `niveauConfidentialite`) sur Mission / Template / Document / Processus. Réflexion documentée sur Mission / Risque / Conseil.
 
-**Roadmap — Éditeur (key user) :** administrer les templates (sections, ordre, champs, rôles, check-lists qualité, validations obligatoires, livrables) sans modifier le code.
+**Roadmap — Éditeur (key user) :** templates (sections, ordre, champs, rôles, check-lists, validations, livrables) sans modifier le code.
 
-**Roadmap — versioning des validations :** invalider les visas si l’élément validé change (`contenuVersion` / statut obsolète).
+**Roadmap — invalidation automatique des visas :** si une section validée est modifiée → point de validation `OBSOLETE` / à revalider (`contenuVersion`).
 
 **Roadmap — Dashboard responsable :** agréger les validations en attente.
 
-**Roadmap — programmes récurrents :** ex. revue des processus tous les 3 ans → génération automatique d’instances.
+**Roadmap — programmes récurrents :** ex. revue des processus tous les 3 ans → instances automatiques.
 
-**Roadmap — routes :** migrer `/audits` vers un chemin aligné sur le nom définitif du module.
+**Roadmap — routes :** migrer `/audits` vers le nom définitif du module.
+
+### 5ter-bis. LPD / Privacy by design (roadmap avancée)
+
+Socle flags livré. Plus tard : règles de conservation, accès besoin de connaître, Active Directory, traçabilité renforcée, recherche/exports filtrés par droits, pilotage LPD. Pas de données personnelles réelles en démo/test. Éviter un dépôt parallèle de documents sensibles (Confluence reste la référence).
+
+### 5ter-ter. Modèles de tâches (roadmap)
+
+**Modèle de tâche → Tâche réelle → Checklist d’exécution** (étapes à cocher dans la tâche, sauf besoin de responsable/échéance propre).
+
+Un modèle peut être lié à un ou plusieurs **Processus** (ex. Gestion du personnel → Entrée / Départ / Changement de fonction) ou rester transversal.
+
+Éditeur (plus tard) : nom, description, checklist, processus associés, délai standard, rôle/responsable par défaut, unités autorisées.
+
+Chaîne cible : **Processus → Modèle de tâche → Tâche → Checklist** (cohérent avec Contrôle → Occurrence, Mission → Section → Validation).
 
 ### 5quater. Export Excel (roadmap)
 

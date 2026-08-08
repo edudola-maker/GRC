@@ -146,6 +146,9 @@ export default async function RisqueDetailPage({
             </dd>
           </div>
         </dl>
+        {risque.justificationEvaluation ? (
+          <p className="detail-note">{risque.justificationEvaluation}</p>
+        ) : null}
       </CollapsibleSection>
 
       <CollapsibleSection title="Pilotage" defaultOpen>

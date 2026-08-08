@@ -294,6 +294,14 @@ export default async function ConseilDetailPage({
         </div>
       </div>
 
+      {conseil.raisonnement ? (
+        <CollapsibleSection title="Réflexion / analyse" defaultOpen={false}>
+          <p className="detail-note" style={{ margin: 0 }}>
+            {conseil.raisonnement}
+          </p>
+        </CollapsibleSection>
+      ) : null}
+
       <ElementsAssocies
         uniteId={user.uniteId}
         type="CONSEIL"

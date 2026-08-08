@@ -18,6 +18,7 @@ import {
 import {
   CATEGORIE_TACHE_LABELS,
   FREQUENCE_REVUE_LABELS,
+  NIVEAU_CONFIDENTIALITE_LABELS,
   STATUT_DOCUMENT_LABELS,
   STATUT_TACHE_LABELS,
   TYPE_DOCUMENT_LABELS,
@@ -172,6 +173,19 @@ export default async function DocumentDetailPage({
           <div>
             <dt>Prochaine revue</dt>
             <dd>{formatDate(document.prochaineRevue)}</dd>
+          </div>
+          <div>
+            <dt>Données personnelles</dt>
+            <dd>
+              {document.contientDonneesPersonnelles ? "Oui" : "Non"}
+            </dd>
+          </div>
+          <div>
+            <dt>Niveau de confidentialité</dt>
+            <dd>
+              {NIVEAU_CONFIDENTIALITE_LABELS[document.niveauConfidentialite] ??
+                document.niveauConfidentialite}
+            </dd>
           </div>
         </dl>
         <p className="detail-trace">

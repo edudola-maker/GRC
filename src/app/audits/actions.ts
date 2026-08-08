@@ -1,7 +1,11 @@
 "use server";
 
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
-import { STATUT_MISSION_OPTIONS, STATUT_RECO_OPTIONS } from "@/lib/catalog";
+import {
+  NIVEAU_CONFIDENTIALITE_OPTIONS,
+  STATUT_MISSION_OPTIONS,
+  STATUT_RECO_OPTIONS,
+} from "@/lib/catalog";
 import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optDate, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
@@ -13,6 +17,21 @@ const STATUTS_MISSION = new Set<string>(
   STATUT_MISSION_OPTIONS.map((o) => o.value),
 );
 const STATUTS_RECO = new Set<string>(STATUT_RECO_OPTIONS.map((o) => o.value));
+const NIVEAUX_CONF = new Set<string>(
+  NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => o.value),
+);
+
+function parseLpd(formData: FormData) {
+  const niveau =
+    optStr(formData, "niveauConfidentialite") ?? "INTERNE";
+  return {
+    contientDonneesPersonnelles:
+      str(formData, "contientDonneesPersonnelles") === "1",
+    niveauConfidentialite: (NIVEAUX_CONF.has(niveau)
+      ? niveau
+      : "INTERNE") as "INTERNE",
+  };
+}
 
 async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
@@ -84,6 +103,7 @@ export async function createMission(formData: FormData) {
   const nomErr = await assertNomUnique("MISSION", titre, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
+  const lpd = parseLpd(formData);
   const mission = await prisma.mission.create({
     data: {
       code: await nextCode("MISSION", uniteId),
@@ -100,6 +120,9 @@ export async function createMission(formData: FormData) {
       dateFin: optDate(formData, "dateFin"),
       statut: statut as "PLANIFIE",
       commentaires: optStr(formData, "commentaires"),
+      analyseTravaux: optStr(formData, "analyseTravaux"),
+      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+      niveauConfidentialite: lpd.niveauConfidentialite,
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
@@ -128,17 +151,15 @@ export async function updateMission(formData: FormData) {
   const existing = await prisma.mission.findUnique({ where: { id } });
   if (!existing) redirectWithError("/audits", "Mission introuvable.");
 
+  const editFallback = `/audits/${id}?edit=VUE_ENSEMBLE`;
   const titre = str(formData, "titre");
   if (!titre) {
-    redirectWithError(
-      `/audits/${id}/modifier`,
-      "Le titre de la mission est obligatoire.",
-    );
+    redirectWithError(editFallback, "Le titre de la mission est obligatoire.");
   }
 
   const statut = str(formData, "statut") || "PLANIFIE";
   if (!STATUTS_MISSION.has(statut)) {
-    redirectWithError(`/audits/${id}/modifier`, "Statut invalide.");
+    redirectWithError(editFallback, "Statut invalide.");
   }
 
   const typeId = str(formData, "typeId") || existing.typeId;
@@ -146,7 +167,7 @@ export async function updateMission(formData: FormData) {
     where: { id: typeId, actif: true },
   });
   if (!type) {
-    redirectWithError(`/audits/${id}/modifier`, "Type de mission introuvable.");
+    redirectWithError(editFallback, "Type de mission introuvable.");
   }
 
   const templateId =
@@ -159,21 +180,19 @@ export async function updateMission(formData: FormData) {
       where: { id: descriptifPresetId, typeId, actif: true },
     });
     if (!preset) {
-      redirectWithError(
-        `/audits/${id}/modifier`,
-        "Descriptif standard introuvable.",
-      );
+      redirectWithError(editFallback, "Descriptif standard introuvable.");
     }
   }
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/audits/${id}/modifier`, "Responsable introuvable.");
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const nomErr = await assertNomUnique("MISSION", titre, existing.uniteId, id);
-  if (nomErr) redirectWithError(`/audits/${id}/modifier`, nomErr);
+  if (nomErr) redirectWithError(editFallback, nomErr);
 
+  const lpd = parseLpd(formData);
   await prisma.mission.update({
     where: { id },
     data: {
@@ -189,11 +208,14 @@ export async function updateMission(formData: FormData) {
       dateFin: optDate(formData, "dateFin"),
       statut: statut as "PLANIFIE",
       commentaires: optStr(formData, "commentaires"),
+      analyseTravaux: optStr(formData, "analyseTravaux"),
+      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+      niveauConfidentialite: lpd.niveauConfidentialite,
       modifieParId: current.id,
     },
   });
 
-  revalidateApp([`/audits/${id}`, `/audits/${id}/modifier`]);
+  revalidateApp([`/audits/${id}`]);
   redirectWithOk(`/audits/${id}`, "modifie");
 }
 
@@ -329,7 +351,7 @@ export async function createRecommandation(formData: FormData) {
   }
 
   revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}`, "reco");
+  redirectWithOk(`/audits/${missionId}?edit=RECOMMANDATIONS`, "reco");
 }
 
 export async function updateRecommandation(formData: FormData) {
@@ -378,7 +400,7 @@ export async function updateRecommandation(formData: FormData) {
   });
 
   revalidateApp([`/audits/${existing.missionId}`]);
-  redirectWithOk(`/audits/${existing.missionId}`, "modifie");
+  redirectWithOk(`/audits/${existing.missionId}?edit=RECOMMANDATIONS`, "modifie");
 }
 
 export async function deleteRecommandation(formData: FormData) {
@@ -396,7 +418,7 @@ export async function deleteRecommandation(formData: FormData) {
     data: { archive: true },
   });
   revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}`, "supprime");
+  redirectWithOk(`/audits/${missionId}?edit=RECOMMANDATIONS`, "supprime");
 }
 
 export async function createTacheDepuisMission(formData: FormData) {
@@ -507,7 +529,7 @@ export async function linkDocument(formData: FormData) {
   });
 
   revalidateApp([`/audits/${missionId}`, `/documents/${documentId}`]);
-  redirectWithOk(`/audits/${missionId}`, "lien");
+  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "lien");
 }
 
 export async function addMissionMembre(formData: FormData) {
@@ -560,7 +582,7 @@ export async function addMissionMembre(formData: FormData) {
   });
 
   revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}`, "equipe");
+  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "equipe");
 }
 
 export async function removeMissionMembre(formData: FormData) {
@@ -585,7 +607,7 @@ export async function removeMissionMembre(formData: FormData) {
   });
 
   revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}`, "equipe");
+  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "equipe");
 }
 
 export async function setMissionMembreRoles(formData: FormData) {
@@ -624,7 +646,7 @@ export async function setMissionMembreRoles(formData: FormData) {
   ]);
 
   revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}`, "equipe");
+  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "equipe");
 }
 
 /** Alias de transition — préférer les noms Mission. */

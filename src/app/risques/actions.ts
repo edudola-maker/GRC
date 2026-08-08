@@ -113,6 +113,7 @@ export async function createRisque(formData: FormData) {
       strategie: (strategie as "REDUIRE") ?? null,
       statut: statut as "IDENTIFIE",
       commentaires: optStr(formData, "commentaires"),
+      justificationEvaluation: optStr(formData, "justificationEvaluation"),
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
@@ -202,6 +203,7 @@ export async function updateRisque(formData: FormData) {
       strategie: (strategie as "REDUIRE") ?? null,
       statut: statut as "IDENTIFIE",
       commentaires: optStr(formData, "commentaires"),
+      justificationEvaluation: optStr(formData, "justificationEvaluation"),
       modifieParId: current.id,
     },
   });
