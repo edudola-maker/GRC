@@ -14,13 +14,18 @@ import {
   STATUT_RISQUE_OPTIONS,
   STATUT_TACHE_OPTIONS,
   STRATEGIE_RISQUE_OPTIONS,
-  TAXINOMIE_OPTIONS,
   TYPE_CONTROLE_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
   TYPE_MISSION_OPTIONS,
 } from "@/lib/catalog";
 import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
+import { FormSection } from "@/components/module/FormSection";
+
+const STATUT_PROCESSUS_OPTIONS = [
+  { value: "ACTIF", label: "Actif" },
+  { value: "SUSPENDU", label: "Suspendu" },
+];
 
 type UserOpt = { id: string; nom: string };
 type ProjetOpt = { id: string; nom: string };
@@ -144,6 +149,18 @@ type AuditValues = {
   commentaires?: string | null;
 };
 
+type ProcessusValues = {
+  id?: string;
+  nom?: string;
+  description?: string | null;
+  tags?: string | null;
+  responsableId?: string;
+  statut?: string;
+  criticite?: number | null;
+  reference?: string | null;
+  parentId?: string | null;
+};
+
 function Field({
   label,
   htmlFor,
@@ -181,40 +198,113 @@ export function ProjetForm({
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      <Field label="Nom du projet *" htmlFor="nom">
-        <input
-          id="nom"
-          name="nom"
-          required
-          defaultValue={values?.nom ?? ""}
-          placeholder="Ex. Modernisation des procédures"
-        />
-      </Field>
-
-      <Field label="Description" htmlFor="description">
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          defaultValue={values?.description ?? ""}
-        />
-      </Field>
-
-      <div className="form-grid">
-        <Field label="Taxinomie" htmlFor="taxinomie">
-          <select
-            id="taxinomie"
-            name="taxinomie"
-            defaultValue={values?.taxinomie ?? ""}
-          >
-            <option value="">—</option>
-            {TAXINOMIE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+      <FormSection title="Description">
+        <Field label="Nom du projet *" htmlFor="nom">
+          <input
+            id="nom"
+            name="nom"
+            required
+            defaultValue={values?.nom ?? ""}
+            placeholder="Ex. Modernisation des procédures"
+          />
         </Field>
+
+        <Field label="Description" htmlFor="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={values?.description ?? ""}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              required
+              defaultValue={values?.responsableId ?? users[0]?.id}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "IDEE"}
+            >
+              {STATUT_PROJET_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Priorité" htmlFor="priorite">
+            <select
+              id="priorite"
+              name="priorite"
+              defaultValue={values?.priorite ?? "MOYENNE"}
+            >
+              {PRIORITE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Avancement (%)" htmlFor="avancement">
+            <input
+              id="avancement"
+              name="avancement"
+              type="number"
+              min={0}
+              max={100}
+              defaultValue={values?.avancement ?? 0}
+            />
+          </Field>
+
+          <Field label="Date de début" htmlFor="dateDebut">
+            <input
+              id="dateDebut"
+              name="dateDebut"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateDebut)}
+            />
+          </Field>
+
+          <Field label="Date d'échéance" htmlFor="dateEcheance">
+            <input
+              id="dateEcheance"
+              name="dateEcheance"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateEcheance)}
+            />
+          </Field>
+        </div>
+
+        <Field label="Commentaires" htmlFor="commentaires">
+          <textarea
+            id="commentaires"
+            name="commentaires"
+            rows={2}
+            defaultValue={values?.commentaires ?? ""}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Tags">
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input
             id="tags"
@@ -223,87 +313,7 @@ export function ProjetForm({
             placeholder="Ex. gouvernance, SCI"
           />
         </Field>
-        <Field label="Responsable" htmlFor="responsableId">
-          <select
-            id="responsableId"
-            name="responsableId"
-            required
-            defaultValue={values?.responsableId ?? users[0]?.id}
-          >
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nom}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Statut" htmlFor="statut">
-          <select
-            id="statut"
-            name="statut"
-            defaultValue={values?.statut ?? "IDEE"}
-          >
-            {STATUT_PROJET_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Priorité" htmlFor="priorite">
-          <select
-            id="priorite"
-            name="priorite"
-            defaultValue={values?.priorite ?? "MOYENNE"}
-          >
-            {PRIORITE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Avancement (%)" htmlFor="avancement">
-          <input
-            id="avancement"
-            name="avancement"
-            type="number"
-            min={0}
-            max={100}
-            defaultValue={values?.avancement ?? 0}
-          />
-        </Field>
-
-        <Field label="Date de début" htmlFor="dateDebut">
-          <input
-            id="dateDebut"
-            name="dateDebut"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateDebut)}
-          />
-        </Field>
-
-        <Field label="Date d'échéance" htmlFor="dateEcheance">
-          <input
-            id="dateEcheance"
-            name="dateEcheance"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateEcheance)}
-          />
-        </Field>
-      </div>
-
-      <Field label="Commentaires" htmlFor="commentaires">
-        <textarea
-          id="commentaires"
-          name="commentaires"
-          rows={2}
-          defaultValue={values?.commentaires ?? ""}
-        />
-      </Field>
+      </FormSection>
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
@@ -410,9 +420,7 @@ export function TacheForm({
           <select
             id="categorie"
             name="categorie"
-            defaultValue={
-              values?.categorie ?? defaultCategorie ?? "AUTRE"
-            }
+            defaultValue={values?.categorie ?? defaultCategorie ?? "AUTRE"}
           >
             {CATEGORIE_TACHE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -586,124 +594,126 @@ export function ConseilForm({
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      <Field label="Objet *" htmlFor="objet">
-        <input
-          id="objet"
-          name="objet"
-          required
-          defaultValue={values?.objet ?? ""}
-          placeholder="Ex. Avis sur la procédure X"
-        />
-      </Field>
-
-      <Field label="Description" htmlFor="description">
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          defaultValue={values?.description ?? ""}
-        />
-      </Field>
-
-      <div className="form-grid">
-        <Field label="Taxinomie" htmlFor="taxinomie">
-          <select id="taxinomie" name="taxinomie" defaultValue={values?.taxinomie ?? ""}>
-            <option value="">—</option>
-            {TAXINOMIE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+      <FormSection title="Description">
+        <Field label="Objet *" htmlFor="objet">
+          <input
+            id="objet"
+            name="objet"
+            required
+            defaultValue={values?.objet ?? ""}
+            placeholder="Ex. Avis sur la procédure X"
+          />
         </Field>
+
+        <Field label="Description" htmlFor="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={values?.description ?? ""}
+          />
+        </Field>
+
+        <div className="form-grid">
+          <Field label="Demandeur" htmlFor="demandeur">
+            <input
+              id="demandeur"
+              name="demandeur"
+              defaultValue={values?.demandeur ?? ""}
+            />
+          </Field>
+          <Field label="Entité demandeuse" htmlFor="entiteDemandeuse">
+            <input
+              id="entiteDemandeuse"
+              name="entiteDemandeuse"
+              defaultValue={values?.entiteDemandeuse ?? ""}
+            />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              required
+              defaultValue={values?.responsableId ?? users[0]?.id}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "RECU"}
+            >
+              {STATUT_CONSEIL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Date de réception"
+            htmlFor="dateReception"
+            hint="L'échéance cible est +5 jours ouvrés si non renseignée."
+          >
+            <input
+              id="dateReception"
+              name="dateReception"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateReception ?? new Date())}
+            />
+          </Field>
+          <Field label="Date d'échéance" htmlFor="dateEcheance">
+            <input
+              id="dateEcheance"
+              name="dateEcheance"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateEcheance)}
+            />
+          </Field>
+          <Field label="Date de réponse" htmlFor="dateReponse">
+            <input
+              id="dateReponse"
+              name="dateReponse"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateReponse)}
+            />
+          </Field>
+          <Field label="Date de clôture" htmlFor="dateCloture">
+            <input
+              id="dateCloture"
+              name="dateCloture"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateCloture)}
+            />
+          </Field>
+        </div>
+
+        <Field label="Commentaires" htmlFor="commentaires">
+          <textarea
+            id="commentaires"
+            name="commentaires"
+            rows={2}
+            defaultValue={values?.commentaires ?? ""}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Tags">
         <Field label="Tags" htmlFor="tags" hint="Ex. LSubv, gouvernance">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
-        <Field label="Demandeur" htmlFor="demandeur">
-          <input
-            id="demandeur"
-            name="demandeur"
-            defaultValue={values?.demandeur ?? ""}
-          />
-        </Field>
-        <Field label="Entité demandeuse" htmlFor="entiteDemandeuse">
-          <input
-            id="entiteDemandeuse"
-            name="entiteDemandeuse"
-            defaultValue={values?.entiteDemandeuse ?? ""}
-          />
-        </Field>
-        <Field label="Responsable" htmlFor="responsableId">
-          <select
-            id="responsableId"
-            name="responsableId"
-            required
-            defaultValue={values?.responsableId ?? users[0]?.id}
-          >
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nom}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Statut" htmlFor="statut">
-          <select
-            id="statut"
-            name="statut"
-            defaultValue={values?.statut ?? "RECU"}
-          >
-            {STATUT_CONSEIL_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Date de réception"
-          htmlFor="dateReception"
-          hint="L'échéance cible est +5 jours ouvrés si non renseignée."
-        >
-          <input
-            id="dateReception"
-            name="dateReception"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateReception ?? new Date())}
-          />
-        </Field>
-        <Field label="Date d'échéance" htmlFor="dateEcheance">
-          <input
-            id="dateEcheance"
-            name="dateEcheance"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateEcheance)}
-          />
-        </Field>
-        <Field label="Date de réponse" htmlFor="dateReponse">
-          <input
-            id="dateReponse"
-            name="dateReponse"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateReponse)}
-          />
-        </Field>
-        <Field label="Date de clôture" htmlFor="dateCloture">
-          <input
-            id="dateCloture"
-            name="dateCloture"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateCloture)}
-          />
-        </Field>
-      </div>
-
-      <Field label="Commentaires" htmlFor="commentaires">
-        <textarea
-          id="commentaires"
-          name="commentaires"
-          rows={2}
-          defaultValue={values?.commentaires ?? ""}
-        />
-      </Field>
+      </FormSection>
 
       {showCreerTache ? (
         <label className="check-field">
@@ -739,156 +749,153 @@ export function ControleSCIForm({
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      <Field label="Nom *" htmlFor="nom">
-        <input
-          id="nom"
-          name="nom"
-          required
-          defaultValue={values?.nom ?? ""}
-          placeholder="Ex. Revue des accès applicatifs"
-        />
-      </Field>
-
-      <Field label="Processus concerné *" htmlFor="processusConcerne">
-        <input
-          id="processusConcerne"
-          name="processusConcerne"
-          required
-          defaultValue={values?.processusConcerne ?? ""}
-          placeholder="Ex. Gestion des accès"
-        />
-      </Field>
-
-      <Field label="Description" htmlFor="description">
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          defaultValue={values?.description ?? ""}
-        />
-      </Field>
-
-      <div className="form-grid">
-        <Field label="Responsable" htmlFor="responsableId">
-          <select
-            id="responsableId"
-            name="responsableId"
-            required
-            defaultValue={values?.responsableId ?? users[0]?.id}
-          >
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nom}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Type de contrôle" htmlFor="typeControle">
-          <select
-            id="typeControle"
-            name="typeControle"
-            defaultValue={values?.typeControle ?? "MANUEL"}
-          >
-            {TYPE_CONTROLE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Fréquence" htmlFor="frequence">
-          <select
-            id="frequence"
-            name="frequence"
-            required
-            defaultValue={values?.frequence ?? "TRIMESTRIELLE"}
-          >
-            {FREQUENCE_CONTROLE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Fenêtre de déclenchement (jours)"
-          htmlFor="fenetreDeclenchementJours"
-          hint="L'action n'apparaît dans Mes actions que dans cette fenêtre avant l'échéance."
-        >
+      <FormSection title="Description">
+        <Field label="Nom *" htmlFor="nom">
           <input
-            id="fenetreDeclenchementJours"
-            name="fenetreDeclenchementJours"
-            type="number"
-            min={0}
-            defaultValue={values?.fenetreDeclenchementJours ?? 30}
+            id="nom"
+            name="nom"
+            required
+            defaultValue={values?.nom ?? ""}
+            placeholder="Ex. Revue des accès applicatifs"
           />
         </Field>
-        <Field
-          label="Délai de réalisation (jours)"
-          htmlFor="delaiRealisationJours"
-        >
-          <input
-            id="delaiRealisationJours"
-            name="delaiRealisationJours"
-            type="number"
-            min={0}
-            defaultValue={values?.delaiRealisationJours ?? ""}
+
+        <Field label="Description" htmlFor="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={values?.description ?? ""}
           />
         </Field>
-        <Field label="Taxinomie" htmlFor="taxinomie">
-          <select
-            id="taxinomie"
-            name="taxinomie"
-            defaultValue={values?.taxinomie ?? ""}
+
+        <div className="form-grid">
+          <Field label="Processus concerné *" htmlFor="processusConcerne">
+            <input
+              id="processusConcerne"
+              name="processusConcerne"
+              required
+              defaultValue={values?.processusConcerne ?? ""}
+              placeholder="Ex. Gestion des accès"
+            />
+          </Field>
+          <Field label="Type de contrôle" htmlFor="typeControle">
+            <select
+              id="typeControle"
+              name="typeControle"
+              defaultValue={values?.typeControle ?? "MANUEL"}
+            >
+              {TYPE_CONTROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              required
+              defaultValue={values?.responsableId ?? users[0]?.id}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "ACTIF"}
+            >
+              {STATUT_CONTROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Fréquence" htmlFor="frequence">
+            <select
+              id="frequence"
+              name="frequence"
+              required
+              defaultValue={values?.frequence ?? "TRIMESTRIELLE"}
+            >
+              {FREQUENCE_CONTROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Fenêtre de déclenchement (jours)"
+            htmlFor="fenetreDeclenchementJours"
+            hint="L'action n'apparaît dans Mes actions que dans cette fenêtre avant l'échéance."
           >
-            <option value="">—</option>
-            {TAXINOMIE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            <input
+              id="fenetreDeclenchementJours"
+              name="fenetreDeclenchementJours"
+              type="number"
+              min={0}
+              defaultValue={values?.fenetreDeclenchementJours ?? 30}
+            />
+          </Field>
+          <Field
+            label="Délai de réalisation (jours)"
+            htmlFor="delaiRealisationJours"
+          >
+            <input
+              id="delaiRealisationJours"
+              name="delaiRealisationJours"
+              type="number"
+              min={0}
+              defaultValue={values?.delaiRealisationJours ?? ""}
+            />
+          </Field>
+          <Field label="Dernière réalisation" htmlFor="dateDerniereRealisation">
+            <input
+              id="dateDerniereRealisation"
+              name="dateDerniereRealisation"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateDerniereRealisation)}
+            />
+          </Field>
+          <Field label="Prochaine échéance" htmlFor="dateProchaineEcheance">
+            <input
+              id="dateProchaineEcheance"
+              name="dateProchaineEcheance"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateProchaineEcheance)}
+            />
+          </Field>
+        </div>
+
+        <Field label="Commentaires" htmlFor="commentaires">
+          <textarea
+            id="commentaires"
+            name="commentaires"
+            rows={2}
+            defaultValue={values?.commentaires ?? ""}
+          />
         </Field>
+      </FormSection>
+
+      <FormSection title="Tags">
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
-        <Field label="Statut" htmlFor="statut">
-          <select
-            id="statut"
-            name="statut"
-            defaultValue={values?.statut ?? "ACTIF"}
-          >
-            {STATUT_CONTROLE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Dernière réalisation" htmlFor="dateDerniereRealisation">
-          <input
-            id="dateDerniereRealisation"
-            name="dateDerniereRealisation"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateDerniereRealisation)}
-          />
-        </Field>
-        <Field label="Prochaine échéance" htmlFor="dateProchaineEcheance">
-          <input
-            id="dateProchaineEcheance"
-            name="dateProchaineEcheance"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateProchaineEcheance)}
-          />
-        </Field>
-      </div>
-
-      <Field label="Commentaires" htmlFor="commentaires">
-        <textarea
-          id="commentaires"
-          name="commentaires"
-          rows={2}
-          defaultValue={values?.commentaires ?? ""}
-        />
-      </Field>
+      </FormSection>
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
@@ -917,169 +924,182 @@ export function RisqueForm({
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      <Field label="Nom *" htmlFor="nom">
-        <input
-          id="nom"
-          name="nom"
-          required
-          defaultValue={values?.nom ?? ""}
-          placeholder="Ex. Perte de données critiques"
-        />
-      </Field>
-
-      <Field label="Description" htmlFor="description">
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          defaultValue={values?.description ?? ""}
-        />
-      </Field>
-
-      <div className="form-grid">
-        <Field label="Processus" htmlFor="processus">
+      <FormSection title="Description">
+        <Field label="Nom *" htmlFor="nom">
           <input
-            id="processus"
-            name="processus"
-            defaultValue={values?.processus ?? ""}
+            id="nom"
+            name="nom"
+            required
+            defaultValue={values?.nom ?? ""}
+            placeholder="Ex. Perte de données critiques"
           />
         </Field>
-        <Field label="Responsable" htmlFor="responsableId">
-          <select
-            id="responsableId"
-            name="responsableId"
-            required
-            defaultValue={values?.responsableId ?? users[0]?.id}
+
+        <Field label="Description" htmlFor="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={values?.description ?? ""}
+          />
+        </Field>
+
+        <div className="form-grid">
+          <Field label="Catégorie" htmlFor="categorie">
+            <select
+              id="categorie"
+              name="categorie"
+              required
+              defaultValue={values?.categorie ?? "OPERATIONNEL"}
+            >
+              {CATEGORIE_RISQUE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Processus" htmlFor="processus">
+            <input
+              id="processus"
+              name="processus"
+              defaultValue={values?.processus ?? ""}
+            />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Évaluation">
+        <div className="form-grid">
+          <Field label="Probabilité inhérente (1–5)" htmlFor="probabilite">
+            <select
+              id="probabilite"
+              name="probabilite"
+              defaultValue={String(values?.probabilite ?? 1)}
+            >
+              {ECHELLE_RISQUE.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Impact inhérent (1–5)" htmlFor="impact">
+            <select
+              id="impact"
+              name="impact"
+              defaultValue={String(values?.impact ?? 1)}
+            >
+              {ECHELLE_RISQUE.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Probabilité résiduelle (1–5)"
+            htmlFor="probabiliteResiduelle"
+            hint="Après maîtrise — laisser vide = égale à l'inhérent"
           >
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nom}
-              </option>
-            ))}
-          </select>
+            <select
+              id="probabiliteResiduelle"
+              name="probabiliteResiduelle"
+              defaultValue={
+                values?.probabiliteResiduelle != null
+                  ? String(values.probabiliteResiduelle)
+                  : ""
+              }
+            >
+              <option value="">— (inhérent)</option>
+              {ECHELLE_RISQUE.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Impact résiduel (1–5)" htmlFor="impactResiduel">
+            <select
+              id="impactResiduel"
+              name="impactResiduel"
+              defaultValue={
+                values?.impactResiduel != null
+                  ? String(values.impactResiduel)
+                  : ""
+              }
+            >
+              <option value="">— (inhérent)</option>
+              {ECHELLE_RISQUE.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Stratégie de traitement" htmlFor="strategie">
+            <select
+              id="strategie"
+              name="strategie"
+              defaultValue={values?.strategie ?? ""}
+            >
+              <option value="">À définir</option>
+              {STRATEGIE_RISQUE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              required
+              defaultValue={values?.responsableId ?? users[0]?.id}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "IDENTIFIE"}
+            >
+              {STATUT_RISQUE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <Field label="Commentaires" htmlFor="commentaires">
+          <textarea
+            id="commentaires"
+            name="commentaires"
+            rows={2}
+            defaultValue={values?.commentaires ?? ""}
+          />
         </Field>
-        <Field label="Catégorie" htmlFor="categorie">
-          <select
-            id="categorie"
-            name="categorie"
-            required
-            defaultValue={values?.categorie ?? "OPERATIONNEL"}
-          >
-            {CATEGORIE_RISQUE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Stratégie de traitement" htmlFor="strategie">
-          <select id="strategie" name="strategie" defaultValue={values?.strategie ?? ""}>
-            <option value="">À définir</option>
-            {STRATEGIE_RISQUE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Taxinomie" htmlFor="taxinomie">
-          <select id="taxinomie" name="taxinomie" defaultValue={values?.taxinomie ?? ""}>
-            <option value="">—</option>
-            {TAXINOMIE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </Field>
+      </FormSection>
+
+      <FormSection title="Tags / métadonnées">
         <Field label="Tags" htmlFor="tags">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
-        <Field label="Statut" htmlFor="statut">
-          <select
-            id="statut"
-            name="statut"
-            defaultValue={values?.statut ?? "IDENTIFIE"}
-          >
-            {STATUT_RISQUE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Probabilité inhérente (1–5)" htmlFor="probabilite">
-          <select
-            id="probabilite"
-            name="probabilite"
-            defaultValue={String(values?.probabilite ?? 1)}
-          >
-            {ECHELLE_RISQUE.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Impact inhérent (1–5)" htmlFor="impact">
-          <select
-            id="impact"
-            name="impact"
-            defaultValue={String(values?.impact ?? 1)}
-          >
-            {ECHELLE_RISQUE.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Probabilité résiduelle (1–5)"
-          htmlFor="probabiliteResiduelle"
-          hint="Après maîtrise — laisser vide = égale à l'inhérent"
-        >
-          <select
-            id="probabiliteResiduelle"
-            name="probabiliteResiduelle"
-            defaultValue={
-              values?.probabiliteResiduelle != null
-                ? String(values.probabiliteResiduelle)
-                : ""
-            }
-          >
-            <option value="">— (inhérent)</option>
-            {ECHELLE_RISQUE.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Impact résiduel (1–5)" htmlFor="impactResiduel">
-          <select
-            id="impactResiduel"
-            name="impactResiduel"
-            defaultValue={
-              values?.impactResiduel != null
-                ? String(values.impactResiduel)
-                : ""
-            }
-          >
-            <option value="">— (inhérent)</option>
-            {ECHELLE_RISQUE.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
-
-      <Field label="Commentaires" htmlFor="commentaires">
-        <textarea
-          id="commentaires"
-          name="commentaires"
-          rows={2}
-          defaultValue={values?.commentaires ?? ""}
-        />
-      </Field>
+      </FormSection>
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
@@ -1108,145 +1128,147 @@ export function DocumentForm({
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      <Field label="Nom *" htmlFor="nom">
-        <input
-          id="nom"
-          name="nom"
-          required
-          defaultValue={values?.nom ?? ""}
-          placeholder="Ex. Procédure de validation budgétaire"
-        />
-      </Field>
+      <FormSection title="Description">
+        <Field label="Nom *" htmlFor="nom">
+          <input
+            id="nom"
+            name="nom"
+            required
+            defaultValue={values?.nom ?? ""}
+            placeholder="Ex. Procédure de validation budgétaire"
+          />
+        </Field>
 
-      <Field label="Description" htmlFor="description">
-        <textarea
-          id="description"
-          name="description"
-          rows={3}
-          defaultValue={values?.description ?? ""}
-        />
-      </Field>
+        <Field label="Description" htmlFor="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={values?.description ?? ""}
+          />
+        </Field>
 
-      <div className="form-grid">
-        <Field label="Type" htmlFor="typeDocument">
-          <select
-            id="typeDocument"
-            name="typeDocument"
-            defaultValue={values?.typeDocument ?? "AUTRE"}
+        <div className="form-grid">
+          <Field label="Type" htmlFor="typeDocument">
+            <select
+              id="typeDocument"
+              name="typeDocument"
+              defaultValue={values?.typeDocument ?? "AUTRE"}
+            >
+              {TYPE_DOCUMENT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Version" htmlFor="version">
+            <input
+              id="version"
+              name="version"
+              defaultValue={values?.version ?? ""}
+              placeholder="1.0"
+            />
+          </Field>
+          <Field
+            label="Lien Confluence / URL"
+            htmlFor="reference"
+            hint="Le contenu détaillé reste dans Confluence — inventaire uniquement."
           >
-            {TYPE_DOCUMENT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Taxinomie" htmlFor="taxinomie">
-          <select id="taxinomie" name="taxinomie" defaultValue={values?.taxinomie ?? ""}>
-            <option value="">—</option>
-            {TAXINOMIE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </Field>
+            <input
+              id="reference"
+              name="reference"
+              defaultValue={values?.reference ?? ""}
+              placeholder="https://confluence…"
+            />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              defaultValue={values?.responsableId ?? ""}
+            >
+              <option value="">Non assigné</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "BROUILLON"}
+            >
+              {STATUT_DOCUMENT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Fréquence de revue" htmlFor="frequenceRevue">
+            <select
+              id="frequenceRevue"
+              name="frequenceRevue"
+              defaultValue={values?.frequenceRevue ?? ""}
+            >
+              <option value="">Non définie</option>
+              {FREQUENCE_REVUE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Fenêtre revue (jours)" htmlFor="fenetreDeclenchementJours">
+            <input
+              id="fenetreDeclenchementJours"
+              name="fenetreDeclenchementJours"
+              type="number"
+              min={0}
+              defaultValue={values?.fenetreDeclenchementJours ?? 30}
+            />
+          </Field>
+          <Field label="Date d'approbation" htmlFor="dateApprobation">
+            <input
+              id="dateApprobation"
+              name="dateApprobation"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateApprobation)}
+            />
+          </Field>
+          <Field label="Dernière revue" htmlFor="dateDerniereRevue">
+            <input
+              id="dateDerniereRevue"
+              name="dateDerniereRevue"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateDerniereRevue)}
+            />
+          </Field>
+          <Field label="Prochaine revue" htmlFor="prochaineRevue">
+            <input
+              id="prochaineRevue"
+              name="prochaineRevue"
+              type="date"
+              defaultValue={toDateInputValue(values?.prochaineRevue)}
+            />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection title="Tags">
         <Field label="Tags" htmlFor="tags">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
-        <Field label="Version" htmlFor="version">
-          <input
-            id="version"
-            name="version"
-            defaultValue={values?.version ?? ""}
-            placeholder="1.0"
-          />
-        </Field>
-        <Field label="Responsable" htmlFor="responsableId">
-          <select
-            id="responsableId"
-            name="responsableId"
-            defaultValue={values?.responsableId ?? ""}
-          >
-            <option value="">Non assigné</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nom}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Statut" htmlFor="statut">
-          <select
-            id="statut"
-            name="statut"
-            defaultValue={values?.statut ?? "BROUILLON"}
-          >
-            {STATUT_DOCUMENT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Fréquence de revue" htmlFor="frequenceRevue">
-          <select
-            id="frequenceRevue"
-            name="frequenceRevue"
-            defaultValue={values?.frequenceRevue ?? ""}
-          >
-            <option value="">Non définie</option>
-            {FREQUENCE_REVUE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Lien Confluence / URL"
-          htmlFor="reference"
-          hint="Le contenu détaillé reste dans Confluence — inventaire uniquement."
-        >
-          <input
-            id="reference"
-            name="reference"
-            defaultValue={values?.reference ?? ""}
-            placeholder="https://confluence…"
-          />
-        </Field>
-        <Field label="Fenêtre revue (jours)" htmlFor="fenetreDeclenchementJours">
-          <input
-            id="fenetreDeclenchementJours"
-            name="fenetreDeclenchementJours"
-            type="number"
-            min={0}
-            defaultValue={values?.fenetreDeclenchementJours ?? 30}
-          />
-        </Field>
-        <Field label="Date d'approbation" htmlFor="dateApprobation">
-          <input
-            id="dateApprobation"
-            name="dateApprobation"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateApprobation)}
-          />
-        </Field>
-        <Field label="Dernière revue" htmlFor="dateDerniereRevue">
-          <input
-            id="dateDerniereRevue"
-            name="dateDerniereRevue"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateDerniereRevue)}
-          />
-        </Field>
-        <Field label="Prochaine revue" htmlFor="prochaineRevue">
-          <input
-            id="prochaineRevue"
-            name="prochaineRevue"
-            type="date"
-            defaultValue={toDateInputValue(values?.prochaineRevue)}
-          />
-        </Field>
-      </div>
+      </FormSection>
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
@@ -1275,110 +1297,240 @@ export function AuditForm({
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      <Field label="Titre *" htmlFor="titre">
-        <input
-          id="titre"
-          name="titre"
-          required
-          defaultValue={values?.titre ?? ""}
-          placeholder="Ex. Audit interne conformité 2026"
-        />
-      </Field>
-
-      <Field label="Type de mission *" htmlFor="typeMission">
-        <select
-          id="typeMission"
-          name="typeMission"
-          defaultValue={values?.typeMission ?? "AUDIT"}
-        >
-          {TYPE_MISSION_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label="Périmètre" htmlFor="perimetre">
-        <textarea
-          id="perimetre"
-          name="perimetre"
-          rows={3}
-          defaultValue={values?.perimetre ?? ""}
-        />
-      </Field>
-
-      <div className="form-grid">
-        <Field label="Responsable" htmlFor="responsableId">
-          <select
-            id="responsableId"
-            name="responsableId"
+      <FormSection title="Description">
+        <Field label="Titre *" htmlFor="titre">
+          <input
+            id="titre"
+            name="titre"
             required
-            defaultValue={values?.responsableId ?? users[0]?.id}
-          >
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nom}
-              </option>
-            ))}
-          </select>
+            defaultValue={values?.titre ?? ""}
+            placeholder="Ex. Audit interne conformité 2026"
+          />
         </Field>
-        <Field label="Statut" htmlFor="statut">
+
+        <Field label="Type de mission *" htmlFor="typeMission">
           <select
-            id="statut"
-            name="statut"
-            defaultValue={values?.statut ?? "PLANIFIE"}
+            id="typeMission"
+            name="typeMission"
+            defaultValue={values?.typeMission ?? "AUDIT"}
           >
-            {STATUT_AUDIT_OPTIONS.map((o) => (
+            {TYPE_MISSION_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Taxinomie" htmlFor="taxinomie">
-          <select
-            id="taxinomie"
-            name="taxinomie"
-            defaultValue={values?.taxinomie ?? ""}
-          >
-            <option value="">—</option>
-            {TAXINOMIE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+
+        <Field label="Périmètre" htmlFor="perimetre">
+          <textarea
+            id="perimetre"
+            name="perimetre"
+            rows={3}
+            defaultValue={values?.perimetre ?? ""}
+          />
         </Field>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              required
+              defaultValue={values?.responsableId ?? users[0]?.id}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "PLANIFIE"}
+            >
+              {STATUT_AUDIT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Date de début" htmlFor="dateDebut">
+            <input
+              id="dateDebut"
+              name="dateDebut"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateDebut)}
+            />
+          </Field>
+          <Field label="Date de fin" htmlFor="dateFin">
+            <input
+              id="dateFin"
+              name="dateFin"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateFin)}
+            />
+          </Field>
+        </div>
+
+        <Field label="Commentaires" htmlFor="commentaires">
+          <textarea
+            id="commentaires"
+            name="commentaires"
+            rows={2}
+            defaultValue={values?.commentaires ?? ""}
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Tags">
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
-        <Field label="Date de début" htmlFor="dateDebut">
-          <input
-            id="dateDebut"
-            name="dateDebut"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateDebut)}
-          />
-        </Field>
-        <Field label="Date de fin" htmlFor="dateFin">
-          <input
-            id="dateFin"
-            name="dateFin"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateFin)}
-          />
-        </Field>
-      </div>
+      </FormSection>
 
-      <Field label="Commentaires" htmlFor="commentaires">
-        <textarea
-          id="commentaires"
-          name="commentaires"
-          rows={2}
-          defaultValue={values?.commentaires ?? ""}
-        />
-      </Field>
+      <div className="form-actions">
+        <SubmitButton>{submitLabel}</SubmitButton>
+        <BtnLink href={cancelHref} variant="ghost">
+          Annuler
+        </BtnLink>
+      </div>
+    </form>
+  );
+}
+
+export function ProcessusForm({
+  action,
+  users,
+  values,
+  cancelHref,
+  submitLabel,
+  parentProcessus,
+}: {
+  action: (formData: FormData) => void | Promise<void>;
+  users: UserOpt[];
+  values?: ProcessusValues;
+  cancelHref: string;
+  submitLabel: string;
+  parentProcessus?: Opt[];
+}) {
+  const parentOptions = (parentProcessus ?? []).filter(
+    (p) => p.id !== values?.id,
+  );
+
+  return (
+    <form action={action} className="entity-form">
+      {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+
+      <FormSection title="Description">
+        <Field label="Nom *" htmlFor="nom">
+          <input
+            id="nom"
+            name="nom"
+            required
+            defaultValue={values?.nom ?? ""}
+            placeholder="Ex. Gestion des accès applicatifs"
+          />
+        </Field>
+
+        <Field label="Description" htmlFor="description">
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={values?.description ?? ""}
+          />
+        </Field>
+
+        <Field
+          label="Référence Confluence"
+          htmlFor="reference"
+          hint="URL vers la page Confluence du processus."
+        >
+          <input
+            id="reference"
+            name="reference"
+            defaultValue={values?.reference ?? ""}
+            placeholder="https://confluence…"
+          />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Pilotage">
+        <div className="form-grid">
+          <Field label="Responsable" htmlFor="responsableId">
+            <select
+              id="responsableId"
+              name="responsableId"
+              required
+              defaultValue={values?.responsableId ?? users[0]?.id}
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Statut" htmlFor="statut">
+            <select
+              id="statut"
+              name="statut"
+              defaultValue={values?.statut ?? "ACTIF"}
+            >
+              {STATUT_PROCESSUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Criticité (1–5)" htmlFor="criticite">
+            <select
+              id="criticite"
+              name="criticite"
+              defaultValue={
+                values?.criticite != null ? String(values.criticite) : ""
+              }
+            >
+              <option value="">—</option>
+              {ECHELLE_RISQUE.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {parentOptions.length > 0 ? (
+            <Field label="Processus parent" htmlFor="parentId">
+              <select
+                id="parentId"
+                name="parentId"
+                defaultValue={values?.parentId ?? ""}
+              >
+                <option value="">Aucun (racine)</option>
+                {parentOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+        </div>
+      </FormSection>
+
+      <FormSection title="Tags">
+        <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
+          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
+        </Field>
+      </FormSection>
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
