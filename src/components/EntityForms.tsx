@@ -10,6 +10,7 @@ import {
   STATUT_CONSEIL_OPTIONS,
   STATUT_CONTROLE_OPTIONS,
   STATUT_DOCUMENT_OPTIONS,
+  STATUT_PROCESSUS_OPTIONS,
   STATUT_PROJET_OPTIONS,
   STATUT_RISQUE_OPTIONS,
   STATUT_TACHE_OPTIONS,
@@ -21,11 +22,6 @@ import {
 import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
 import { FormSection } from "@/components/module/FormSection";
-
-const STATUT_PROCESSUS_OPTIONS = [
-  { value: "ACTIF", label: "Actif" },
-  { value: "SUSPENDU", label: "Suspendu" },
-];
 
 type UserOpt = { id: string; nom: string };
 type ProjetOpt = { id: string; nom: string };
