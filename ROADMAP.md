@@ -24,10 +24,12 @@ Slogan produit : *Simple à utiliser, flexible à configurer.*
 |-------|------|
 | **Projet** | Mission / chantier de l’unité |
 | **Conseil** | Demande ponctuelle d’analyse / avis / recherche *(aujourd’hui : catégorie de tâche ; demain : objet distinct)* |
+| **Processus** | Référentiel / cartographie des processus (doc détaillée → Confluence) |
 | **Contrôle SCI** | Définition permanente d’un contrôle ; exécution = tâches / occurrences |
 | **Mission d'assurance** | Audit ou Revue de processus (évolution progressive du module Audits) |
 | **Document** | Inventaire documentaire + revues |
 | **Risque** | Registre des risques + matrice de criticité |
+| **Unité** *(roadmap)* | Carte d’identité opérationnelle agrégée (≠ admin technique) |
 
 ### La tâche n’est pas un métier
 
@@ -146,7 +148,20 @@ ex. programme de revue des processus avec rotation tous les 3 ans ; chaque occur
 
 ### 5quater. Export Excel (roadmap)
 
-Fonctionnalité transversale : export Excel des inventaires (Projets, Conseils, Missions d'assurance, Risques, Contrôles SCI, Documents). Si des filtres sont actifs, pouvoir exporter la **vue filtrée** (ex. risques résiduels élevés affichés).
+Fonctionnalité transversale : export Excel des inventaires (Projets, Conseils, Missions d'assurance, Risques, Contrôles SCI, Documents, Processus). Si des filtres sont actifs, pouvoir exporter la **vue filtrée** (ex. risques résiduels élevés affichés).
+
+### 5quinquies. Processus
+
+Référentiel métier `Processus` (codes PRC-xxxx). Associations libres via `LienObjet`. Chaîne cible : **Unité → Processus → Risques → Contrôles SCI → Occurrences**. Hiérarchie parent optionnelle (macro → processus → sous-processus). Pas de GED : lien Confluence pour la documentation.
+
+### 5sexies. Fiche Unité (roadmap — après stabilisation Processus)
+
+Distinguer :
+
+- **Administration technique** des unités et des droits ;
+- **Fiche métier Unité** : carte d’identité opérationnelle (mission, responsable/adjoint, processus, vue agrégée risques/contrôles/projets/missions/documents).
+
+Cette vue **agrège** les informations déjà présentes — pas de double saisie.
 
 ### 6. Indicateurs par module
 

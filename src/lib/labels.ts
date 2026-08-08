@@ -123,6 +123,12 @@ export const TYPE_OBJET_LABELS: Record<string, string> = {
   CONTROLE_SCI: "Contrôle SCI",
   DOCUMENT: "Document",
   TACHE: "Action",
+  PROCESSUS: "Processus",
+};
+
+export const STATUT_PROCESSUS_LABELS: Record<string, string> = {
+  ACTIF: "Actif",
+  SUSPENDU: "Suspendu",
 };
 
 export const STATUT_RECO_LABELS: Record<string, string> = {

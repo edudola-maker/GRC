@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/session";
 import type { TypeObjetMetier } from "@/generated/prisma/client";
 
 const TYPES = new Set<string>([
+  "PROCESSUS",
   "PROJET",
   "CONSEIL",
   "AUDIT",

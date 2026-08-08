@@ -6,8 +6,9 @@ import {
   SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
-import { PageHeader, BtnLink } from "@/components/ui";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { PageHeader, BtnLink } from "@/components/ui";
 import {
   addNoteJournal,
   archiveConseil,
@@ -20,7 +21,6 @@ import {
   CATEGORIE_TACHE_LABELS,
   STATUT_CONSEIL_LABELS,
   STATUT_TACHE_LABELS,
-  TAXINOMIE_LABELS,
   formatDate,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -147,30 +147,6 @@ export default async function ConseilDetailPage({
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_CONSEIL_LABELS[conseil.statut]}</dd>
-            </div>
-            <div>
-              <dt>Taxinomie</dt>
-              <dd>
-                {conseil.taxinomie
-                  ? (TAXINOMIE_LABELS[conseil.taxinomie] ?? conseil.taxinomie)
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Tags</dt>
-              <dd>
-                {tags.length ? (
-                  <span className="tag-list">
-                    {tags.map((t) => (
-                      <span key={t} className="tag">
-                        #{t}
-                      </span>
-                    ))}
-                  </span>
-                ) : (
-                  "—"
-                )}
-              </dd>
             </div>
             <div>
               <dt>Demandeur</dt>
@@ -327,6 +303,22 @@ export default async function ConseilDetailPage({
         id={conseil.id}
         retour={`/conseils/${conseil.id}`}
       />
+
+      <CollapsibleSection title="Tags" defaultOpen={false}>
+        <p style={{ margin: 0 }}>
+          {tags.length ? (
+            <span className="tag-list">
+              {tags.map((t) => (
+                <span key={t} className="tag">
+                  #{t}
+                </span>
+              ))}
+            </span>
+          ) : (
+            "Aucun tag."
+          )}
+        </p>
+      </CollapsibleSection>
     </>
   );
 }

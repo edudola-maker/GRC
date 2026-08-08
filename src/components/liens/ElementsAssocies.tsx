@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { deleteLienObjet } from "@/app/liens/actions";
 import { AssocierObjetForm } from "@/components/liens/AssocierObjetForm";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import {
   TYPE_OBJET_LABELS,
   listCandidatsLien,
@@ -10,6 +11,7 @@ import {
 import type { TypeObjetMetier } from "@/generated/prisma/client";
 
 const LINKABLE: TypeObjetMetier[] = [
+  "PROCESSUS",
   "PROJET",
   "CONSEIL",
   "AUDIT",
@@ -56,8 +58,12 @@ export async function ElementsAssocies({
   }
 
   return (
-    <section className="panel elements-associes" style={{ marginTop: "1rem" }}>
-      <h2 className="panel-title">Éléments associés</h2>
+    <CollapsibleSection
+      title="Éléments associés"
+      defaultOpen={editable || liens.length > 0}
+      badge={`${liens.length}`}
+      className="elements-associes"
+    >
       <p className="muted" style={{ marginTop: 0 }}>
         {editable
           ? "Liez librement cet objet à d’autres objets métier."
@@ -88,7 +94,7 @@ export async function ElementsAssocies({
           candidatsParType={candidatsParType}
         />
       ) : null}
-    </section>
+    </CollapsibleSection>
   );
 }
 

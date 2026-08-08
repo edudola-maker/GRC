@@ -19,7 +19,7 @@ import {
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
-import { getConseilDelaiCibleJours, listReferentiel } from "@/lib/referentiels";
+import { getConseilDelaiCibleJours } from "@/lib/referentiels";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -34,14 +34,13 @@ export default async function ConseilsPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [conseils, responsables, taxinomies, delaiCible] = await Promise.all([
+  const [conseils, responsables, delaiCible] = await Promise.all([
     prisma.conseil.findMany({
       where: { uniteId },
       include: { responsable: true },
       orderBy: { dateReception: "desc" },
     }),
     listUtilisateursActifsForCurrentUnite(),
-    listReferentiel("TAXINOMIE"),
     getConseilDelaiCibleJours(uniteId),
   ]);
 
@@ -58,7 +57,6 @@ export default async function ConseilsPage({
       code: c.code,
       objet: c.objet,
       tags: c.tags,
-      taxinomie: c.taxinomie,
       demandeur: c.demandeur,
       entiteDemandeuse: c.entiteDemandeuse,
       statut: c.statut,
@@ -144,7 +142,6 @@ export default async function ConseilsPage({
       <ConseilInventory
         items={items}
         responsables={responsables.map((r) => ({ id: r.id, nom: r.nom }))}
-        taxinomies={taxinomies}
       />
     </>
   );

@@ -20,14 +20,13 @@ import {
   type ConseilAdvancedFilters,
   type ConseilQuickFilter,
 } from "@/lib/inventory-filters";
-import { TAXINOMIE_LABELS, formatDateDot } from "@/lib/labels";
+import { formatDateDot } from "@/lib/labels";
 
 export type ConseilInventoryItem = {
   id: string;
   code: string;
   objet: string;
   tags: string | null;
-  taxinomie: string | null;
   demandeur: string | null;
   entiteDemandeuse: string | null;
   statut: string;
@@ -55,11 +54,9 @@ const QUICK_LABELS: Record<ConseilQuickFilter, string> = {
 export function ConseilInventory({
   items,
   responsables,
-  taxinomies,
 }: {
   items: ConseilInventoryItem[];
   responsables: { id: string; nom: string }[];
-  taxinomies: { value: string; label: string }[];
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<ConseilQuickFilter>("ouverts");
@@ -115,15 +112,9 @@ export function ConseilInventory({
           ?.label ?? advanced.statut;
       chips.push(`Statut : ${label}`);
     }
-    if (advanced.taxinomie) {
-      const label =
-        taxinomies.find((t) => t.value === advanced.taxinomie)?.label ??
-        advanced.taxinomie;
-      chips.push(`Taxinomie : ${label}`);
-    }
     if (advanced.tags.trim()) chips.push(`Tags : ${advanced.tags.trim()}`);
     return chips;
-  }, [quick, query, responsableQuick, advanced, responsables, taxinomies]);
+  }, [quick, query, responsableQuick, advanced, responsables]);
 
   const canReset =
     quick !== "tous" ||
@@ -281,22 +272,6 @@ export function ConseilInventory({
             </select>
           </label>
           <label className="field">
-            <span className="field__label">Taxinomie</span>
-            <select
-              value={advanced.taxinomie}
-              onChange={(e) =>
-                setAdvanced((s) => ({ ...s, taxinomie: e.target.value }))
-              }
-            >
-              <option value="">Toutes</option>
-              {taxinomies.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
             <span className="field__label">Tags</span>
             <input
               type="text"
@@ -326,7 +301,7 @@ export function ConseilInventory({
       ) : (
         <InventoryList
           columns={["Code", "Nom", "Provenance", "Statut"]}
-          secondaryColumns={["Responsable", "Échéance", "Taxinomie", "Tags"]}
+          secondaryColumns={["Responsable", "Échéance", "Tags", ""]}
         >
           {filtered.map((c) => (
             <li key={c.id}>
@@ -343,11 +318,7 @@ export function ConseilInventory({
                 secondary={[
                   { value: c.responsableNom },
                   { value: formatDateDot(c.dateEcheance) },
-                  {
-                    value: c.taxinomie
-                      ? (TAXINOMIE_LABELS[c.taxinomie] ?? c.taxinomie)
-                      : "—",
-                  },
+                  { value: "" },
                   { value: c.tags || "—" },
                 ]}
               />

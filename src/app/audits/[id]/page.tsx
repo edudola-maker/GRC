@@ -23,7 +23,6 @@ import {
   STATUT_AUDIT_LABELS,
   STATUT_RECO_LABELS,
   STATUT_TACHE_LABELS,
-  TAXINOMIE_LABELS,
   TYPE_MISSION_LABELS,
   formatDate,
   urgenceEcheance,
@@ -37,6 +36,7 @@ import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/ses
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 
 export const dynamic = "force-dynamic";
 
@@ -160,20 +160,6 @@ export default async function AuditDetailPage({
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_AUDIT_LABELS[audit.statut]}</dd>
-            </div>
-            <div>
-              <dt>Taxinomie</dt>
-              <dd>
-                {audit.taxinomie
-                  ? (TAXINOMIE_LABELS[audit.taxinomie] ?? audit.taxinomie)
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Tags</dt>
-              <dd>
-                {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
-              </dd>
             </div>
             <div>
               <dt>Début</dt>
@@ -534,6 +520,12 @@ export default async function AuditDetailPage({
         id={audit.id}
         retour={`/audits/${audit.id}`}
       />
+
+      <CollapsibleSection title="Tags" defaultOpen={false}>
+        <p style={{ margin: 0 }}>
+          {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
+        </p>
+      </CollapsibleSection>
     </>
   );
 }

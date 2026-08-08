@@ -31,6 +31,7 @@ import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 
 export const dynamic = "force-dynamic";
 
@@ -173,14 +174,6 @@ export default async function ProjetDetailPage({
             <div>
               <dt>Priorité</dt>
               <dd>{PRIORITE_LABELS[projet.priorite]}</dd>
-            </div>
-            <div>
-              <dt>Taxinomie</dt>
-              <dd>{projet.taxinomie ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Tags</dt>
-              <dd>{projet.tags ?? "—"}</dd>
             </div>
             <div>
               <dt>Avancement</dt>
@@ -420,6 +413,10 @@ export default async function ProjetDetailPage({
         id={projet.id}
         retour={`/projets/${projet.id}`}
       />
+
+      <CollapsibleSection title="Tags" defaultOpen={false}>
+        <p style={{ margin: 0 }}>{projet.tags ?? "Aucun tag."}</p>
+      </CollapsibleSection>
     </>
   );
 }

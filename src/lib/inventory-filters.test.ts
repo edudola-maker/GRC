@@ -11,7 +11,6 @@ function item(
   return {
     objet: partial.objet ?? partial.code,
     tags: null,
-    taxinomie: null,
     demandeur: null,
     entiteDemandeuse: null,
     statut: "EN_COURS",
@@ -31,7 +30,6 @@ const dataset: ConseilFilterable[] = [
     code: "CNS-0001",
     objet: "Analyse du seuil de délégation",
     tags: "LSubv, Gouvernance",
-    taxinomie: "JURIDIQUE",
     responsableId: "claire",
     statut: "EN_COURS",
     estOuvert: true,
@@ -42,7 +40,6 @@ const dataset: ConseilFilterable[] = [
     code: "CNS-0002",
     objet: "Revue gouvernance",
     tags: "Gouvernance, LSubv",
-    taxinomie: "GOUVERNANCE",
     responsableId: "alice",
     statut: "CLOTURE",
     estOuvert: false,
@@ -54,7 +51,6 @@ const dataset: ConseilFilterable[] = [
     code: "CNS-0003",
     objet: "Clause de confidentialité",
     tags: "Contrats",
-    taxinomie: "JURIDIQUE",
     responsableId: "bernard",
     statut: "EN_COURS",
     estOuvert: true,
@@ -64,9 +60,7 @@ const dataset: ConseilFilterable[] = [
   }),
 ];
 
-function codes(
-  list: ConseilFilterable[],
-): string[] {
+function codes(list: ConseilFilterable[]): string[] {
   return list.map((c) => c.code);
 }
 
@@ -92,13 +86,12 @@ assert.deepEqual(
   ["CNS-0001"],
 );
 
-// En retard + taxinomie Juridique
+// En retard
 assert.deepEqual(
   codes(
     filterConseils(dataset, {
       quick: "retard",
       query: "",
-      advanced: { ...EMPTY_CONSEIL_ADVANCED, taxinomie: "JURIDIQUE" },
     }),
   ),
   ["CNS-0003"],
@@ -132,4 +125,4 @@ assert.deepEqual(
   ["CNS-0001", "CNS-0003"],
 );
 
-console.log("inventory-filters tests OK");
+console.log("inventory-filters.test.ts OK");

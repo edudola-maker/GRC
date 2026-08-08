@@ -35,7 +35,6 @@ export type ConseilAdvancedFilters = {
   provenance: string;
   responsableId: string;
   statut: string;
-  taxinomie: string;
   tags: string;
 };
 
@@ -47,7 +46,6 @@ export const EMPTY_CONSEIL_ADVANCED: ConseilAdvancedFilters = {
   provenance: "",
   responsableId: "",
   statut: "",
-  taxinomie: "",
   tags: "",
 };
 
@@ -55,7 +53,6 @@ export type ConseilFilterable = {
   code: string;
   objet: string;
   tags: string | null;
-  taxinomie: string | null;
   demandeur: string | null;
   entiteDemandeuse: string | null;
   statut: string;
@@ -120,7 +117,6 @@ export function filterConseils<T extends ConseilFilterable>(
     list = list.filter((c) => c.responsableId === a.responsableId);
   }
   if (a.statut) list = list.filter((c) => c.statut === a.statut);
-  if (a.taxinomie) list = list.filter((c) => c.taxinomie === a.taxinomie);
   if (a.tags.trim()) {
     const t = a.tags.trim().toLowerCase();
     list = list.filter((c) => (c.tags ?? "").toLowerCase().includes(t));

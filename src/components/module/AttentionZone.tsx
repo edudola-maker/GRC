@@ -9,9 +9,9 @@ export type AttentionItem = {
   meta?: string;
 };
 
-/** Zone d’alertes métier — affichée uniquement s’il y a des éléments. */
+/** Zone « À traiter » — sobre ; le jaune/rouge reste réservé aux statuts. */
 export function AttentionZone({
-  label = "Attention requise",
+  label = "À traiter",
   items,
   max = 5,
   moreHint,
@@ -29,7 +29,7 @@ export function AttentionZone({
   return (
     <section
       className="page-zone page-zone--attention"
-      aria-label="Éléments nécessitant une attention"
+      aria-label="Éléments à traiter"
     >
       <p className="page-zone__label">{label}</p>
       <ul className="attention-list">

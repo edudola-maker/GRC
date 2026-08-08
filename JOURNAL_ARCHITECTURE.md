@@ -78,13 +78,21 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Contrôles SCI :** statut de *définition* `ACTIF` | `SUSPENDU` (+ archive) ; exécution = tâches/occurrences ; pas de « Marquer réalisé » ni de box Preuves sur la définition (preuves → occurrence). Table `ControleDocument` conservée pour migration ultérieure vers preuves de tâche.
 
+**Processus :** objet `Processus` (PRC-xxxx) ; associations via `LienObjet` uniquement (pas de M2M dédiées) ; `parentId` pour hiérarchie future ; doc détaillée → Confluence. Nav Gouvernance : Processus → Risques → Contrôles → Documents.
+
+**Taxinomie :** retirée de l’UI (le besoin réel = **code unique** stable). Colonne DB encore présente mais non exposée ; catégories / tags pour le classement métier.
+
+**Formulaires :** blocs thématiques `FormSection` (un seul Enregistrer). Fiches : `CollapsibleSection`. Cartographie risques repliée par défaut. Zone « À traiter » sobre (plus de jaune global).
+
 **Missions d'assurance :** `Audit.typeMission` (`AUDIT` | `REVUE_PROCESSUS`) — même moteur ; programmes récurrents = roadmap.
 
 **Relations :** table générique `LienObjet` + section **Éléments associés** (lecture en consultation, édition sur Modifier).
 
 **Principe Objet ↔ Tâche :** objets métier = structure / pilotage ; tâches = exécution opérationnelle.
 
-Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryList`, `InventoryRow`, `StatusBadge`, `ElementsAssocies`, `RiskMatrix`.  
+**Roadmap Unité métier :** fiche agrégée ≠ admin technique — après stabilisation Processus.
+
+Composants partagés : `KpiZone`, `KpiStat`, `AttentionZone`, `InventoryBrowser`, `InventoryList`, `InventoryRow`, `StatusBadge`, `ElementsAssocies`, `RiskMatrix`, `FormSection`, `CollapsibleSection`, `ModuleHelp`.  
 Objectif : même logique de navigation d’un module à l’autre, sans personnalisation d’écran.
 
 ### Ajustement planification (revue Vague C)

@@ -408,6 +408,37 @@ async function main() {
     },
   });
 
+  const processusAcces = await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0001",
+      nom: "Gestion des accès applicatifs",
+      description:
+        "Cycle de vie des droits d’accès aux applications métier de l’unité.",
+      tags: "accès,SI",
+      responsableId: bernard.id,
+      statut: "ACTIF",
+      criticite: 4,
+      reference: "https://confluence.example/processus/acces",
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+
+  await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0002",
+      nom: "Engagements budgétaires",
+      description: "Instruction et suivi des engagements de dépense.",
+      responsableId: alice.id,
+      statut: "ACTIF",
+      criticite: 3,
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+
   const controle = await prisma.controleSCI.create({
     data: {
       uniteId,
@@ -431,6 +462,29 @@ async function main() {
 
   await prisma.risqueControle.create({
     data: { risqueId: risque.id, controleSCIId: controle.id },
+  });
+
+  await prisma.lienObjet.create({
+    data: {
+      uniteId,
+      typeA: "PROCESSUS",
+      idA: processusAcces.id,
+      typeB: "RISQUE",
+      idB: risque.id,
+      libelle: "Processus porteur",
+      creeParId: bernard.id,
+    },
+  });
+  await prisma.lienObjet.create({
+    data: {
+      uniteId,
+      typeA: "CONTROLE_SCI",
+      idA: controle.id,
+      typeB: "PROCESSUS",
+      idB: processusAcces.id,
+      libelle: "Contrôle du processus",
+      creeParId: bernard.id,
+    },
   });
 
   await prisma.controleSCI.create({

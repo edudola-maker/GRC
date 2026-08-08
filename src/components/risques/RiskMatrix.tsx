@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { CATEGORIE_RISQUE_OPTIONS } from "@/lib/catalog";
 import { criticiteNiveau } from "@/lib/labels";
 
@@ -43,16 +44,23 @@ export function RiskMatrix({ risques }: { risques: MatrixRisquePoint[] }) {
   }, [filtered, vue]);
 
   return (
-    <section className="page-zone page-zone--panel" aria-label="Matrice des risques">
-      <p className="page-zone__label">Cartographie</p>
-      <p className="muted page-zone__intro">
+    <CollapsibleSection
+      title="Cartographie des risques"
+      defaultOpen={false}
+      badge={`${risques.length} risque${risques.length > 1 ? "s" : ""}`}
+      className="page-zone--panel"
+    >
+      <p className="muted page-zone__intro" style={{ marginTop: 0 }}>
         Matrice 5×5 — lignes = impact (5→1), colonnes = probabilité (1→5).
         {vue === "inherent"
           ? " Affichage du risque inhérent."
           : " Affichage du risque résiduel (à défaut = inhérent)."}
       </p>
 
-      <div className="filter-bar inventory__filters" style={{ marginBottom: "0.85rem" }}>
+      <div
+        className="filter-bar inventory__filters"
+        style={{ marginBottom: "0.85rem" }}
+      >
         <label className="inventory__select">
           <span className="sr-only">Catégorie</span>
           <select
@@ -122,6 +130,6 @@ export function RiskMatrix({ risques }: { risques: MatrixRisquePoint[] }) {
           </tbody>
         </table>
       </div>
-    </section>
+    </CollapsibleSection>
   );
 }

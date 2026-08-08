@@ -101,6 +101,12 @@ enum TypeObjetMetier {
   CONTROLE_SCI
   DOCUMENT
   TACHE
+  PROCESSUS
+}
+
+enum StatutProcessus {
+  ACTIF
+  SUSPENDU
 }
 
 /// Type de mission d'assurance (évolution progressive du module Audits).
@@ -201,6 +207,7 @@ model Unite {
   risques          Risque[]
   documents        Document[]
   audits           Audit[]
+  processus        Processus[]
   objectifsAnnuels ObjectifAnnuel[]
   objectifsModule  ObjectifModule[]
   sequences        SequenceCode[]
@@ -230,6 +237,7 @@ model Utilisateur {
   risquesResponsable      Risque[]           @relation("RisqueResponsable")
   documentsResponsable    Document[]         @relation("DocumentResponsable")
   auditsResponsable       Audit[]            @relation("AuditResponsable")
+  processusResponsable    Processus[]        @relation("ProcessusResponsable")
   recommandationsResp     Recommandation[]   @relation("RecoResponsable")
 
   projetsCrees            Projet[]           @relation("ProjetCreePar")
@@ -246,6 +254,8 @@ model Utilisateur {
   documentsModifies       Document[]         @relation("DocumentModifiePar")
   auditsCrees             Audit[]            @relation("AuditCreePar")
   auditsModifies          Audit[]            @relation("AuditModifiePar")
+  processusCrees          Processus[]        @relation("ProcessusCreePar")
+  processusModifies       Processus[]        @relation("ProcessusModifiePar")
   historiquesTache        HistoriqueTache[]
   objectifs               ObjectifAnnuel[]
   projetMembres           ProjetMembre[]
@@ -736,6 +746,43 @@ model ParametreFonctionnel {
   unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
 
   @@unique([uniteId, cle])
+}
+
+// ─── Processus (référentiel / cartographie SCI) ─────────────
+/// Définition d’un processus métier. Documentation détaillée → Confluence.
+/// Associations libres via LienObjet (Risques, Contrôles SCI, Documents…).
+/// parentId prépare Macro-processus → Processus → Sous-processus.
+model Processus {
+  id            String          @id @default(cuid())
+  uniteId       String
+  code          String
+  nom           String
+  description   String?
+  tags          String?
+  responsableId String
+  statut        StatutProcessus @default(ACTIF)
+  /// Criticité métier optionnelle (1–5)
+  criticite     Int?
+  /// Lien Confluence (documentation) — pas une GED
+  reference     String?
+  parentId      String?
+  archive       Boolean         @default(false)
+  creeParId     String
+  modifieParId  String
+  creeLe        DateTime        @default(now())
+  modifieLe     DateTime        @updatedAt
+  meta          Json?
+
+  unite       Unite       @relation(fields: [uniteId], references: [id])
+  responsable Utilisateur @relation("ProcessusResponsable", fields: [responsableId], references: [id])
+  creePar     Utilisateur @relation("ProcessusCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur @relation("ProcessusModifiePar", fields: [modifieParId], references: [id])
+  parent      Processus?  @relation("ProcessusHierarchie", fields: [parentId], references: [id])
+  enfants     Processus[] @relation("ProcessusHierarchie")
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
+  @@index([parentId])
 }
 
 // Compteur pour codes stables PRO-0001, CNS-0001, … (par unité)

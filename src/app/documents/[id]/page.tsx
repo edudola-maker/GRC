@@ -7,6 +7,7 @@ import {
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveDocument,
@@ -19,7 +20,6 @@ import {
   FREQUENCE_REVUE_LABELS,
   STATUT_DOCUMENT_LABELS,
   STATUT_TACHE_LABELS,
-  TAXINOMIE_LABELS,
   TYPE_DOCUMENT_LABELS,
   formatDate,
   urgenceEcheance,
@@ -139,20 +139,6 @@ export default async function DocumentDetailPage({
             <dd>{STATUT_DOCUMENT_LABELS[document.statut]}</dd>
           </div>
           <div>
-            <dt>Taxinomie</dt>
-            <dd>
-              {document.taxinomie
-                ? (TAXINOMIE_LABELS[document.taxinomie] ?? document.taxinomie)
-                : "—"}
-            </dd>
-          </div>
-          <div>
-            <dt>Tags</dt>
-            <dd>
-              {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
-            </dd>
-          </div>
-          <div>
             <dt>Page Confluence</dt>
             <dd>
               {confluenceUrl ? (
@@ -263,6 +249,12 @@ export default async function DocumentDetailPage({
           </ul>
         )}
       </section>
+
+      <CollapsibleSection title="Tags" defaultOpen={false}>
+        <p style={{ margin: 0 }}>
+          {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
+        </p>
+      </CollapsibleSection>
     </>
   );
 }

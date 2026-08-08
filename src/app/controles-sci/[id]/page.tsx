@@ -16,7 +16,6 @@ import {
   FREQUENCE_LABELS,
   STATUT_CONTROLE_LABELS,
   STATUT_TACHE_LABELS,
-  TAXINOMIE_LABELS,
   TYPE_CONTROLE_LABELS,
   formatDate,
   urgenceEcheance,
@@ -26,6 +25,7 @@ import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { getCurrentUser } from "@/lib/session";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 
 export const dynamic = "force-dynamic";
 
@@ -152,20 +152,6 @@ export default async function ControleSCIDetailPage({
             </dd>
           </div>
           <div>
-            <dt>Taxinomie</dt>
-            <dd>
-              {controle.taxinomie
-                ? (TAXINOMIE_LABELS[controle.taxinomie] ?? controle.taxinomie)
-                : "—"}
-            </dd>
-          </div>
-          <div>
-            <dt>Tags</dt>
-            <dd>
-              {tags.length ? tags.map((t) => `#${t}`).join(" ") : "—"}
-            </dd>
-          </div>
-          <div>
             <dt>Dernière réalisation</dt>
             <dd>{formatDate(controle.dateDerniereRealisation)}</dd>
           </div>
@@ -272,6 +258,12 @@ export default async function ControleSCIDetailPage({
           </ul>
         )}
       </section>
+
+      <CollapsibleSection title="Tags" defaultOpen={false}>
+        <p style={{ margin: 0 }}>
+          {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
+        </p>
+      </CollapsibleSection>
     </>
   );
 }

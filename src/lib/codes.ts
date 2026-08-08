@@ -7,6 +7,7 @@ const PREFIXES = {
   RISQUE: "RSK",
   CONTROLE_SCI: "CTL",
   DOCUMENT: "DOC",
+  PROCESSUS: "PRC",
 } as const;
 
 export type PrefixeCode = keyof typeof PREFIXES;
@@ -107,6 +108,17 @@ export async function assertNomUnique(
       },
     });
     if (existing) return "Un audit actif porte déjà ce titre.";
+  }
+  if (type === "PROCESSUS") {
+    const existing = await prisma.processus.findFirst({
+      where: {
+        uniteId,
+        nom: n,
+        archive: false,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un processus actif porte déjà ce nom.";
   }
   return null;
 }

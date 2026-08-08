@@ -5,17 +5,15 @@ import {
   ConfirmDeleteButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader, BtnLink } from "@/components/ui";
-import {
-  archiveRisque,
-  deleteRisque,
-} from "../actions";
+import { archiveRisque, deleteRisque } from "../actions";
 import {
   CATEGORIE_RISQUE_LABELS,
   STATUT_CONTROLE_LABELS,
   STATUT_RISQUE_LABELS,
   STRATEGIE_RISQUE_LABELS,
-  TAXINOMIE_LABELS,
   criticiteNiveau,
   formatDate,
   urgenceEcheance,
@@ -23,7 +21,6 @@ import {
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { getCurrentUser } from "@/lib/session";
-import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 
 export const dynamic = "force-dynamic";
 
@@ -97,123 +94,115 @@ export default async function RisqueDetailPage({
         </div>
       ) : null}
 
-      <div className="detail-grid">
-        <div className="panel">
-          <h2 className="panel-title">Informations</h2>
-          <dl className="kv">
-            <div>
-              <dt>Code</dt>
-              <dd>{risque.code}</dd>
-            </div>
-            <div>
-              <dt>Responsable</dt>
-              <dd>{risque.responsable.nom}</dd>
-            </div>
-            <div>
-              <dt>Catégorie</dt>
-              <dd>{CATEGORIE_RISQUE_LABELS[risque.categorie]}</dd>
-            </div>
-            <div>
-              <dt>Statut</dt>
-              <dd>{STATUT_RISQUE_LABELS[risque.statut]}</dd>
-            </div>
-            <div>
-              <dt>Stratégie de traitement</dt>
-              <dd>
-                {risque.strategie
-                  ? STRATEGIE_RISQUE_LABELS[risque.strategie]
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Taxinomie</dt>
-              <dd>
-                {risque.taxinomie
-                  ? (TAXINOMIE_LABELS[risque.taxinomie] ?? risque.taxinomie)
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Tags</dt>
-              <dd>
-                {tags.length
-                  ? tags.map((t) => `#${t}`).join(" ")
-                  : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt>Processus</dt>
-              <dd>{risque.processus ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Inhérent (P × I)</dt>
-              <dd>
-                {risque.probabilite} × {risque.impact} = {risque.criticite} (
-                {niveau})
-              </dd>
-            </div>
-            <div>
-              <dt>Résiduel (P × I)</dt>
-              <dd>
-                {risque.probabiliteResiduelle != null &&
-                risque.impactResiduel != null &&
-                risque.criticiteResiduelle != null
-                  ? `${risque.probabiliteResiduelle} × ${risque.impactResiduel} = ${risque.criticiteResiduelle} (${criticiteNiveau(risque.criticiteResiduelle)})`
-                  : "Non renseigné"}
-              </dd>
-            </div>
-            <div>
-              <dt>Créé par</dt>
-              <dd>{risque.creePar.nom}</dd>
-            </div>
-          </dl>
-          {risque.commentaires ? (
-            <p className="detail-note">{risque.commentaires}</p>
-          ) : null}
-        </div>
-
-        <div className="panel">
-          <div className="panel-head">
-            <h2 className="panel-title">
-              Contrôles liés ({risque.controles.length})
-            </h2>
+      <CollapsibleSection title="Description" defaultOpen>
+        <dl className="kv">
+          <div>
+            <dt>Code</dt>
+            <dd>{risque.code}</dd>
           </div>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Consultation — pour modifier les liens, utilisez Modifier.
-          </p>
+          <div>
+            <dt>Catégorie</dt>
+            <dd>{CATEGORIE_RISQUE_LABELS[risque.categorie]}</dd>
+          </div>
+          <div>
+            <dt>Processus (libellé)</dt>
+            <dd>{risque.processus ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Créé par</dt>
+            <dd>{risque.creePar.nom}</dd>
+          </div>
+        </dl>
+        {risque.commentaires ? (
+          <p className="detail-note">{risque.commentaires}</p>
+        ) : null}
+      </CollapsibleSection>
 
-          {risque.controles.length === 0 ? (
-            <p className="empty">Aucun contrôle lié pour l&apos;instant.</p>
-          ) : (
-            <ul className="entity-list">
-              {risque.controles.map(({ controle: c }) => {
-                const urgence = urgenceEcheance(
-                  c.dateProchaineEcheance,
-                  c.archive || c.statut === "SUSPENDU",
-                );
-                return (
-                  <li key={c.id}>
-                    <Link
-                      href={`/controles-sci/${c.id}`}
-                      className={`entity-row entity-row--${urgence}`}
-                    >
-                      <div className="entity-row__main">
-                        <strong>{c.nom}</strong>
-                        <span className="entity-row__meta">
-                          {c.responsable.nom} · {STATUT_CONTROLE_LABELS[c.statut]}
-                        </span>
-                      </div>
-                      <span className="entity-row__date">
-                        {formatDate(c.dateProchaineEcheance)}
+      <CollapsibleSection title="Évaluation" defaultOpen>
+        <dl className="kv">
+          <div>
+            <dt>Inhérent (P × I)</dt>
+            <dd>
+              {risque.probabilite} × {risque.impact} = {risque.criticite} (
+              {niveau})
+            </dd>
+          </div>
+          <div>
+            <dt>Résiduel (P × I)</dt>
+            <dd>
+              {risque.probabiliteResiduelle != null &&
+              risque.impactResiduel != null &&
+              risque.criticiteResiduelle != null
+                ? `${risque.probabiliteResiduelle} × ${risque.impactResiduel} = ${risque.criticiteResiduelle} (${criticiteNiveau(risque.criticiteResiduelle)})`
+                : "Non renseigné"}
+            </dd>
+          </div>
+          <div>
+            <dt>Stratégie de traitement</dt>
+            <dd>
+              {risque.strategie
+                ? STRATEGIE_RISQUE_LABELS[risque.strategie]
+                : "—"}
+            </dd>
+          </div>
+        </dl>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Pilotage" defaultOpen>
+        <dl className="kv">
+          <div>
+            <dt>Responsable</dt>
+            <dd>{risque.responsable.nom}</dd>
+          </div>
+          <div>
+            <dt>Statut</dt>
+            <dd>{STATUT_RISQUE_LABELS[risque.statut]}</dd>
+          </div>
+        </dl>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Contrôles SCI liés"
+        defaultOpen={false}
+        badge={`${risque.controles.length}`}
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Liaison métier historique — pour les associations libres, utilisez
+          Éléments associés (mode Modifier).
+        </p>
+
+        {risque.controles.length === 0 ? (
+          <p className="empty">Aucun contrôle lié pour l&apos;instant.</p>
+        ) : (
+          <ul className="entity-list">
+            {risque.controles.map(({ controle: c }) => {
+              const urgence = urgenceEcheance(
+                c.dateProchaineEcheance,
+                c.archive || c.statut === "SUSPENDU",
+              );
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/controles-sci/${c.id}`}
+                    className={`entity-row entity-row--${urgence}`}
+                  >
+                    <div className="entity-row__main">
+                      <strong>{c.nom}</strong>
+                      <span className="entity-row__meta">
+                        {c.responsable.nom} ·{" "}
+                        {STATUT_CONTROLE_LABELS[c.statut]}
                       </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
+                    </div>
+                    <span className="entity-row__date">
+                      {formatDate(c.dateProchaineEcheance)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CollapsibleSection>
 
       <ElementsAssocies
         uniteId={user.uniteId}
@@ -222,6 +211,12 @@ export default async function RisqueDetailPage({
         retour={`/risques/${risque.id}`}
         editable={false}
       />
+
+      <CollapsibleSection title="Tags" defaultOpen={false}>
+        <p style={{ margin: 0 }}>
+          {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
+        </p>
+      </CollapsibleSection>
     </>
   );
 }

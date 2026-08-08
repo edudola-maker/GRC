@@ -43,6 +43,7 @@ const NAV_GROUPS: NavGroup[] = [
     id: "gouvernance",
     label: "Gouvernance",
     items: [
+      { href: "/processus", label: "Processus", icon: "⬡" },
       { href: "/risques", label: "Risques", icon: "⚠" },
       { href: "/controles-sci", label: "Contrôles SCI", icon: "☑" },
       { href: "/documents", label: "Documents", icon: "▤" },

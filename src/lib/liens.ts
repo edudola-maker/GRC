@@ -32,6 +32,8 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
       return `/documents/${id}`;
     case "TACHE":
       return `/taches/${id}`;
+    case "PROCESSUS":
+      return `/processus/${id}`;
     default:
       return "/";
   }
@@ -120,6 +122,21 @@ async function resolveObjet(
             id: o.id,
             code: "ACT",
             titre: o.titre,
+            href: hrefFor(type, o.id),
+          }
+        : null;
+    }
+    case "PROCESSUS": {
+      const o = await prisma.processus.findFirst({
+        where: { id, uniteId },
+        select: { id: true, code: true, nom: true },
+      });
+      return o
+        ? {
+            type,
+            id: o.id,
+            code: o.code,
+            titre: o.nom,
             href: hrefFor(type, o.id),
           }
         : null;
@@ -239,6 +256,17 @@ export async function listCandidatsLien(
       return rows
         .filter((r) => r.id !== excludeId)
         .map((r) => ({ id: r.id, label: r.titre }));
+    }
+    case "PROCESSUS": {
+      const rows = await prisma.processus.findMany({
+        where: { uniteId, archive: false },
+        select: { id: true, code: true, nom: true },
+        orderBy: { nom: "asc" },
+        take: 200,
+      });
+      return rows
+        .filter((r) => r.id !== excludeId)
+        .map((r) => ({ id: r.id, label: `${r.code} — ${r.nom}` }));
     }
     default:
       return [];
