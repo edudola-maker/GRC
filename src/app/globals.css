@@ -1673,25 +1673,7 @@ a {
   font-size: 0.88rem;
 }
 
-.form-section {
-  margin: 0 0 1.15rem;
-  padding: 0.85rem 0.95rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fbfcfb;
-}
-
-.form-section__head {
-  margin-bottom: 0.65rem;
-}
-
-.form-section__title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--brand-deep);
-}
-
+/* FormSection = CollapsibleSection ; styles hérités de .collapsible-section */
 .form-section__desc {
   margin: 0.2rem 0 0;
   font-size: 0.8rem;
@@ -1701,11 +1683,16 @@ a {
   margin-bottom: 0.65rem;
 }
 
+.entity-form-wrap {
+  margin: 0 0 1rem;
+}
+
 .collapsible-section {
   margin: 0 0 1rem;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--bg-panel);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
@@ -1721,6 +1708,7 @@ a {
   color: var(--brand-deep);
   background: #f5f8f6;
   border-bottom: 1px solid transparent;
+  user-select: none;
 }
 
 .collapsible-section[open] > .collapsible-section__summary {
@@ -1731,19 +1719,18 @@ a {
   display: none;
 }
 
-.collapsible-section__summary::before {
-  content: "▸";
-  font-size: 0.75rem;
-  opacity: 0.55;
-  transition: transform 140ms ease;
-}
-
-.collapsible-section[open] > .collapsible-section__summary::before {
-  transform: rotate(90deg);
+.collapsible-section__chevron {
+  font-size: 0.85rem;
+  line-height: 1;
+  opacity: 0.65;
+  width: 1rem;
+  text-align: center;
+  flex: 0 0 auto;
 }
 
 .collapsible-section__title {
   flex: 1 1 auto;
+  font-size: 0.95rem;
 }
 
 .collapsible-section__badge {
@@ -1754,6 +1741,33 @@ a {
 
 .collapsible-section__body {
   padding: 0.85rem 0.95rem 1rem;
+}
+
+/* Zones page (KPI, inventaire…) : même composant, fond de zone préservé */
+.collapsible-section--zone.page-zone--attention {
+  background: #f5f7f6;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.collapsible-section--zone.page-zone--kpi .collapsible-section__body,
+.collapsible-section--zone.page-zone--tools .collapsible-section__body,
+.collapsible-section--zone.page-zone--inventory .collapsible-section__body {
+  padding-top: 0.65rem;
+}
+
+.collapsible-section--form {
+  box-shadow: none;
+  margin-bottom: 0.85rem;
+  background: #fbfcfb;
+}
+
+.collapsible-section--form .form-section__desc {
+  margin: 0 0 0.65rem;
+}
+
+.collapsible-section--secondary .collapsible-section__summary {
+  background: #f7f7f5;
 }
 
 /* Initiales — langage visuel compact (≠ identifiant technique) */

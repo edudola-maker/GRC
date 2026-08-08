@@ -265,118 +265,122 @@ export default async function MissionDetailPage({
         title="1. Planification"
         defaultOpen={openFor("PLANIFICATION", true)}
       >
-        <h3 className="panel-title" style={{ marginTop: 0 }}>
-          Équipe de mission
-        </h3>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Rôles propres à la mission (distincts du rôle applicatif). Plusieurs
-          rôles possibles par personne. Affichage compact via les initiales.
-        </p>
-        <MissionEquipePanel
-          missionId={mission.id}
-          membres={equipe}
-          roles={roles}
-          utilisateurs={users.map((u) => ({
-            id: u.id,
-            nom: u.nom,
-            initiales: u.initiales ?? null,
-          }))}
-          editable={editable}
-        />
-
-        <h3 className="panel-title">Check-list qualité</h3>
-        {mission.checklistItems.filter((c) => c.sectionKey === "PLANIFICATION")
-          .length === 0 ? (
-          <p className="empty">
-            Aucun point pour l&apos;instant — les check-lists seront définies par
-            template (contenu métier à venir).
+        <CollapsibleSection title="Équipe de mission" defaultOpen>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Rôles propres à la mission (distincts du rôle applicatif). Plusieurs
+            rôles possibles par personne. Affichage compact via les initiales.
           </p>
-        ) : (
-          <ul className="check-list">
-            {mission.checklistItems
-              .filter((c) => c.sectionKey === "PLANIFICATION")
-              .map((c) => (
-                <li key={c.id}>
-                  {c.fait ? "☑" : "☐"} {c.libelle}
-                </li>
-              ))}
-          </ul>
-        )}
+          <MissionEquipePanel
+            missionId={mission.id}
+            membres={equipe}
+            roles={roles}
+            utilisateurs={users.map((u) => ({
+              id: u.id,
+              nom: u.nom,
+              initiales: u.initiales ?? null,
+            }))}
+            editable={editable}
+          />
+        </CollapsibleSection>
 
-        <h3 className="panel-title">Validations</h3>
-        {mission.validationPoints.filter(
-          (v) => v.sectionKey === "PLANIFICATION",
-        ).length === 0 ? (
-          <p className="empty">
-            Points de validation (Préparer → Soumettre → Valider) prévus par
-            l&apos;architecture — contenu à définir progressivement.
+        <CollapsibleSection title="Check-list qualité" defaultOpen>
+          {mission.checklistItems.filter((c) => c.sectionKey === "PLANIFICATION")
+            .length === 0 ? (
+            <p className="empty">
+              Aucun point pour l&apos;instant — les check-lists seront définies par
+              template (contenu métier à venir).
+            </p>
+          ) : (
+            <ul className="check-list">
+              {mission.checklistItems
+                .filter((c) => c.sectionKey === "PLANIFICATION")
+                .map((c) => (
+                  <li key={c.id}>
+                    {c.fait ? "☑" : "☐"} {c.libelle}
+                  </li>
+                ))}
+            </ul>
+          )}
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Validations" defaultOpen>
+          {mission.validationPoints.filter(
+            (v) => v.sectionKey === "PLANIFICATION",
+          ).length === 0 ? (
+            <p className="empty">
+              Points de validation (Préparer → Soumettre → Valider) prévus par
+              l&apos;architecture — contenu à définir progressivement.
+            </p>
+          ) : (
+            <ul className="entity-list entity-list--compact">
+              {mission.validationPoints
+                .filter((v) => v.sectionKey === "PLANIFICATION")
+                .map((v) => (
+                  <li key={v.id}>
+                    {v.libelle} — {v.statut} (v{v.contenuVersion})
+                  </li>
+                ))}
+            </ul>
+          )}
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Tâches opérationnelles"
+          badge={mission.taches.length}
+          defaultOpen
+        >
+          <p className="muted" style={{ marginTop: 0 }}>
+            Distinctes des check-lists qualité — visibles au Dashboard
+            collaborateur.
           </p>
-        ) : (
-          <ul className="entity-list entity-list--compact">
-            {mission.validationPoints
-              .filter((v) => v.sectionKey === "PLANIFICATION")
-              .map((v) => (
-                <li key={v.id}>
-                  {v.libelle} — {v.statut} (v{v.contenuVersion})
-                </li>
-              ))}
-          </ul>
-        )}
-
-        <h3 className="panel-title">
-          Tâches opérationnelles ({mission.taches.length})
-        </h3>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Distinctes des check-lists qualité — visibles au Dashboard
-          collaborateur.
-        </p>
-        {editable ? (
-          <form
-            action={createTacheDepuisMission}
-            className="form-actions"
-            style={{ marginBottom: "0.85rem" }}
-          >
-            <input type="hidden" name="missionId" value={mission.id} />
-            <SubmitButton>Créer une tâche liée</SubmitButton>
-            <BtnLink
-              href={`/taches/nouvelle?missionId=${mission.id}&categorie=MISSION`}
-              variant="ghost"
+          {editable ? (
+            <form
+              action={createTacheDepuisMission}
+              className="form-actions"
+              style={{ marginBottom: "0.85rem" }}
             >
-              Formulaire complet
-            </BtnLink>
-          </form>
-        ) : null}
-        {mission.taches.length === 0 ? (
-          <p className="empty">Aucune tâche liée.</p>
-        ) : (
-          <ul className="entity-list">
-            {mission.taches.map((t) => {
-              const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
-                t.statut,
-              );
-              const urgence = urgenceEcheance(t.dateEcheance, clos);
-              return (
-                <li key={t.id}>
-                  <Link
-                    href={`/taches/${t.id}`}
-                    className={`entity-row entity-row--${urgence}`}
-                  >
-                    <div className="entity-row__main">
-                      <strong>{t.titre}</strong>
-                      <span className="entity-row__meta">
-                        {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
-                        {t.responsable.nom} · {STATUT_TACHE_LABELS[t.statut]}
+              <input type="hidden" name="missionId" value={mission.id} />
+              <SubmitButton>Créer une tâche liée</SubmitButton>
+              <BtnLink
+                href={`/taches/nouvelle?missionId=${mission.id}&categorie=MISSION`}
+                variant="ghost"
+              >
+                Formulaire complet
+              </BtnLink>
+            </form>
+          ) : null}
+          {mission.taches.length === 0 ? (
+            <p className="empty">Aucune tâche liée.</p>
+          ) : (
+            <ul className="entity-list">
+              {mission.taches.map((t) => {
+                const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
+                  t.statut,
+                );
+                const urgence = urgenceEcheance(t.dateEcheance, clos);
+                return (
+                  <li key={t.id}>
+                    <Link
+                      href={`/taches/${t.id}`}
+                      className={`entity-row entity-row--${urgence}`}
+                    >
+                      <div className="entity-row__main">
+                        <strong>{t.titre}</strong>
+                        <span className="entity-row__meta">
+                          {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
+                          {t.responsable.nom} · {STATUT_TACHE_LABELS[t.statut]}
+                        </span>
+                      </div>
+                      <span className="entity-row__date">
+                        {formatDate(t.dateEcheance)}
                       </span>
-                    </div>
-                    <span className="entity-row__date">
-                      {formatDate(t.dateEcheance)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CollapsibleSection>
       </CollapsibleSection>
 
       <CollapsibleSection

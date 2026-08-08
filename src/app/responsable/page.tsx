@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionRow } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
 import { getActionsUnite } from "@/lib/actions-view";
 import { getDashboardResponsable } from "@/lib/dashboard-responsable";
@@ -256,7 +257,11 @@ export default async function DashboardResponsablePage({
           ].filter((i) => !ragFilter || i.rag === ragFilter);
 
           return (
-            <div className="panel">
+            <CollapsibleSection
+              title="Éléments opérationnels"
+              badge={items.length}
+              defaultOpen
+            >
               {items.length === 0 ? (
                 <p className="empty">Aucun élément pour ce filtre.</p>
               ) : (
@@ -275,20 +280,20 @@ export default async function DashboardResponsablePage({
                   ))}
                 </ul>
               )}
-            </div>
+            </CollapsibleSection>
           );
         })()}
       </section>
 
       <section className="section" aria-label="Objectifs modules">
-        <h2 className="section__title">
-          Objectifs modules {data.meta.annee} — vision consolidée
-        </h2>
-        <p className="muted" style={{ marginBottom: "0.75rem" }}>
-          Chaque module définit ses cibles ; ce tableau de bord les agrège
-          uniquement.
-        </p>
-        <div className="panel">
+        <CollapsibleSection
+          title={`Objectifs modules ${data.meta.annee} — vision consolidée`}
+          defaultOpen
+        >
+          <p className="muted" style={{ marginBottom: "0.75rem" }}>
+            Chaque module définit ses cibles ; ce tableau de bord les agrège
+            uniquement.
+          </p>
           {objectifsModule.length === 0 ? (
             <p className="empty">
               Aucun objectif module pour cette année. Ils seront gérés via
@@ -317,7 +322,7 @@ export default async function DashboardResponsablePage({
               ))}
             </ul>
           )}
-        </div>
+        </CollapsibleSection>
       </section>
 
       <section className="section" aria-label="Objectifs annuels">
@@ -341,7 +346,11 @@ export default async function DashboardResponsablePage({
             value={s.controlesRealises}
           />
         </div>
-        <div className="panel">
+        <CollapsibleSection
+          title="Détail par collaborateur"
+          badge={data.objectifs.length}
+          defaultOpen
+        >
           {data.objectifs.length === 0 ? (
             <p className="empty">Aucun objectif annuel collaborateur renseigné.</p>
           ) : (
@@ -361,7 +370,7 @@ export default async function DashboardResponsablePage({
               ))}
             </ul>
           )}
-        </div>
+        </CollapsibleSection>
       </section>
 
       <section className="section" aria-label="Monitoring des actions">
@@ -439,7 +448,11 @@ export default async function DashboardResponsablePage({
           </Link>
         </form>
 
-        <div className="panel">
+        <CollapsibleSection
+          title="Liste des actions"
+          badge={monitoring.actions.length}
+          defaultOpen
+        >
           {monitoring.actions.length === 0 ? (
             <p className="empty">Aucune action ouverte pour ces filtres.</p>
           ) : (
@@ -454,7 +467,7 @@ export default async function DashboardResponsablePage({
               ))}
             </ul>
           )}
-        </div>
+        </CollapsibleSection>
       </section>
     </>
   );

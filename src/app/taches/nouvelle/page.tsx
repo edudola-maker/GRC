@@ -1,5 +1,6 @@
 import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
@@ -88,7 +89,7 @@ export default async function NouvelleTachePage({
         }
       />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <CollapsibleSection title="Formulaire" defaultOpen>
         <TacheForm
           action={createTache}
           users={users}
@@ -110,7 +111,7 @@ export default async function NouvelleTachePage({
           submitLabel="Créer l'action"
           defaultCategorie={categorie}
         />
-      </div>
+      </CollapsibleSection>
     </>
   );
 }

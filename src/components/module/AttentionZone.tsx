@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 
 export type AttentionItem = {
   id: string;
@@ -9,17 +10,19 @@ export type AttentionItem = {
   meta?: string;
 };
 
-/** Zone « À traiter » — sobre ; le jaune/rouge reste réservé aux statuts. */
+/** Zone « À traiter » — sobre ; repliable. */
 export function AttentionZone({
   label = "À traiter",
   items,
   max = 5,
   moreHint,
+  defaultOpen = true,
 }: {
   label?: string;
   items: AttentionItem[];
   max?: number;
   moreHint?: ReactNode;
+  defaultOpen?: boolean;
 }) {
   if (items.length === 0) return null;
 
@@ -27,11 +30,12 @@ export function AttentionZone({
   const rest = items.length - visible.length;
 
   return (
-    <section
-      className="page-zone page-zone--attention"
-      aria-label="Éléments à traiter"
+    <CollapsibleSection
+      title={label}
+      defaultOpen={defaultOpen}
+      badge={items.length}
+      className="page-zone page-zone--attention collapsible-section--zone"
     >
-      <p className="page-zone__label">{label}</p>
       <ul className="attention-list">
         {visible.map((item) => (
           <li key={item.id}>
@@ -55,6 +59,6 @@ export function AttentionZone({
           )}
         </p>
       ) : null}
-    </section>
+    </CollapsibleSection>
   );
 }

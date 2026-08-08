@@ -36,7 +36,7 @@ export default async function ModifierConseilPage({
       <BackLink href={`/conseils/${conseil.id}`} label="← Retour au conseil" />
       <PageHeader title="Modifier le conseil" description={conseil.objet} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ConseilForm
           action={updateConseil}
           users={users}

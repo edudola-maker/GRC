@@ -3,6 +3,7 @@ import { RisqueForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { SubmitButton } from "@/components/FormControls";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
 import { formatDate } from "@/lib/labels";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
@@ -48,7 +49,7 @@ export default async function ModifierRisquePage({
       <BackLink href={`/risques/${id}`} label="← Retour au risque" />
       <PageHeader title="Modifier le risque" description={risque.nom} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <RisqueForm
           action={updateRisque}
           users={users}
@@ -58,8 +59,7 @@ export default async function ModifierRisquePage({
         />
       </div>
 
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <h2 className="panel-title">Contrôles SCI liés</h2>
+      <CollapsibleSection title="Contrôles SCI liés" defaultOpen>
         {controlesActifs.length === 0 ? (
           <p className="empty">Aucun contrôle SCI actif disponible.</p>
         ) : (
@@ -102,7 +102,7 @@ export default async function ModifierRisquePage({
             </div>
           </form>
         )}
-      </div>
+      </CollapsibleSection>
 
       <ElementsAssocies
         uniteId={user.uniteId}

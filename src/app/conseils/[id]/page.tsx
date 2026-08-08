@@ -133,8 +133,7 @@ export default async function ConseilDetailPage({
       ) : null}
 
       <div className="detail-grid">
-        <div className="panel">
-          <h2 className="panel-title">Informations</h2>
+        <CollapsibleSection title="Informations" defaultOpen>
           <dl className="kv">
             <div>
               <dt>Code</dt>
@@ -191,15 +190,14 @@ export default async function ConseilDetailPage({
             Créé par {conseil.creePar.nom} · Modifié par {conseil.modifiePar.nom}{" "}
             · {formatDate(conseil.modifieLe)}
           </p>
-        </div>
+        </CollapsibleSection>
 
         <div className="stack-panels">
-          <div className="panel">
-            <div className="panel-head">
-              <h2 className="panel-title">
-                Tâches liées ({conseil.taches.length})
-              </h2>
-            </div>
+          <CollapsibleSection
+            title="Tâches liées"
+            badge={conseil.taches.length}
+            defaultOpen
+          >
             {!conseil.archive ? (
               <form
                 action={createTacheDepuisConseil}
@@ -247,10 +245,9 @@ export default async function ConseilDetailPage({
                 })}
               </ul>
             )}
-          </div>
+          </CollapsibleSection>
 
-          <div className="panel">
-            <h2 className="panel-title">Journal</h2>
+          <CollapsibleSection title="Journal" defaultOpen>
             <p className="muted" style={{ marginBottom: "0.65rem" }}>
               Notes et événements (réouvertures, échanges).
             </p>
@@ -293,7 +290,7 @@ export default async function ConseilDetailPage({
                 ))}
               </ul>
             )}
-          </div>
+          </CollapsibleSection>
         </div>
       </div>
 

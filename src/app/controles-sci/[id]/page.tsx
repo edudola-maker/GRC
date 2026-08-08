@@ -112,8 +112,7 @@ export default async function ControleSCIDetailPage({
         </div>
       ) : null}
 
-      <div className="panel">
-        <h2 className="panel-title">Informations</h2>
+      <CollapsibleSection title="Informations" defaultOpen>
         <dl className="kv">
           <div>
             <dt>Code</dt>
@@ -167,12 +166,13 @@ export default async function ControleSCIDetailPage({
           Créé par {controle.creePar.nom} · Modifié par{" "}
           {controle.modifiePar.nom} · {formatDate(controle.modifieLe)}
         </p>
-      </div>
+      </CollapsibleSection>
 
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <h2 className="panel-title">
-          Risques couverts ({controle.risques.length})
-        </h2>
+      <CollapsibleSection
+        title="Risques couverts"
+        badge={controle.risques.length}
+        defaultOpen
+      >
         <p className="muted" style={{ marginTop: 0 }}>
           Consultation — pour modifier les liens, utilisez Modifier.
         </p>
@@ -197,7 +197,7 @@ export default async function ControleSCIDetailPage({
             ))}
           </ul>
         )}
-      </div>
+      </CollapsibleSection>
 
       <ElementsAssocies
         uniteId={user.uniteId}
@@ -207,20 +207,22 @@ export default async function ControleSCIDetailPage({
         editable={false}
       />
 
-      <section className="panel panel--secondary" style={{ marginTop: "1rem" }}>
-        <div className="panel-head">
-          <h2 className="panel-title">
-            Occurrences / tâches ({controle.taches.length})
-          </h2>
-          {!controle.archive && controle.statut === "ACTIF" ? (
+      <CollapsibleSection
+        title="Occurrences / tâches"
+        badge={controle.taches.length}
+        defaultOpen
+        className="collapsible-section--secondary"
+      >
+        {!controle.archive && controle.statut === "ACTIF" ? (
+          <div className="form-actions" style={{ marginBottom: "0.65rem" }}>
             <BtnLink
               href={`/taches/nouvelle?controleSCIId=${controle.id}&categorie=SCI`}
               variant="ghost"
             >
               Nouvelle occurrence
             </BtnLink>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
         <p className="muted" style={{ marginTop: 0 }}>
           L’exécution du contrôle se fait via ces tâches (commentaire, preuve,
           date de réalisation).
@@ -257,7 +259,7 @@ export default async function ControleSCIDetailPage({
             })}
           </ul>
         )}
-      </section>
+      </CollapsibleSection>
 
       <CollapsibleSection title="Tags" defaultOpen={false}>
         <p style={{ margin: 0 }}>

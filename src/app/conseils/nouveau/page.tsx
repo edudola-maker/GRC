@@ -28,7 +28,7 @@ export default async function NouveauConseilPage({
       />
       <ModuleHelp {...MODULE_HELP.conseils} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ConseilForm
           action={createConseil}
           users={users}

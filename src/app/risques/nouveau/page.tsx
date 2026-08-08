@@ -25,7 +25,7 @@ export default async function NouveauRisquePage({
       />
       <ModuleHelp {...MODULE_HELP.risques} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <RisqueForm
           action={createRisque}
           users={users}

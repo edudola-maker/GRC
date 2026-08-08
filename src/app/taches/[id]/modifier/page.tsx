@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
@@ -79,7 +80,7 @@ export default async function ModifierTachePage({
       <BackLink href={`/taches/${tache.id}`} label="← Retour à la tâche" />
       <PageHeader title="Modifier la tâche" description={tache.titre} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <CollapsibleSection title="Formulaire" defaultOpen>
         <TacheForm
           action={updateTache}
           users={users}
@@ -92,7 +93,7 @@ export default async function ModifierTachePage({
           cancelHref={`/taches/${tache.id}`}
           submitLabel="Enregistrer"
         />
-      </div>
+      </CollapsibleSection>
       <ElementsAssocies
         uniteId={user.uniteId}
         type="TACHE"

@@ -44,7 +44,7 @@ export default async function ModifierProcessusPage({
       />
       <PageHeader title="Modifier le processus" description={processus.nom} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ProcessusForm
           action={updateProcessus}
           users={users}

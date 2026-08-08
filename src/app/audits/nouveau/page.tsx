@@ -40,7 +40,7 @@ export default async function NouveauAuditPage({
         description="Choisissez le type, le descriptif et le calendrier."
       />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <MissionForm
           action={createMission}
           users={users}

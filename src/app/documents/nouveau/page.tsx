@@ -25,7 +25,7 @@ export default async function NouveauDocumentPage({
       />
       <ModuleHelp {...MODULE_HELP.documents} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <DocumentForm
           action={createDocument}
           users={users}

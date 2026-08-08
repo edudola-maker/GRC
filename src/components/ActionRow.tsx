@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { completeTacheRapide } from "@/app/taches/actions";
 import { SubmitButton } from "@/components/FormControls";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import {
   CATEGORIE_TACHE_LABELS,
   PRIORITE_LABELS,
@@ -78,15 +79,15 @@ export function ActionBucket({
   tone?: "danger" | "warn" | "info";
 }) {
   return (
-    <div className="panel">
-      <div className="panel-head">
-        <h2 className="panel-title">
-          {title}
-          <span className={`bucket-count${tone ? ` bucket-count--${tone}` : ""}`}>
-            {count}
-          </span>
-        </h2>
-      </div>
+    <CollapsibleSection
+      title={title}
+      badge={
+        <span className={`bucket-count${tone ? ` bucket-count--${tone}` : ""}`}>
+          {count}
+        </span>
+      }
+      defaultOpen
+    >
       {items.length === 0 ? (
         <p className="empty">{empty}</p>
       ) : (
@@ -101,6 +102,6 @@ export function ActionBucket({
           ))}
         </ul>
       )}
-    </div>
+    </CollapsibleSection>
   );
 }

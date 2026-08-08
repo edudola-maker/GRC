@@ -4,6 +4,7 @@ import {
 } from "@/lib/catalog";
 import { updateTacheRapide } from "@/app/taches/actions";
 import { SubmitButton } from "@/components/FormControls";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 
 type UserOpt = { id: string; nom: string };
 
@@ -21,8 +22,7 @@ export function TacheActionsRapides({
   users: UserOpt[];
 }) {
   return (
-    <div className="panel">
-      <h2 className="panel-title">Actions rapides</h2>
+    <CollapsibleSection title="Actions rapides" defaultOpen>
       <p className="panel-hint">
         Modifiez le statut, la priorité ou le responsable sans ouvrir le
         formulaire complet.
@@ -77,6 +77,6 @@ export function TacheActionsRapides({
           <SubmitButton pendingLabel="…">Appliquer</SubmitButton>
         </form>
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }

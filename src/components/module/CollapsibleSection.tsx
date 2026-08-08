@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 /**
- * Section repliable commune (fiches, cartographie, etc.).
- * Repliée : seul le titre reste visible.
+ * Grande box de contenu repliable — composant transversal.
+ * Repliée : seul le titre (en-tête) reste visible.
+ * Ne pas utiliser pour KPI individuels, badges, champs ou lignes d’inventaire.
  */
 export function CollapsibleSection({
   title,
@@ -13,24 +14,30 @@ export function CollapsibleSection({
   defaultOpen = true,
   className = "",
   badge,
+  id,
 }: {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
   className?: string;
   badge?: ReactNode;
+  id?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
     <details
+      id={id}
       className={`collapsible-section ${className}`.trim()}
       open={open}
       onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
     >
       <summary className="collapsible-section__summary">
+        <span className="collapsible-section__chevron" aria-hidden>
+          {open ? "▾" : "▸"}
+        </span>
         <span className="collapsible-section__title">{title}</span>
-        {badge ? (
+        {badge != null && badge !== "" ? (
           <span className="collapsible-section__badge">{badge}</span>
         ) : null}
       </summary>

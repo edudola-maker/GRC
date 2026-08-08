@@ -156,8 +156,7 @@ export default async function ProjetDetailPage({
       </div>
 
       <div className="detail-grid">
-        <div className="panel">
-          <h2 className="panel-title">Informations</h2>
+        <CollapsibleSection title="Informations" defaultOpen>
           <dl className="kv">
             <div>
               <dt>Code</dt>
@@ -195,10 +194,9 @@ export default async function ProjetDetailPage({
             Créé par {projet.creePar.nom} · Modifié par {projet.modifiePar.nom} ·{" "}
             {formatDate(projet.modifieLe)}
           </p>
-        </div>
+        </CollapsibleSection>
 
-        <div className="panel">
-          <h2 className="panel-title">Équipe projet</h2>
+        <CollapsibleSection title="Équipe projet" defaultOpen>
           <p className="muted" style={{ marginBottom: "0.65rem" }}>
             Responsable : {projet.responsable.nom}. Cochez les membres
             éventuels.
@@ -244,12 +242,15 @@ export default async function ProjetDetailPage({
               )}
             </ul>
           )}
-        </div>
+        </CollapsibleSection>
       </div>
 
       <div className="detail-grid" style={{ marginTop: "1rem" }}>
-        <div className="panel">
-          <h2 className="panel-title">Jalons ({projet.jalons.length})</h2>
+        <CollapsibleSection
+          title="Jalons"
+          badge={projet.jalons.length}
+          defaultOpen
+        >
           {!projet.archive ? (
             <form action={createJalon} className="inline-form">
               <input type="hidden" name="projetId" value={projet.id} />
@@ -307,12 +308,13 @@ export default async function ProjetDetailPage({
               ))}
             </ul>
           )}
-        </div>
+        </CollapsibleSection>
 
-        <div className="panel">
-          <h2 className="panel-title">
-            Documents liés ({projet.documents.length})
-          </h2>
+        <CollapsibleSection
+          title="Documents liés"
+          badge={projet.documents.length}
+          defaultOpen
+        >
           {!projet.archive && docsDisponibles.length > 0 ? (
             <form action={linkProjetDocument} className="inline-form">
               <input type="hidden" name="projetId" value={projet.id} />
@@ -365,13 +367,14 @@ export default async function ProjetDetailPage({
               ))}
             </ul>
           )}
-        </div>
+        </CollapsibleSection>
       </div>
 
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <div className="panel-head">
-          <h2 className="panel-title">Tâches ({projet.taches.length})</h2>
-        </div>
+      <CollapsibleSection
+        title="Tâches"
+        badge={projet.taches.length}
+        defaultOpen
+      >
         {projet.taches.length === 0 ? (
           <p className="empty">Aucune tâche rattachée.</p>
         ) : (
@@ -405,7 +408,7 @@ export default async function ProjetDetailPage({
             })}
           </ul>
         )}
-      </div>
+      </CollapsibleSection>
 
       <ElementsAssocies
         uniteId={user.uniteId}

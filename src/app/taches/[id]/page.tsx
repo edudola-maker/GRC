@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { TacheActionsRapides } from "@/components/TacheActionsRapides";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { deleteTache } from "../actions";
@@ -117,8 +118,7 @@ export default async function TacheDetailPage({
       ) : null}
 
       <div className="detail-grid">
-        <div className="panel">
-          <h2 className="panel-title">Informations</h2>
+        <CollapsibleSection title="Informations" defaultOpen>
           <dl className="kv">
             <div>
               <dt>Catégorie</dt>
@@ -238,7 +238,7 @@ export default async function TacheDetailPage({
             Créé par {tache.creePar.nom} · Modifié par {tache.modifiePar.nom} ·{" "}
             {formatDate(tache.modifieLe)}
           </p>
-        </div>
+        </CollapsibleSection>
 
         <div className="stack-panels">
           <TacheActionsRapides
@@ -249,8 +249,7 @@ export default async function TacheDetailPage({
             users={users}
           />
 
-          <div className="panel">
-            <h2 className="panel-title">Historique</h2>
+          <CollapsibleSection title="Historique" defaultOpen={false}>
             {tache.historique.length === 0 ? (
               <p className="empty">Aucune modification enregistrée.</p>
             ) : (
@@ -269,7 +268,7 @@ export default async function TacheDetailPage({
                 ))}
               </ul>
             )}
-          </div>
+          </CollapsibleSection>
         </div>
       </div>
 

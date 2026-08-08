@@ -22,7 +22,7 @@ export default async function NouveauControleSCIPage({
         description="Définissez le contrôle périodique et sa prochaine échéance."
       />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ControleSCIForm
           action={createControleSCI}
           users={users}

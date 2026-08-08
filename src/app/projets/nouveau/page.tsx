@@ -25,7 +25,7 @@ export default async function NouveauProjetPage({
       />
       <ModuleHelp {...MODULE_HELP.projets} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ProjetForm
           action={createProjet}
           users={users}

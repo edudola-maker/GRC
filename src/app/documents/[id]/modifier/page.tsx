@@ -36,7 +36,7 @@ export default async function ModifierDocumentPage({
       <BackLink href={`/documents/${document.id}`} label="← Retour au document" />
       <PageHeader title="Modifier le document" description={document.nom} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <DocumentForm
           action={updateDocument}
           users={users}

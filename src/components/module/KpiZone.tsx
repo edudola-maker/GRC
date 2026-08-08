@@ -1,18 +1,24 @@
 import type { ReactNode } from "react";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 
-/** Zone de pilotage commune à tous les modules. */
+/** Zone de pilotage commune à tous les modules (repliable). */
 export function KpiZone({
   label = "Vue de pilotage",
   children,
+  defaultOpen = true,
 }: {
   label?: string;
   children: ReactNode;
+  defaultOpen?: boolean;
 }) {
   return (
-    <section className="page-zone page-zone--kpi" aria-label={label}>
-      <p className="page-zone__label">{label}</p>
+    <CollapsibleSection
+      title={label}
+      defaultOpen={defaultOpen}
+      className="page-zone page-zone--kpi collapsible-section--zone"
+    >
       <div className="stats">{children}</div>
-    </section>
+    </CollapsibleSection>
   );
 }
 

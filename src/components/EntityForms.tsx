@@ -305,7 +305,7 @@ export function ProjetForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Tags">
+      <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input
             id="tags"
@@ -714,7 +714,7 @@ export function ConseilForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Tags">
+      <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Ex. LSubv, gouvernance">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
@@ -896,7 +896,7 @@ export function ControleSCIForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Tags">
+      <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
@@ -1100,7 +1100,7 @@ export function RisqueForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Tags / métadonnées">
+      <FormSection title="Tags / métadonnées" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
@@ -1269,7 +1269,7 @@ export function DocumentForm({
         </div>
       </FormSection>
 
-      <FormSection title="Tags">
+      <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
@@ -1455,7 +1455,7 @@ export function MissionForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Tags">
+      <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>
@@ -1595,7 +1595,7 @@ export function ProcessusForm({
         </div>
       </FormSection>
 
-      <FormSection title="Tags">
+      <FormSection title="Tags" defaultOpen={false}>
         <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
           <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
         </Field>

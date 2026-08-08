@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ActionBucket } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PlanningCalendar } from "@/components/PlanningCalendar";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { getMesActions } from "@/lib/actions-view";
@@ -90,8 +91,7 @@ export default async function DashboardCollaborateurPage({
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
       <section className="section" aria-label="Ma planification">
-        <div className="panel panel--soft">
-          <h2 className="panel-title">Ma planification</h2>
+        <CollapsibleSection title="Ma planification" defaultOpen>
           <p className="muted" style={{ marginBottom: "0.85rem" }}>
             Sur quoi vais-je travailler les prochaines semaines ? Vue high
             level — projets, audits et tâches (conseils, SCI, revues…). Outlook
@@ -106,7 +106,7 @@ export default async function DashboardCollaborateurPage({
             activeFilters={planFilters}
             vue={sp.vue}
           />
-        </div>
+        </CollapsibleSection>
       </section>
 
       <section className="section" aria-label="Mes actions">
@@ -139,8 +139,10 @@ export default async function DashboardCollaborateurPage({
         </div>
 
         {vue === "terminees" ? (
-          <div className="panel">
-            <h2 className="panel-title">Historique — actions terminées</h2>
+          <CollapsibleSection
+            title="Historique — actions terminées"
+            defaultOpen={false}
+          >
             {actions.terminees.length === 0 ? (
               <p className="empty">Aucune action terminée récemment.</p>
             ) : (
@@ -162,7 +164,7 @@ export default async function DashboardCollaborateurPage({
                 ))}
               </ul>
             )}
-          </div>
+          </CollapsibleSection>
         ) : actions.totalOuvertes === 0 ? (
           <div className="panel">
             <p className="empty empty--success">

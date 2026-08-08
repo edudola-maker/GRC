@@ -34,7 +34,7 @@ export default async function ModifierProjetPage({
       <BackLink href={`/projets/${projet.id}`} label="← Retour au projet" />
       <PageHeader title="Modifier le projet" description={projet.nom} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ProjetForm
           action={updateProjet}
           users={users}

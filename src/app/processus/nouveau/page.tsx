@@ -34,7 +34,7 @@ export default async function NouveauProcessusPage({
       />
       <ModuleHelp {...MODULE_HELP.processus} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ProcessusForm
           action={createProcessus}
           users={users}

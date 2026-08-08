@@ -4,6 +4,7 @@ import { ControleSCIForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { SubmitButton } from "@/components/FormControls";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -62,7 +63,7 @@ export default async function ModifierControleSCIPage({
       />
       <PageHeader title="Modifier le contrôle" description={controle.nom} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <ControleSCIForm
           action={updateControleSCI}
           users={users}
@@ -77,10 +78,11 @@ export default async function ModifierControleSCIPage({
         </p>
       </div>
 
-      <div className="panel" style={{ marginTop: "1rem" }}>
-        <h2 className="panel-title">
-          Risques couverts ({controle.risques.length})
-        </h2>
+      <CollapsibleSection
+        title="Risques couverts"
+        badge={controle.risques.length}
+        defaultOpen
+      >
         {risquesDispo.length > 0 ? (
           <form action={lierRisqueControle} className="inline-form">
             <input type="hidden" name="controleSCIId" value={controle.id} />
@@ -129,7 +131,7 @@ export default async function ModifierControleSCIPage({
             ))}
           </ul>
         )}
-      </div>
+      </CollapsibleSection>
 
       <ElementsAssocies
         uniteId={user.uniteId}

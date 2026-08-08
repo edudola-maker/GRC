@@ -2,11 +2,12 @@
 
 import { useDeferredValue, useState, type ReactNode } from "react";
 import { ActiveFiltersBar } from "@/components/inventory/ActiveFiltersBar";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { filterByQuery } from "@/lib/inventory-filters";
 
 /**
  * Socle réutilisable : recherche dynamique + panneau avancé + filtres actifs.
- * Structure en zones : outils (filtres/recherche) puis inventaire.
+ * Structure en zones repliables : outils puis inventaire.
  */
 export function InventoryBrowser({
   searchPlaceholder,
@@ -48,9 +49,11 @@ export function InventoryBrowser({
 
   return (
     <div className="inventory inventory-shell">
-      <section className="page-zone page-zone--tools" aria-label={toolsLabel}>
-        <p className="page-zone__label">{toolsLabel}</p>
-
+      <CollapsibleSection
+        title={toolsLabel}
+        defaultOpen
+        className="page-zone page-zone--tools collapsible-section--zone"
+      >
         <div className="inventory__search-row">
           <label className="inventory__search" htmlFor="inventory-q">
             <span className="sr-only">Recherche</span>
@@ -88,18 +91,16 @@ export function InventoryBrowser({
             canReset={canResetFilters}
           />
         ) : null}
-      </section>
+      </CollapsibleSection>
 
-      <section
-        className="page-zone page-zone--inventory"
-        aria-label={inventoryLabel}
+      <CollapsibleSection
+        title={inventoryLabel}
+        defaultOpen
+        badge={countLabel}
+        className="page-zone page-zone--inventory collapsible-section--zone"
       >
-        <div className="page-zone__head">
-          <p className="page-zone__label">{inventoryLabel}</p>
-          <p className="inventory__count muted">{countLabel}</p>
-        </div>
         {children}
-      </section>
+      </CollapsibleSection>
     </div>
   );
 }

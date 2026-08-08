@@ -115,8 +115,7 @@ export default async function DocumentDetailPage({
         </div>
       ) : null}
 
-      <div className="panel">
-        <h2 className="panel-title">Informations</h2>
+      <CollapsibleSection title="Informations" defaultOpen>
         <dl className="kv">
           <div>
             <dt>Code</dt>
@@ -182,7 +181,7 @@ export default async function DocumentDetailPage({
             : ""}{" "}
           · {formatDate(document.modifieLe)}
         </p>
-      </div>
+      </CollapsibleSection>
 
       <ElementsAssocies
         uniteId={user.uniteId}
@@ -192,12 +191,12 @@ export default async function DocumentDetailPage({
         editable={false}
       />
 
-      <section className="panel panel--secondary" style={{ marginTop: "1rem" }}>
-        <div className="panel-head">
-          <h2 className="panel-title">
-            Tâches de revue ({document.tachesRevue.length})
-          </h2>
-        </div>
+      <CollapsibleSection
+        title="Tâches de revue"
+        badge={document.tachesRevue.length}
+        defaultOpen
+        className="collapsible-section--secondary"
+      >
         <p className="muted" style={{ marginTop: 0 }}>
           Actions découlant du document — exécution opérationnelle de la revue.
         </p>
@@ -248,7 +247,7 @@ export default async function DocumentDetailPage({
             })}
           </ul>
         )}
-      </section>
+      </CollapsibleSection>
 
       <CollapsibleSection title="Tags" defaultOpen={false}>
         <p style={{ margin: 0 }}>

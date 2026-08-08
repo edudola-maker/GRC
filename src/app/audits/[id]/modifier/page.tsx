@@ -51,7 +51,7 @@ export default async function ModifierAuditPage({
       <BackLink href={`/audits/${mission.id}`} label="← Retour à la mission" />
       <PageHeader title="Modifier la mission" description={mission.titre} />
       <FlashBanner erreur={sp.erreur} />
-      <div className="panel">
+      <div className="entity-form-wrap">
         <MissionForm
           action={updateMission}
           users={users}
