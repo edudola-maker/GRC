@@ -17,6 +17,9 @@ const TYPES = new Set<string>([
   "CONTROLE_SCI",
   "DOCUMENT",
   "TACHE",
+  "OBJECTIF",
+  "MODELE_TACHE",
+  "UNITE",
 ]);
 
 /** Ordre canonique pour éviter les doublons A↔B. */

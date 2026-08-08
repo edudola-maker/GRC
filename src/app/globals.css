@@ -1942,6 +1942,45 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+.unite-activite__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.unite-activite__slice-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.unite-activite__slice-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.unite-activite__list,
+.unite-objectifs__list,
+.unite-equipe__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.unite-activite__list li,
+.unite-objectifs__row,
+.unite-equipe__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
 /* Zones page (KPI, inventaire…) : même composant, fond de zone préservé */
 .collapsible-section--zone.page-zone--attention {
   background: #f5f7f6;

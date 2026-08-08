@@ -22,6 +22,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Dashboards",
     items: [
       { href: "/", label: "Dashboard collaborateur", icon: "⌂" },
+      { href: "/unite", label: "Mon unité", icon: "⬡" },
       {
         href: "/responsable",
         label: "Dashboard responsable",

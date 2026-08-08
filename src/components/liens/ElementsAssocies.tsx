@@ -21,6 +21,9 @@ const LINKABLE: TypeObjetMetier[] = [
   "CONTROLE_SCI",
   "DOCUMENT",
   "TACHE",
+  "OBJECTIF",
+  "MODELE_TACHE",
+  "UNITE",
 ];
 
 /**

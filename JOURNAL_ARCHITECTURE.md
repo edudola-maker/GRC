@@ -82,6 +82,8 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Modèles de tâches :** chaîne `Processus (optionnel) → ModeleTache → Tache → TacheChecklistItem`. Checklist d’occurrence = **copie** à la création (pas de sync rétroactive). Relation N–N dédiée `ModeleTacheProcessus` (≠ `LienObjet`). Séparation stricte avec `MissionChecklistItem`. Sur une tâche : cocher en consultation ; structure checklist uniquement en `?edit=CHECKLIST`.
 
+**Fiche Unité métier (`/unite`) :** enrichissement `Unite` (description, responsable, adjoint, code UNT-xxxx) + agrégateur (pilotage, activité, équipe, processus). Nouvel objet `Objectif` (OBJ-xxxx) distinct de `ObjectifAnnuel` / `ObjectifModule`. `TypeObjetMetier` : `UNITE`, `OBJECTIF`. Inventaire multi-unités → Admin plus tard. Dashboard responsable reste agrégateur lecture seule (Objectifs branchables ultérieurement).
+
 **Projets :** plus de **Jalons** (redondants avec Tâches) — suivi via `Projet → Tâches`. Une seule section **Éléments associés** (tâches owned + liens libres, filtre par type).
 
 **Édition transversale :** `EditableSection` + `?edit=SECTION` — lecture seule stricte ; une box à la fois ; Brouillon / Finaliser / Annuler. Composants : `CollapsibleSection`, `EditableSection`, `SectionSaveActions`.
