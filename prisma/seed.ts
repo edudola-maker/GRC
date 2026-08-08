@@ -43,7 +43,8 @@ async function main() {
   await prisma.controleDocument.deleteMany();
   await prisma.controleSCI.deleteMany();
   await prisma.projetDocument.deleteMany();
-  await prisma.jalon.deleteMany();
+  await prisma.sectionRedaction.deleteMany();
+  await prisma.processusEtape.deleteMany();
   await prisma.projetMembre.deleteMany();
   await prisma.conseil.deleteMany();
   await prisma.document.deleteMany();
@@ -226,21 +227,6 @@ async function main() {
       modifieParId: alice.id,
       membres: {
         create: [{ utilisateurId: bernard.id }, { utilisateurId: claire.id }],
-      },
-      jalons: {
-        create: [
-          {
-            nom: "Cartographie validée",
-            dateEcheance: daysFromNow(-10),
-            atteint: true,
-            dateAtteinte: daysFromNow(-12),
-          },
-          {
-            nom: "Diffusion procédures",
-            dateEcheance: daysFromNow(30),
-            atteint: false,
-          },
-        ],
       },
     },
   });
@@ -503,6 +489,14 @@ async function main() {
       reference: "https://confluence.example/processus/acces",
       creeParId: bernard.id,
       modifieParId: bernard.id,
+      etapes: {
+        create: [
+          { libelle: "Demande", ordre: 0 },
+          { libelle: "Validation", ordre: 1 },
+          { libelle: "Attribution", ordre: 2 },
+          { libelle: "Revue périodique", ordre: 3 },
+        ],
+      },
     },
   });
 
@@ -517,6 +511,38 @@ async function main() {
       criticite: 3,
       creeParId: alice.id,
       modifieParId: alice.id,
+      etapes: {
+        create: [
+          { libelle: "Demande d’engagement", ordre: 0 },
+          { libelle: "Contrôle budgétaire", ordre: 1 },
+          { libelle: "Validation", ordre: 2 },
+        ],
+      },
+    },
+  });
+
+  await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0004",
+      nom: "Réaliser un audit",
+      description:
+        "Enchaînement type d’une mission d’assurance — le détail procédural est dans Confluence.",
+      tags: "audit,mission",
+      responsableId: alice.id,
+      statut: "ACTIF",
+      reference: "https://confluence.example/processus/realiser-audit",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+      etapes: {
+        create: [
+          { libelle: "Planification", ordre: 0 },
+          { libelle: "Substantif", ordre: 1 },
+          { libelle: "Recommandations", ordre: 2 },
+          { libelle: "Rapport", ordre: 3 },
+          { libelle: "Suivi", ordre: 4 },
+        ],
+      },
     },
   });
 

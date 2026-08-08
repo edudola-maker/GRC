@@ -173,7 +173,21 @@ Fonctionnalité transversale : export Excel des inventaires (Projets, Conseils, 
 
 ### 5quinquies. Processus
 
-Référentiel métier `Processus` (codes PRC-xxxx). Associations libres via `LienObjet`. Chaîne cible : **Unité → Processus → Risques → Contrôles SCI → Occurrences**. Hiérarchie parent optionnelle (macro → processus → sous-processus). Pas de GED : lien Confluence pour la documentation.
+Référentiel volontairement simple : **Processus = quoi** ; **procédure = comment** (Confluence).
+
+Champs principaux : code PRC-xxxx, nom, description courte, unité, responsable, statut, lien Confluence, **étapes ordonnées** (ajouter / renommer / supprimer / réordonner — pas de BPMN), éléments associés.
+
+Associations libres via `LienObjet` (y compris vers une **étape** précise, facultatif). Chaîne cible : **Unité → Processus → Risques → Contrôles SCI → Occurrences**.
+
+### 5quinquies-bis. Édition box-by-box & brouillons (transversal)
+
+Trois règles UX : (1) toute grande box est repliable ; (2) lecture seule stricte par défaut ; (3) édition indépendante par box, avec **Enregistrer comme brouillon / Finaliser / Annuler** lorsque pertinent.
+
+Modèle `SectionRedaction` : état de **rédaction** (`BROUILLON` | `FINALISE` | …) distinct du **statut métier**. Pour les Missions, s’articule avec `MissionValidationPoint` / visas (`Brouillon → À valider → Validé`, invalidation via `contenuVersion`) — un seul fil de versioning, pas deux systèmes concurrents.
+
+### 5quinquies-ter. Projets — sans jalons
+
+Suivi opérationnel : **Projet → Tâches** uniquement. La notion de Jalon a été retirée (redondante). Une seule section **Éléments associés** (tâches, documents, risques, processus, missions, conseils…) avec filtre par type.
 
 ### 5sexies. Fiche Unité (roadmap — après stabilisation Processus)
 
@@ -192,7 +206,7 @@ Indicateurs de progression (pas de gamification). Exemples :
 |--------|------------------------|
 | Pilotage | Vue synthétique de l’unité |
 | Conseils | Reçues, clôturées, temps moyen, respect délai cible (5 j. ouvrés), en attente |
-| Projets | Actifs, terminés, respect échéances, en retard, avancement global, jalons |
+| Projets | Actifs, terminés, respect échéances, en retard, avancement global, tâches ouvertes |
 | Contrôles SCI | Réalisés, planifiés, en retard, taux de réalisation |
 | Documents | Inventoriés, revues à faire / en retard / réalisées |
 | Risques | Nombre, répartition, critiques, élevés, traités |

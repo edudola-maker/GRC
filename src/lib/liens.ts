@@ -34,6 +34,8 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
       return `/taches/${id}`;
     case "PROCESSUS":
       return `/processus/${id}`;
+    case "PROCESSUS_ETAPE":
+      return `/processus`; // affiné après résolution
     default:
       return "/";
   }
@@ -140,6 +142,27 @@ async function resolveObjet(
             href: hrefFor(type, o.id),
           }
         : null;
+    }
+    case "PROCESSUS_ETAPE": {
+      const o = await prisma.processusEtape.findFirst({
+        where: { id, processus: { uniteId } },
+        select: {
+          id: true,
+          libelle: true,
+          ordre: true,
+          processusId: true,
+          processus: { select: { code: true } },
+        },
+      });
+      if (!o) return null;
+      const num = String(o.ordre + 1).padStart(2, "0");
+      return {
+        type,
+        id: o.id,
+        code: `${o.processus.code}/${num}`,
+        titre: o.libelle,
+        href: `/processus/${o.processusId}#etape-${o.id}`,
+      };
     }
     default:
       return null;
@@ -267,6 +290,28 @@ export async function listCandidatsLien(
       return rows
         .filter((r) => r.id !== excludeId)
         .map((r) => ({ id: r.id, label: `${r.code} — ${r.nom}` }));
+    }
+    case "PROCESSUS_ETAPE": {
+      const rows = await prisma.processusEtape.findMany({
+        where: { processus: { uniteId, archive: false } },
+        select: {
+          id: true,
+          libelle: true,
+          ordre: true,
+          processus: { select: { code: true, nom: true } },
+        },
+        orderBy: [{ processus: { code: "asc" } }, { ordre: "asc" }],
+        take: 300,
+      });
+      return rows
+        .filter((r) => r.id !== excludeId)
+        .map((r) => {
+          const num = String(r.ordre + 1).padStart(2, "0");
+          return {
+            id: r.id,
+            label: `${r.processus.code} / ${num} ${r.libelle}`,
+          };
+        });
     }
     default:
       return [];

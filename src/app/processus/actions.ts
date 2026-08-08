@@ -10,6 +10,11 @@ import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import {
+  etatFromIntent,
+  markSectionRedaction,
+  parseSaveIntent,
+} from "@/lib/section-redaction";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -29,6 +34,10 @@ function parseLpd(formData: FormData) {
   };
 }
 
+function revalidateProcessus(id: string) {
+  revalidateApp([`/processus/${id}`, `/processus/${id}/modifier`]);
+}
+
 export async function createProcessus(formData: FormData) {
   const current = await getCurrentUser();
   const uniteId = current.uniteId;
@@ -45,19 +54,6 @@ export async function createProcessus(formData: FormData) {
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
-  const parentId = optStr(formData, "parentId");
-  if (parentId) {
-    const parent = await prisma.processus.findFirst({
-      where: { id: parentId, uniteId, archive: false },
-    });
-    if (!parent) redirectWithError(fallback, "Processus parent introuvable.");
-  }
-
-  const criticite = optInt(formData, "criticite");
-  if (criticite != null && (criticite < 1 || criticite > 5)) {
-    redirectWithError(fallback, "Criticité invalide (1–5).");
-  }
-
   const lpd = parseLpd(formData);
   const processus = await prisma.processus.create({
     data: {
@@ -68,9 +64,7 @@ export async function createProcessus(formData: FormData) {
       tags: serializeTags(optStr(formData, "tags")),
       responsableId,
       statut: statut as "ACTIF",
-      criticite: criticite ?? null,
       reference: optStr(formData, "reference"),
-      parentId: parentId ?? null,
       contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
       niveauConfidentialite: lpd.niveauConfidentialite,
       archive: false,
@@ -79,7 +73,7 @@ export async function createProcessus(formData: FormData) {
     },
   });
 
-  revalidateApp([`/processus/${processus.id}`]);
+  revalidateProcessus(processus.id);
   redirectWithOk(`/processus/${processus.id}`, "cree");
 }
 
@@ -91,73 +85,215 @@ export async function updateProcessus(formData: FormData) {
   const existing = await prisma.processus.findUnique({ where: { id } });
   if (!existing) redirectWithError("/processus", "Processus introuvable.");
 
-  const nom = str(formData, "nom");
-  if (!nom) {
-    redirectWithError(
-      `/processus/${id}/modifier`,
-      "Le nom du processus est obligatoire.",
-    );
-  }
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const intent = parseSaveIntent(formData);
+  const editFallback = `/processus/${id}?edit=${sectionKey}`;
 
-  const statut = str(formData, "statut") || "ACTIF";
-  if (!STATUTS.has(statut as "ACTIF" | "SUSPENDU")) {
-    redirectWithError(`/processus/${id}/modifier`, "Statut invalide.");
-  }
-
-  const nomErr = await assertNomUnique(
-    "PROCESSUS",
-    nom,
-    existing.uniteId,
-    id,
-  );
-  if (nomErr) {
-    redirectWithError(`/processus/${id}/modifier`, nomErr);
-  }
-
-  const responsableId = str(formData, "responsableId") || current.id;
-  let parentId = optStr(formData, "parentId");
-  if (parentId === id) {
-    redirectWithError(
-      `/processus/${id}/modifier`,
-      "Un processus ne peut pas être son propre parent.",
-    );
-  }
-  if (parentId) {
-    const parent = await prisma.processus.findFirst({
-      where: { id: parentId, uniteId: existing.uniteId, archive: false },
-    });
-    if (!parent) {
-      redirectWithError(`/processus/${id}/modifier`, "Processus parent introuvable.");
+  if (sectionKey === "INFOS_GENERALES") {
+    const nom = str(formData, "nom");
+    if (!nom) {
+      redirectWithError(editFallback, "Le nom du processus est obligatoire.");
     }
-  } else {
-    parentId = null;
-  }
-
-  const criticite = optInt(formData, "criticite");
-  if (criticite != null && (criticite < 1 || criticite > 5)) {
-    redirectWithError(`/processus/${id}/modifier`, "Criticité invalide (1–5).");
-  }
-
-  const lpd = parseLpd(formData);
-  await prisma.processus.update({
-    where: { id },
-    data: {
+    const statut = str(formData, "statut") || "ACTIF";
+    if (!STATUTS.has(statut as "ACTIF" | "SUSPENDU")) {
+      redirectWithError(editFallback, "Statut invalide.");
+    }
+    const nomErr = await assertNomUnique(
+      "PROCESSUS",
       nom,
-      description: optStr(formData, "description"),
-      tags: serializeTags(optStr(formData, "tags")),
-      responsableId,
-      statut: statut as "ACTIF",
-      criticite: criticite ?? null,
-      reference: optStr(formData, "reference"),
-      parentId,
-      contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
-      niveauConfidentialite: lpd.niveauConfidentialite,
-      modifieParId: current.id,
-    },
+      existing.uniteId,
+      id,
+    );
+    if (nomErr) redirectWithError(editFallback, nomErr);
+
+    const responsableId = str(formData, "responsableId") || current.id;
+    await prisma.processus.update({
+      where: { id },
+      data: {
+        nom,
+        description: optStr(formData, "description"),
+        reference: optStr(formData, "reference"),
+        responsableId,
+        statut: statut as "ACTIF",
+        modifieParId: current.id,
+      },
+    });
+  } else if (sectionKey === "LPD") {
+    const lpd = parseLpd(formData);
+    await prisma.processus.update({
+      where: { id },
+      data: {
+        contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
+        niveauConfidentialite: lpd.niveauConfidentialite,
+        tags: serializeTags(optStr(formData, "tags")),
+        modifieParId: current.id,
+      },
+    });
+  } else if (sectionKey === "ETAPES" || sectionKey === "ELEMENTS_ASSOCIES") {
+    await prisma.processus.update({
+      where: { id },
+      data: { modifieParId: current.id },
+    });
+  }
+
+  await markSectionRedaction({
+    uniteId: existing.uniteId,
+    typeObjet: "PROCESSUS",
+    objetId: id,
+    sectionKey,
+    etat: etatFromIntent(intent),
+    modifieParId: current.id,
+    bumpVersion: intent === "finaliser",
   });
 
-  revalidateApp([`/processus/${id}`, `/processus/${id}/modifier`]);
-  redirectWithOk(`/processus/${id}`, "modifie");
+  revalidateProcessus(id);
+  redirectWithOk(
+    intent === "brouillon" ? editFallback : `/processus/${id}`,
+    intent === "brouillon" ? "brouillon" : "modifie",
+  );
+}
+
+async function markEtapesBrouillon(processusId: string, userId: string, uniteId: string) {
+  await markSectionRedaction({
+    uniteId,
+    typeObjet: "PROCESSUS",
+    objetId: processusId,
+    sectionKey: "ETAPES",
+    etat: "BROUILLON",
+    modifieParId: userId,
+  });
+}
+
+export async function addProcessusEtape(formData: FormData) {
+  const current = await getCurrentUser();
+  const processusId = str(formData, "processusId");
+  if (!processusId) redirectWithError("/processus", "Identifiant manquant.");
+
+  const processus = await prisma.processus.findUnique({
+    where: { id: processusId },
+  });
+  if (!processus) redirectWithError("/processus", "Processus introuvable.");
+  if (processus.archive) {
+    redirectWithError(`/processus/${processusId}`, "Processus archivé.");
+  }
+
+  const libelle = str(formData, "libelle");
+  if (!libelle) {
+    redirectWithError(
+      `/processus/${processusId}?edit=ETAPES`,
+      "Libellé d’étape obligatoire.",
+    );
+  }
+
+  const max = await prisma.processusEtape.aggregate({
+    where: { processusId },
+    _max: { ordre: true },
+  });
+  await prisma.processusEtape.create({
+    data: {
+      processusId,
+      libelle,
+      ordre: (max._max.ordre ?? -1) + 1,
+    },
+  });
+  await markEtapesBrouillon(processusId, current.id, processus.uniteId);
+  revalidateProcessus(processusId);
+  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+}
+
+export async function updateProcessusEtape(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  if (!id || !processusId) {
+    redirectWithError("/processus", "Identifiant manquant.");
+  }
+  const etape = await prisma.processusEtape.findFirst({
+    where: { id, processusId },
+    include: { processus: true },
+  });
+  if (!etape) redirectWithError(`/processus/${processusId}`, "Étape introuvable.");
+
+  const libelle = str(formData, "libelle");
+  if (!libelle) {
+    redirectWithError(
+      `/processus/${processusId}?edit=ETAPES`,
+      "Libellé d’étape obligatoire.",
+    );
+  }
+  await prisma.processusEtape.update({ where: { id }, data: { libelle } });
+  await markEtapesBrouillon(processusId, current.id, etape.processus.uniteId);
+  revalidateProcessus(processusId);
+  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+}
+
+export async function deleteProcessusEtape(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  if (!id || !processusId) {
+    redirectWithError("/processus", "Identifiant manquant.");
+  }
+  const etape = await prisma.processusEtape.findFirst({
+    where: { id, processusId },
+    include: { processus: true },
+  });
+  if (!etape) redirectWithError(`/processus/${processusId}`, "Étape introuvable.");
+
+  await prisma.processusEtape.delete({ where: { id } });
+  // Réordonner
+  const rest = await prisma.processusEtape.findMany({
+    where: { processusId },
+    orderBy: { ordre: "asc" },
+  });
+  await prisma.$transaction(
+    rest.map((e, i) =>
+      prisma.processusEtape.update({ where: { id: e.id }, data: { ordre: i } }),
+    ),
+  );
+  await markEtapesBrouillon(processusId, current.id, etape.processus.uniteId);
+  revalidateProcessus(processusId);
+  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+}
+
+export async function moveProcessusEtape(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  const direction = str(formData, "direction");
+  if (!id || !processusId) {
+    redirectWithError("/processus", "Identifiant manquant.");
+  }
+
+  const etapes = await prisma.processusEtape.findMany({
+    where: { processusId },
+    orderBy: { ordre: "asc" },
+    include: { processus: true },
+  });
+  const index = etapes.findIndex((e) => e.id === id);
+  if (index < 0) {
+    redirectWithError(`/processus/${processusId}?edit=ETAPES`, "Étape introuvable.");
+  }
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= etapes.length) {
+    redirect(`/processus/${processusId}?edit=ETAPES`);
+  }
+
+  const a = etapes[index]!;
+  const b = etapes[swapWith]!;
+  await prisma.$transaction([
+    prisma.processusEtape.update({
+      where: { id: a.id },
+      data: { ordre: b.ordre },
+    }),
+    prisma.processusEtape.update({
+      where: { id: b.id },
+      data: { ordre: a.ordre },
+    }),
+  ]);
+  await markEtapesBrouillon(processusId, current.id, a.processus.uniteId);
+  revalidateProcessus(processusId);
+  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
 }
 
 export async function archiveProcessus(formData: FormData) {
@@ -168,7 +304,7 @@ export async function archiveProcessus(formData: FormData) {
     where: { id },
     data: { archive: true, modifieParId: current.id },
   });
-  revalidateApp([`/processus/${id}`]);
+  revalidateProcessus(id);
   redirectWithOk(`/processus/${id}`, "archive");
 }
 
@@ -180,7 +316,7 @@ export async function unarchiveProcessus(formData: FormData) {
     where: { id },
     data: { archive: false, modifieParId: current.id },
   });
-  revalidateApp([`/processus/${id}`]);
+  revalidateProcessus(id);
   redirectWithOk(`/processus/${id}`, "desarchive");
 }
 

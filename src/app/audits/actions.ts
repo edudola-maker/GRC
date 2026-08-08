@@ -10,6 +10,11 @@ import { assertNomUnique, nextCode } from "@/lib/codes";
 import { optDate, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import {
+  etatFromIntent,
+  markSectionRedaction,
+  parseSaveIntent,
+} from "@/lib/section-redaction";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -151,7 +156,9 @@ export async function updateMission(formData: FormData) {
   const existing = await prisma.mission.findUnique({ where: { id } });
   if (!existing) redirectWithError("/audits", "Mission introuvable.");
 
-  const editFallback = `/audits/${id}?edit=VUE_ENSEMBLE`;
+  const sectionKey = optStr(formData, "sectionKey") ?? "VUE_ENSEMBLE";
+  const intent = parseSaveIntent(formData);
+  const editFallback = `/audits/${id}?edit=${sectionKey}`;
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(editFallback, "Le titre de la mission est obligatoire.");
@@ -215,8 +222,21 @@ export async function updateMission(formData: FormData) {
     },
   });
 
+  await markSectionRedaction({
+    uniteId: existing.uniteId,
+    typeObjet: "MISSION",
+    objetId: id,
+    sectionKey,
+    etat: etatFromIntent(intent),
+    modifieParId: current.id,
+    bumpVersion: intent === "finaliser",
+  });
+
   revalidateApp([`/audits/${id}`]);
-  redirectWithOk(`/audits/${id}`, "modifie");
+  redirectWithOk(
+    intent === "brouillon" ? editFallback : `/audits/${id}`,
+    intent === "brouillon" ? "brouillon" : "modifie",
+  );
 }
 
 export async function archiveMission(formData: FormData) {

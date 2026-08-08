@@ -102,6 +102,18 @@ enum TypeObjetMetier {
   DOCUMENT
   TACHE
   PROCESSUS
+  /// Étape d’un processus (lien facultatif vers une étape précise).
+  PROCESSUS_ETAPE
+}
+
+/// État de rédaction d’une box/section — distinct du statut métier de l’objet.
+/// Missions : évolue vers A_VALIDER / VALIDE (visas) sans concurrencer MissionValidationPoint.
+enum EtatSectionRedaction {
+  BROUILLON
+  FINALISE
+  A_VALIDER
+  VALIDE
+  OBSOLETE
 }
 
 enum StatutProcessus {
@@ -230,6 +242,7 @@ model Unite {
   journal          JournalEvenement[]
   parametres       ParametreFonctionnel[]
   liensObjets      LienObjet[]
+  sectionsRedaction SectionRedaction[]
 }
 
 // ─── Utilisateur ────────────────────────────────────────────
@@ -288,6 +301,7 @@ model Utilisateur {
   validationsSoumises     MissionValidationPoint[] @relation("ValidationSoumisPar")
   visasMission            MissionValidationVisa[]
   journalEvenements       JournalEvenement[]
+  sectionsRedaction       SectionRedaction[] @relation("SectionRedactionModifiePar")
 }
 
 // ─── Projet ─────────────────────────────────────────────────
@@ -307,6 +321,8 @@ model Projet {
   priorite      Priorite     @default(MOYENNE)
   avancement    Int          @default(0)
   commentaires  String?
+  /// Réflexion / analyse documentée (≠ journal d’activité).
+  reflexion     String?
   archive       Boolean      @default(false)
   creeParId     String
   modifieParId  String
@@ -320,7 +336,7 @@ model Projet {
   modifiePar  Utilisateur     @relation("ProjetModifiePar", fields: [modifieParId], references: [id])
   taches      Tache[]
   membres     ProjetMembre[]
-  jalons      Jalon[]
+  /// Conservé pour migration — UI unifiée via LienObjet / Éléments associés.
   documents   ProjetDocument[]
 
   @@unique([uniteId, code])
@@ -336,17 +352,6 @@ model ProjetMembre {
   utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id])
 
   @@unique([projetId, utilisateurId])
-}
-
-model Jalon {
-  id           String    @id @default(cuid())
-  projetId     String
-  nom          String
-  dateEcheance DateTime?
-  atteint      Boolean   @default(false)
-  dateAtteinte DateTime?
-
-  projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
 }
 
 model ProjetDocument {
@@ -965,10 +970,45 @@ model Processus {
   modifiePar  Utilisateur @relation("ProcessusModifiePar", fields: [modifieParId], references: [id])
   parent      Processus?  @relation("ProcessusHierarchie", fields: [parentId], references: [id])
   enfants     Processus[] @relation("ProcessusHierarchie")
+  etapes      ProcessusEtape[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
   @@index([parentId])
+}
+
+/// Étapes ordonnées d’un processus (« quoi ») — le « comment » reste dans Confluence.
+model ProcessusEtape {
+  id          String @id @default(cuid())
+  processusId String
+  libelle     String
+  ordre       Int    @default(0)
+
+  processus Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
+
+  @@index([processusId, ordre])
+}
+
+/// État de rédaction d’une box (brouillon / finalisé…) — transversal, ≠ statut métier.
+/// Pour les Missions, s’articule avec MissionValidationPoint (visas) sans le remplacer.
+model SectionRedaction {
+  id             String               @id @default(cuid())
+  uniteId        String
+  typeObjet      TypeObjetMetier
+  objetId        String
+  sectionKey     String
+  etat           EtatSectionRedaction @default(BROUILLON)
+  /// Incrémenté à chaque finalisation (et à la remise en édition d’une section validée).
+  contenuVersion Int                  @default(1)
+  modifieParId   String
+  modifieLe      DateTime             @updatedAt
+
+  unite      Unite       @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+  modifiePar Utilisateur @relation("SectionRedactionModifiePar", fields: [modifieParId], references: [id])
+
+  @@unique([typeObjet, objetId, sectionKey])
+  @@index([typeObjet, objetId])
+  @@index([uniteId, etat])
 }
 
 // Compteur pour codes stables PRO-0001, CNS-0001, … (par unité)

@@ -42,6 +42,10 @@ import {
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
+import {
+  formatSectionEtatLabel,
+  listSectionRedactions,
+} from "@/lib/section-redaction";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +116,7 @@ export default async function MissionDetailPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [mission, users, documentsDispo, roles, types, templates, descriptifs] =
+  const [mission, users, documentsDispo, roles, types, templates, descriptifs, redactions] =
     await Promise.all([
       prisma.mission.findUnique({
         where: { id },
@@ -173,6 +177,7 @@ export default async function MissionDetailPage({
         orderBy: { ordre: "asc" },
         select: { id: true, libelle: true, typeId: true },
       }),
+      listSectionRedactions("MISSION", id),
     ]);
   if (!mission) notFound();
 
@@ -263,6 +268,7 @@ export default async function MissionDetailPage({
       <CollapsibleSection
         title="Vue d'ensemble"
         defaultOpen={openFor("VUE_ENSEMBLE", true)}
+        badge={formatSectionEtatLabel(redactions.get("VUE_ENSEMBLE")) ?? undefined}
       >
         {canEdit && !edit ? (
           <SectionEditLink
@@ -280,7 +286,9 @@ export default async function MissionDetailPage({
               descriptifs={descriptifs}
               values={mission}
               cancelHref={baseHref}
-              submitLabel="Enregistrer"
+              submitLabel="Finaliser"
+              draftActions
+              sectionKey="VUE_ENSEMBLE"
             />
           </div>
         ) : (

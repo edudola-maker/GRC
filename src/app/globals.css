@@ -1700,6 +1700,69 @@ a {
   overflow: hidden;
 }
 
+.collapsible-section--editing {
+  border-color: var(--brand);
+}
+
+.section-etat-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6b4f1d;
+  background: #f7edd8;
+  border-radius: 999px;
+}
+
+.processus-etapes__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.processus-etapes__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.processus-etapes__num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--brand-deep);
+  min-width: 1.75rem;
+}
+
+.processus-etapes__rename {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 12rem;
+}
+
+.processus-etapes__rename input {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.processus-etapes__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.processus-etapes__flow {
+  margin: 0.85rem 0 0;
+}
+
 .collapsible-section__summary {
   cursor: pointer;
   list-style: none;

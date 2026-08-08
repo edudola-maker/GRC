@@ -78,15 +78,21 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Contrôles SCI :** statut de *définition* `ACTIF` | `SUSPENDU` (+ archive) ; exécution = tâches/occurrences ; pas de « Marquer réalisé » ni de box Preuves sur la définition (preuves → occurrence). Table `ControleDocument` conservée pour migration ultérieure vers preuves de tâche.
 
-**Processus :** objet `Processus` (PRC-xxxx) ; associations via `LienObjet` uniquement (pas de M2M dédiées) ; `parentId` pour hiérarchie future ; doc détaillée → Confluence. Nav Gouvernance : Processus → Risques → Contrôles → Documents.
+**Processus :** volontairement simple — **quoi** (app) vs **comment** (Confluence). Étapes ordonnées `ProcessusEtape` (CRUD + réordonnancement, pas de BPMN). Associations `LienObjet` (objet ou étape `PROCESSUS_ETAPE`). Nav Gouvernance : Processus → Risques → Contrôles → Documents.
+
+**Projets :** plus de **Jalons** (redondants avec Tâches) — suivi via `Projet → Tâches`. Une seule section **Éléments associés** (tâches owned + liens libres, filtre par type).
+
+**Édition transversale :** `EditableSection` + `?edit=SECTION` — lecture seule stricte ; une box à la fois ; Brouillon / Finaliser / Annuler. Composants : `CollapsibleSection`, `EditableSection`, `SectionSaveActions`.
+
+**Brouillon ≠ statut métier :** modèle `SectionRedaction` (état de rédaction par box). Missions : s’articule avec `MissionValidationPoint` / visas (`contenuVersion`) — pas de second système de versioning. Évolution cible Mission : Brouillon → À valider → Validé ; modification d’une section validée → OBSOLETE.
 
 **Taxinomie :** retirée de l’UI (le besoin réel = **code unique** stable). Colonne DB encore présente mais non exposée ; catégories / tags pour le classement métier.
 
-**Formulaires :** blocs thématiques `FormSection` (un seul Enregistrer). **Toutes les grandes box** (fiches, dashboards, inventaires, KPI zone, À traiter, formulaires) passent par le composant transversal `CollapsibleSection` (titre + ▾/▸). Cartographie risques repliée par défaut. Zone « À traiter » sobre (plus de jaune global).
+**Formulaires :** blocs thématiques `FormSection`. **Toutes les grandes box** passent par `CollapsibleSection`.
 
-**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — moteur **Type → Template → Instance**. Édition **par section** (`?edit=`) : lecture seule par défaut ; Vue d’ensemble = infos générales ; Planification = équipe/docs. Plus de Modifier global ni d’édition inline hors mode section. Recos `REC-xxxx` ; soft-delete. **LPD** socle sur Mission/Template/Document/Processus. **Réflexion** : `analyseTravaux` (Mission), `justificationEvaluation` (Risque), `raisonnement` (Conseil) ≠ journal. Routes `/audits` temporaires. Roadmap : Éditeur, invalidation visas, modèles de tâches, LPD avancé.
+**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — Type → Template → Instance. Édition par section ; Recos `REC-xxxx` ; LPD socle ; réflexion documentée. Routes `/audits` temporaires.
 
-**Relations :** table générique `LienObjet` + section **Éléments associés** (lecture en consultation, édition sur Modifier).
+**Relations :** `LienObjet` + **Éléments associés** unifiés (édition uniquement en mode Modifier de la box).
 
 **Principe Objet ↔ Tâche :** objets métier = structure / pilotage ; tâches = exécution opérationnelle.
 

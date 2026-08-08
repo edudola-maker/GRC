@@ -31,12 +31,14 @@ export function FlashBanner({
     lien: "Lien enregistré.",
     lien_ajoute: "Élément associé.",
     lien_supprime: "Lien retiré.",
-    jalon: "Jalon enregistré.",
     preuve: "Preuve ajoutée.",
     reco: "Recommandation créée.",
     tache: "Tâche créée.",
     note: "Note ajoutée au journal.",
     reouvert: "Conseil rouvert.",
+    brouillon: "Brouillon enregistré.",
+    etape: "Étape mise à jour.",
+    equipe: "Équipe mise à jour.",
   };
 
   return (

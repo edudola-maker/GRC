@@ -127,8 +127,17 @@ export const TYPE_OBJET_LABELS: Record<string, string> = {
   RISQUE: "Risque",
   CONTROLE_SCI: "Contrôle SCI",
   DOCUMENT: "Document",
-  TACHE: "Action",
+  TACHE: "Tâche",
   PROCESSUS: "Processus",
+  PROCESSUS_ETAPE: "Étape de processus",
+};
+
+export const ETAT_SECTION_REDACTION_LABELS: Record<string, string> = {
+  BROUILLON: "Brouillon",
+  FINALISE: "Finalisé",
+  A_VALIDER: "À valider",
+  VALIDE: "Validé",
+  OBSOLETE: "Obsolète",
 };
 
 export const STATUT_PROCESSUS_LABELS: Record<string, string> = {

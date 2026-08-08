@@ -30,13 +30,13 @@ export default async function ProjetsPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [projets, actifs, termines, enRetard, avancementAgg, jalonsAtteints, jalonsTotal] =
+  const [projets, actifs, termines, enRetard, avancementAgg, tachesOuvertes] =
     await Promise.all([
       prisma.projet.findMany({
         where: { uniteId },
         include: {
           responsable: true,
-          _count: { select: { taches: true, jalons: true } },
+          _count: { select: { taches: true } },
         },
         orderBy: [{ statut: "asc" }, { dateEcheance: "asc" }],
       }),
@@ -70,11 +70,12 @@ export default async function ProjetsPage({
         },
         _avg: { avancement: true },
       }),
-      prisma.jalon.count({
-        where: { atteint: true, projet: { archive: false, uniteId } },
-      }),
-      prisma.jalon.count({
-        where: { projet: { archive: false, uniteId } },
+      prisma.tache.count({
+        where: {
+          uniteId,
+          projetId: { not: null },
+          statut: { notIn: ["TERMINE", "ANNULE"] },
+        },
       }),
     ]);
 
@@ -103,7 +104,6 @@ export default async function ProjetsPage({
       tags: p.tags,
       dateEcheance: p.dateEcheance?.toISOString() ?? null,
       nbTaches: p._count.taches,
-      nbJalons: p._count.jalons,
       archive: p.archive,
       urgence: urgenceEcheance(p.dateEcheance, clos || p.archive),
       estActif,
@@ -133,10 +133,7 @@ export default async function ProjetsPage({
         <KpiStat value={termines} label="Clôturés" />
         <KpiStat value={enRetard} label="En retard" />
         <KpiStat value={`${avancementGlobal}%`} label="Avancement global" />
-        <KpiStat
-          value={`${jalonsAtteints}/${jalonsTotal}`}
-          label="Jalons atteints"
-        />
+        <KpiStat value={tachesOuvertes} label="Tâches ouvertes" />
         <KpiStat
           value={
             <>

@@ -1,17 +1,19 @@
-import Link from "next/link";
-import { deleteLienObjet } from "@/app/liens/actions";
 import { AssocierObjetForm } from "@/components/liens/AssocierObjetForm";
+import {
+  ElementsAssociesList,
+  type ElementAssocieItem,
+} from "@/components/liens/ElementsAssociesList";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import {
   TYPE_OBJET_LABELS,
   listCandidatsLien,
   listLiensFor,
-  type LienVue,
 } from "@/lib/liens";
 import type { TypeObjetMetier } from "@/generated/prisma/client";
 
 const LINKABLE: TypeObjetMetier[] = [
   "PROCESSUS",
+  "PROCESSUS_ETAPE",
   "PROJET",
   "CONSEIL",
   "MISSION",
@@ -22,9 +24,9 @@ const LINKABLE: TypeObjetMetier[] = [
 ];
 
 /**
- * Section Éléments associés.
- * Consultation : liste navigable uniquement.
- * Édition : associer / retirer (page Modifier).
+ * Section Éléments associés unifiée (type · code · nom).
+ * Consultation : liste + filtre par type.
+ * Édition : uniquement quand `editable` (mode Modifier de la box).
  */
 export async function ElementsAssocies({
   uniteId,
@@ -32,16 +34,43 @@ export async function ElementsAssocies({
   id,
   retour,
   editable = false,
+  /** Éléments « owned » (ex. tâches du projet) fusionnés dans la même liste. */
+  ownedItems = [],
+  wrapInSection = true,
+  redactionBadge,
 }: {
   uniteId: string;
   type: TypeObjetMetier;
   id: string;
   retour: string;
-  /** false = mode consultation (défaut) */
   editable?: boolean;
+  ownedItems?: ElementAssocieItem[];
+  /** false = contenu seul (déjà dans EditableSection). */
+  wrapInSection?: boolean;
+  redactionBadge?: string | null;
 }) {
   const liens = await listLiensFor(uniteId, type, id);
   const otherTypes = LINKABLE.filter((t) => t !== type);
+
+  const fromLiens: ElementAssocieItem[] = liens.map((lien) => ({
+    key: `lien-${lien.lienId}`,
+    type: lien.autre.type,
+    code: lien.autre.code,
+    titre: lien.autre.titre,
+    href: lien.autre.href,
+    libelle: lien.libelle,
+    lienId: lien.lienId,
+  }));
+
+  // Owned d’abord (ex. tâches du projet), puis liens — dédup par type+href.
+  const seen = new Set<string>();
+  const items: ElementAssocieItem[] = [];
+  for (const item of [...ownedItems, ...fromLiens]) {
+    const sig = `${item.type}:${item.href}`;
+    if (seen.has(sig)) continue;
+    seen.add(sig);
+    items.push(item);
+  }
 
   const candidatsParType: Record<string, Array<{ id: string; label: string }>> =
     {};
@@ -57,33 +86,19 @@ export async function ElementsAssocies({
     );
   }
 
-  return (
-    <CollapsibleSection
-      title="Éléments associés"
-      defaultOpen={editable || liens.length > 0}
-      badge={`${liens.length}`}
-      className="elements-associes"
-    >
+  const body = (
+    <>
       <p className="muted" style={{ marginTop: 0 }}>
         {editable
-          ? "Liez librement cet objet à d’autres objets métier."
-          : "Navigation croisée — pour modifier les liens, utilisez Modifier."}
+          ? "Liez librement cet objet à d’autres objets métier (y compris une étape de processus)."
+          : "Relations libres — type, code et nom. Passez en Modifier pour associer ou retirer."}
       </p>
 
-      {liens.length === 0 ? (
-        <p className="empty">Aucun élément associé pour le moment.</p>
-      ) : (
-        <ul className="elements-associes__list">
-          {liens.map((lien) => (
-            <LienRow
-              key={lien.lienId}
-              lien={lien}
-              retour={retour}
-              editable={editable}
-            />
-          ))}
-        </ul>
-      )}
+      <ElementsAssociesList
+        items={items}
+        retour={retour}
+        editable={editable}
+      />
 
       {editable ? (
         <AssocierObjetForm
@@ -94,36 +109,25 @@ export async function ElementsAssocies({
           candidatsParType={candidatsParType}
         />
       ) : null}
+    </>
+  );
+
+  if (!wrapInSection) return body;
+
+  const badgeParts = [`${items.length}`];
+  if (redactionBadge) badgeParts.push(redactionBadge);
+
+  return (
+    <CollapsibleSection
+      title="Éléments associés"
+      defaultOpen={editable || items.length > 0}
+      badge={badgeParts.join(" · ")}
+      className="elements-associes"
+    >
+      {body}
     </CollapsibleSection>
   );
 }
 
-function LienRow({
-  lien,
-  retour,
-  editable,
-}: {
-  lien: LienVue;
-  retour: string;
-  editable: boolean;
-}) {
-  return (
-    <li className="elements-associes__row">
-      <Link href={lien.autre.href} className="elements-associes__link">
-        <span className="inventory-cell__value--code">{lien.autre.code}</span>
-        <span className="elements-associes__title">{lien.autre.titre}</span>
-        <span className="muted">{TYPE_OBJET_LABELS[lien.autre.type]}</span>
-        {lien.libelle ? <span className="muted">{lien.libelle}</span> : null}
-      </Link>
-      {editable ? (
-        <form action={deleteLienObjet}>
-          <input type="hidden" name="retour" value={retour} />
-          <input type="hidden" name="id" value={lien.lienId} />
-          <button type="submit" className="btn btn--ghost">
-            Retirer
-          </button>
-        </form>
-      ) : null}
-    </li>
-  );
-}
+export { TYPE_OBJET_LABELS };
+export type { ElementAssocieItem };

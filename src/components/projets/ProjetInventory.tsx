@@ -28,7 +28,6 @@ export type ProjetInventoryItem = {
   tags: string | null;
   dateEcheance: string | null;
   nbTaches: number;
-  nbJalons: number;
   archive: boolean;
   urgence: "retard" | "bientot" | "a_venir" | "neutre";
   estActif: boolean;
@@ -239,7 +238,7 @@ export function ProjetInventory({
                   { value: p.responsableNom },
                   { value: formatDateDot(p.dateEcheance) },
                   {
-                    value: `${p.avancement}% · ${p.nbTaches} tâche${p.nbTaches > 1 ? "s" : ""}${p.nbJalons > 0 ? ` · ${p.nbJalons} jalon${p.nbJalons > 1 ? "s" : ""}` : ""}`,
+                    value: `${p.avancement}% · ${p.nbTaches} tâche${p.nbTaches > 1 ? "s" : ""}`,
                   },
                   { value: p.tags || "—" },
                 ]}

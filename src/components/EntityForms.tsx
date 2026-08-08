@@ -40,6 +40,7 @@ type ProjetValues = {
   priorite?: string;
   avancement?: number;
   commentaires?: string | null;
+  reflexion?: string | null;
 };
 
 type TacheValues = {
@@ -198,140 +199,188 @@ export function ProjetForm({
   values,
   cancelHref,
   submitLabel,
+  section = "ALL",
+  draftActions = false,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   values?: ProjetValues;
   cancelHref: string;
   submitLabel: string;
+  /** ALL = création ; sinon une box d’édition. */
+  section?:
+    | "ALL"
+    | "INFOS_GENERALES"
+    | "PILOTAGE"
+    | "REFLEXION"
+    | "TAGS";
+  draftActions?: boolean;
 }) {
+  const showInfos = section === "ALL" || section === "INFOS_GENERALES";
+  const showPilotage = section === "ALL" || section === "PILOTAGE";
+  const showReflexion = section === "ALL" || section === "REFLEXION";
+  const showTags = section === "ALL" || section === "TAGS";
+
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {section !== "ALL" ? (
+        <input type="hidden" name="sectionKey" value={section} />
+      ) : null}
 
-      <FormSection title="Description">
-        <Field label="Nom du projet *" htmlFor="nom">
-          <input
-            id="nom"
-            name="nom"
-            required
-            defaultValue={values?.nom ?? ""}
-            placeholder="Ex. Modernisation des procédures"
-          />
-        </Field>
-
-        <Field label="Description" htmlFor="description">
-          <textarea
-            id="description"
-            name="description"
-            rows={3}
-            defaultValue={values?.description ?? ""}
-          />
-        </Field>
-      </FormSection>
-
-      <FormSection title="Pilotage">
-        <div className="form-grid">
-          <Field label="Responsable" htmlFor="responsableId">
-            <select
-              id="responsableId"
-              name="responsableId"
+      {showInfos ? (
+        <FormSection title="Informations générales" defaultOpen>
+          <Field label="Nom du projet *" htmlFor="nom">
+            <input
+              id="nom"
+              name="nom"
               required
-              defaultValue={values?.responsableId ?? users[0]?.id}
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nom}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Statut" htmlFor="statut">
-            <select
-              id="statut"
-              name="statut"
-              defaultValue={values?.statut ?? "IDEE"}
-            >
-              {STATUT_PROJET_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Priorité" htmlFor="priorite">
-            <select
-              id="priorite"
-              name="priorite"
-              defaultValue={values?.priorite ?? "MOYENNE"}
-            >
-              {PRIORITE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Avancement (%)" htmlFor="avancement">
-            <input
-              id="avancement"
-              name="avancement"
-              type="number"
-              min={0}
-              max={100}
-              defaultValue={values?.avancement ?? 0}
+              defaultValue={values?.nom ?? ""}
+              placeholder="Ex. Modernisation des procédures"
             />
           </Field>
-
-          <Field label="Date de début" htmlFor="dateDebut">
-            <input
-              id="dateDebut"
-              name="dateDebut"
-              type="date"
-              defaultValue={toDateInputValue(values?.dateDebut)}
+          <Field label="Description" htmlFor="description">
+            <textarea
+              id="description"
+              name="description"
+              rows={3}
+              defaultValue={values?.description ?? ""}
             />
           </Field>
+        </FormSection>
+      ) : null}
 
-          <Field label="Date d'échéance" htmlFor="dateEcheance">
-            <input
-              id="dateEcheance"
-              name="dateEcheance"
-              type="date"
-              defaultValue={toDateInputValue(values?.dateEcheance)}
+      {showPilotage ? (
+        <FormSection title="Pilotage & dates" defaultOpen>
+          <div className="form-grid">
+            <Field label="Responsable" htmlFor="responsableId">
+              <select
+                id="responsableId"
+                name="responsableId"
+                required
+                defaultValue={values?.responsableId ?? users[0]?.id}
+              >
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nom}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Statut" htmlFor="statut">
+              <select
+                id="statut"
+                name="statut"
+                defaultValue={values?.statut ?? "IDEE"}
+              >
+                {STATUT_PROJET_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Priorité" htmlFor="priorite">
+              <select
+                id="priorite"
+                name="priorite"
+                defaultValue={values?.priorite ?? "MOYENNE"}
+              >
+                {PRIORITE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Avancement (%)" htmlFor="avancement">
+              <input
+                id="avancement"
+                name="avancement"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={values?.avancement ?? 0}
+              />
+            </Field>
+            <Field label="Date de début" htmlFor="dateDebut">
+              <input
+                id="dateDebut"
+                name="dateDebut"
+                type="date"
+                defaultValue={toDateInputValue(values?.dateDebut)}
+              />
+            </Field>
+            <Field label="Date d'échéance" htmlFor="dateEcheance">
+              <input
+                id="dateEcheance"
+                name="dateEcheance"
+                type="date"
+                defaultValue={toDateInputValue(values?.dateEcheance)}
+              />
+            </Field>
+          </div>
+          <Field label="Commentaires" htmlFor="commentaires">
+            <textarea
+              id="commentaires"
+              name="commentaires"
+              rows={2}
+              defaultValue={values?.commentaires ?? ""}
             />
           </Field>
+        </FormSection>
+      ) : null}
+
+      {showReflexion ? (
+        <FormSection title="Réflexion / analyse" defaultOpen={section !== "ALL"}>
+          <Field
+            label="Réflexion / analyse"
+            htmlFor="reflexion"
+            hint="Raisonnement distinct du journal d’activité."
+          >
+            <textarea
+              id="reflexion"
+              name="reflexion"
+              rows={4}
+              defaultValue={values?.reflexion ?? ""}
+            />
+          </Field>
+        </FormSection>
+      ) : null}
+
+      {showTags ? (
+        <FormSection title="Tags" defaultOpen={section !== "ALL"}>
+          <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
+            <input
+              id="tags"
+              name="tags"
+              defaultValue={values?.tags ?? ""}
+              placeholder="Ex. gouvernance, SCI"
+            />
+          </Field>
+        </FormSection>
+      ) : null}
+
+      {draftActions ? (
+        <div className="form-actions">
+          <SubmitButton name="intent" value="brouillon" variant="ghost">
+            Enregistrer comme brouillon
+          </SubmitButton>
+          <SubmitButton name="intent" value="finaliser">
+            Finaliser
+          </SubmitButton>
+          <BtnLink href={cancelHref} variant="ghost">
+            Annuler
+          </BtnLink>
         </div>
-
-        <Field label="Commentaires" htmlFor="commentaires">
-          <textarea
-            id="commentaires"
-            name="commentaires"
-            rows={2}
-            defaultValue={values?.commentaires ?? ""}
-          />
-        </Field>
-      </FormSection>
-
-      <FormSection title="Tags" defaultOpen={false}>
-        <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
-          <input
-            id="tags"
-            name="tags"
-            defaultValue={values?.tags ?? ""}
-            placeholder="Ex. gouvernance, SCI"
-          />
-        </Field>
-      </FormSection>
-
-      <div className="form-actions">
-        <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
-          Annuler
-        </BtnLink>
-      </div>
+      ) : (
+        <div className="form-actions">
+          <SubmitButton>{submitLabel}</SubmitButton>
+          <BtnLink href={cancelHref} variant="ghost">
+            Annuler
+          </BtnLink>
+        </div>
+      )}
     </form>
   );
 }
@@ -1352,6 +1401,8 @@ export function MissionForm({
   types,
   templates,
   descriptifs,
+  draftActions = false,
+  sectionKey,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1361,6 +1412,8 @@ export function MissionForm({
   types: MissionTypeOpt[];
   templates?: MissionTemplateOpt[];
   descriptifs?: MissionDescriptifOpt[];
+  draftActions?: boolean;
+  sectionKey?: string;
 }) {
   const defaultTypeId = values?.typeId ?? types[0]?.id ?? "";
   const templatesForType = (templates ?? []).filter(
@@ -1373,6 +1426,9 @@ export function MissionForm({
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {sectionKey ? (
+        <input type="hidden" name="sectionKey" value={sectionKey} />
+      ) : null}
 
       <FormSection title="Description">
         <Field label="Titre *" htmlFor="titre">
@@ -1555,12 +1611,26 @@ export function MissionForm({
         </Field>
       </FormSection>
 
-      <div className="form-actions">
-        <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
-          Annuler
-        </BtnLink>
-      </div>
+      {draftActions ? (
+        <div className="form-actions">
+          <SubmitButton name="intent" value="brouillon" variant="ghost">
+            Enregistrer comme brouillon
+          </SubmitButton>
+          <SubmitButton name="intent" value="finaliser">
+            Finaliser
+          </SubmitButton>
+          <BtnLink href={cancelHref} variant="ghost">
+            Annuler
+          </BtnLink>
+        </div>
+      ) : (
+        <div className="form-actions">
+          <SubmitButton>{submitLabel}</SubmitButton>
+          <BtnLink href={cancelHref} variant="ghost">
+            Annuler
+          </BtnLink>
+        </div>
+      )}
     </form>
   );
 }
@@ -1574,158 +1644,151 @@ export function ProcessusForm({
   values,
   cancelHref,
   submitLabel,
-  parentProcessus,
+  section = "ALL",
+  draftActions = false,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   values?: ProcessusValues;
   cancelHref: string;
   submitLabel: string;
-  parentProcessus?: Opt[];
+  /** ALL = création ; sinon une box d’édition. */
+  section?: "ALL" | "INFOS_GENERALES" | "LPD";
+  draftActions?: boolean;
 }) {
-  const parentOptions = (parentProcessus ?? []).filter(
-    (p) => p.id !== values?.id,
-  );
+  const showInfos = section === "ALL" || section === "INFOS_GENERALES";
+  const showLpd = section === "ALL" || section === "LPD";
 
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {section !== "ALL" ? (
+        <input type="hidden" name="sectionKey" value={section} />
+      ) : null}
 
-      <FormSection title="Description">
-        <Field label="Nom *" htmlFor="nom">
-          <input
-            id="nom"
-            name="nom"
-            required
-            defaultValue={values?.nom ?? ""}
-            placeholder="Ex. Gestion des accès applicatifs"
-          />
-        </Field>
-
-        <Field label="Description" htmlFor="description">
-          <textarea
-            id="description"
-            name="description"
-            rows={3}
-            defaultValue={values?.description ?? ""}
-          />
-        </Field>
-
-        <Field
-          label="Référence Confluence"
-          htmlFor="reference"
-          hint="URL vers la page Confluence du processus."
-        >
-          <input
-            id="reference"
-            name="reference"
-            defaultValue={values?.reference ?? ""}
-            placeholder="https://confluence…"
-          />
-        </Field>
-      </FormSection>
-
-      <FormSection title="Pilotage">
-        <div className="form-grid">
-          <Field label="Responsable" htmlFor="responsableId">
-            <select
-              id="responsableId"
-              name="responsableId"
+      {showInfos ? (
+        <FormSection title="Informations" defaultOpen>
+          <Field label="Nom *" htmlFor="nom">
+            <input
+              id="nom"
+              name="nom"
               required
-              defaultValue={values?.responsableId ?? users[0]?.id}
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nom}
-                </option>
-              ))}
-            </select>
+              defaultValue={values?.nom ?? ""}
+              placeholder="Ex. Réaliser un audit"
+            />
           </Field>
-          <Field label="Statut" htmlFor="statut">
+          <Field
+            label="Description courte"
+            htmlFor="description"
+            hint="Le détail procédural reste dans Confluence."
+          >
+            <textarea
+              id="description"
+              name="description"
+              rows={3}
+              defaultValue={values?.description ?? ""}
+            />
+          </Field>
+          <Field
+            label="Lien Confluence"
+            htmlFor="reference"
+            hint="Procédure détaillée (comment on le fait)."
+          >
+            <input
+              id="reference"
+              name="reference"
+              defaultValue={values?.reference ?? ""}
+              placeholder="https://confluence…"
+            />
+          </Field>
+          <div className="form-grid">
+            <Field label="Responsable" htmlFor="responsableId">
+              <select
+                id="responsableId"
+                name="responsableId"
+                required
+                defaultValue={values?.responsableId ?? users[0]?.id}
+              >
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.nom}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Statut" htmlFor="statut">
+              <select
+                id="statut"
+                name="statut"
+                defaultValue={values?.statut ?? "ACTIF"}
+              >
+                {STATUT_PROCESSUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </FormSection>
+      ) : null}
+
+      {showLpd ? (
+        <FormSection
+          title="Protection des données & tags"
+          defaultOpen={section !== "ALL"}
+        >
+          <label className="check-field">
+            <input
+              type="checkbox"
+              name="contientDonneesPersonnelles"
+              value="1"
+              defaultChecked={values?.contientDonneesPersonnelles ?? false}
+            />
+            Contient des données personnelles
+          </label>
+          <Field
+            label="Niveau de confidentialité"
+            htmlFor="niveauConfidentialite"
+          >
             <select
-              id="statut"
-              name="statut"
-              defaultValue={values?.statut ?? "ACTIF"}
+              id="niveauConfidentialite"
+              name="niveauConfidentialite"
+              defaultValue={values?.niveauConfidentialite ?? "INTERNE"}
             >
-              {STATUT_PROCESSUS_OPTIONS.map((o) => (
+              {NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Criticité (1–5)" htmlFor="criticite">
-            <select
-              id="criticite"
-              name="criticite"
-              defaultValue={
-                values?.criticite != null ? String(values.criticite) : ""
-              }
-            >
-              <option value="">—</option>
-              {ECHELLE_RISQUE.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
+          <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
+            <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
           </Field>
-          {parentOptions.length > 0 ? (
-            <Field label="Processus parent" htmlFor="parentId">
-              <select
-                id="parentId"
-                name="parentId"
-                defaultValue={values?.parentId ?? ""}
-              >
-                <option value="">Aucun (racine)</option>
-                {parentOptions.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nom}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
+        </FormSection>
+      ) : null}
+
+      {draftActions ? (
+        <div className="form-actions">
+          <SubmitButton name="intent" value="brouillon" variant="ghost">
+            Enregistrer comme brouillon
+          </SubmitButton>
+          <SubmitButton name="intent" value="finaliser">
+            Finaliser
+          </SubmitButton>
+          <BtnLink href={cancelHref} variant="ghost">
+            Annuler
+          </BtnLink>
         </div>
-      </FormSection>
-
-      <FormSection title="Protection des données (LPD)" defaultOpen={false}>
-        <label className="check-field">
-          <input
-            type="checkbox"
-            name="contientDonneesPersonnelles"
-            value="1"
-            defaultChecked={values?.contientDonneesPersonnelles ?? false}
-          />
-          Contient des données personnelles
-        </label>
-        <Field label="Niveau de confidentialité" htmlFor="niveauConfidentialite">
-          <select
-            id="niveauConfidentialite"
-            name="niveauConfidentialite"
-            defaultValue={values?.niveauConfidentialite ?? "INTERNE"}
-          >
-            {NIVEAU_CONFIDENTIALITE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </FormSection>
-
-      <FormSection title="Tags" defaultOpen={false}>
-        <Field label="Tags" htmlFor="tags" hint="Séparés par des virgules">
-          <input id="tags" name="tags" defaultValue={values?.tags ?? ""} />
-        </Field>
-      </FormSection>
-
-      <div className="form-actions">
-        <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
-          Annuler
-        </BtnLink>
-      </div>
+      ) : (
+        <div className="form-actions">
+          <SubmitButton>{submitLabel}</SubmitButton>
+          <BtnLink href={cancelHref} variant="ghost">
+            Annuler
+          </BtnLink>
+        </div>
+      )}
     </form>
   );
 }

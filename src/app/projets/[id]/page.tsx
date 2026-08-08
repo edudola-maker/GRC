@@ -3,62 +3,80 @@ import { notFound } from "next/navigation";
 import {
   ConfirmActionButton,
   ConfirmDeleteButton,
-  SubmitButton,
 } from "@/components/FormControls";
+import { ProjetForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveProjet,
-  createJalon,
-  deleteJalon,
   deleteProjet,
-  linkProjetDocument,
-  setProjetMembres,
-  toggleJalon,
   unarchiveProjet,
-  unlinkProjetDocument,
+  updateProjet,
 } from "../actions";
 import {
-  CATEGORIE_TACHE_LABELS,
   PRIORITE_LABELS,
   STATUT_PROJET_LABELS,
-  STATUT_TACHE_LABELS,
-  TYPE_DOCUMENT_LABELS,
   formatDate,
-  urgenceEcheance,
 } from "@/lib/labels";
-import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
-import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
-import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import {
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
+import {
+  ElementsAssocies,
+  type ElementAssocieItem,
+} from "@/components/liens/ElementsAssocies";
+import {
+  EditableSection,
+  SectionSaveActions,
+} from "@/components/module/EditableSection";
+import { listSectionRedactions } from "@/lib/section-redaction";
+import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
+
+const EDIT_SECTIONS = [
+  "INFOS_GENERALES",
+  "PILOTAGE",
+  "EQUIPE",
+  "ELEMENTS_ASSOCIES",
+  "REFLEXION",
+  "TAGS",
+] as const;
+
+type EditSection = (typeof EDIT_SECTIONS)[number];
+
+function parseEdit(raw: string | undefined): EditSection | null {
+  if (!raw) return null;
+  return (EDIT_SECTIONS as readonly string[]).includes(raw)
+    ? (raw as EditSection)
+    : null;
+}
 
 export default async function ProjetDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
-  const [projet, users, documentsDispo] = await Promise.all([
+
+  const [projet, users, redactions] = await Promise.all([
     prisma.projet.findUnique({
       where: { id },
       include: {
         responsable: true,
         creePar: true,
         modifiePar: true,
+        unite: true,
         membres: { include: { utilisateur: true } },
-        jalons: { orderBy: { dateEcheance: "asc" } },
-        documents: {
-          include: { document: true },
-          orderBy: { creeLe: "desc" },
-        },
+        documents: { include: { document: true } },
         taches: {
           include: { responsable: true },
           orderBy: { dateEcheance: "asc" },
@@ -66,19 +84,34 @@ export default async function ProjetDetailPage({
       },
     }),
     listUtilisateursActifsForCurrentUnite(),
-    prisma.document.findMany({
-      where: { archive: false, uniteId },
-      orderBy: { nom: "asc" },
-      select: { id: true, nom: true, typeDocument: true },
-    }),
+    listSectionRedactions("PROJET", id),
   ]);
 
   if (!projet) notFound();
 
+  const canEdit = !projet.archive;
+  const baseHref = `/projets/${projet.id}`;
   const membreIds = new Set(projet.membres.map((m) => m.utilisateurId));
-  const linkedDocIds = new Set(projet.documents.map((d) => d.documentId));
-  const docsDisponibles = documentsDispo.filter((d) => !linkedDocIds.has(d.id));
-  const jalonsAtteints = projet.jalons.filter((j) => j.atteint).length;
+  const tags = parseTags(projet.tags);
+
+  const ownedItems: ElementAssocieItem[] = [
+    ...projet.taches.map((t) => ({
+      key: `tache-${t.id}`,
+      type: "TACHE" as const,
+      code: "—",
+      titre: t.titre,
+      href: `/taches/${t.id}`,
+      owned: true,
+    })),
+    ...projet.documents.map((d) => ({
+      key: `doc-${d.document.id}`,
+      type: "DOCUMENT" as const,
+      code: d.document.code,
+      titre: d.document.nom,
+      href: `/documents/${d.document.id}`,
+      owned: true,
+    })),
+  ];
 
   return (
     <>
@@ -88,10 +121,7 @@ export default async function ProjetDetailPage({
         description={projet.description ?? "Aucune description."}
         actions={
           <>
-            {!projet.archive ? (
-              <BtnLink href={`/projets/${projet.id}/modifier`}>Modifier</BtnLink>
-            ) : null}
-            {!projet.archive ? (
+            {canEdit ? (
               <BtnLink
                 href={`/taches/nouvelle?projetId=${projet.id}`}
                 variant="ghost"
@@ -140,12 +170,6 @@ export default async function ProjetDetailPage({
           Avancement
         </div>
         <div className="stat">
-          <strong>
-            {jalonsAtteints}/{projet.jalons.length}
-          </strong>
-          Jalons atteints
-        </div>
-        <div className="stat">
           <strong>{projet.taches.length}</strong>
           Tâches
         </div>
@@ -155,271 +179,237 @@ export default async function ProjetDetailPage({
         </div>
       </div>
 
-      <div className="detail-grid">
-        <CollapsibleSection title="Informations" defaultOpen>
-          <dl className="kv">
-            <div>
-              <dt>Code</dt>
-              <dd>{projet.code}</dd>
-            </div>
-            <div>
-              <dt>Responsable</dt>
-              <dd>{projet.responsable.nom}</dd>
-            </div>
-            <div>
-              <dt>Statut</dt>
-              <dd>{STATUT_PROJET_LABELS[projet.statut]}</dd>
-            </div>
-            <div>
-              <dt>Priorité</dt>
-              <dd>{PRIORITE_LABELS[projet.priorite]}</dd>
-            </div>
-            <div>
-              <dt>Avancement</dt>
-              <dd>{projet.avancement} %</dd>
-            </div>
-            <div>
-              <dt>Début</dt>
-              <dd>{formatDate(projet.dateDebut)}</dd>
-            </div>
-            <div>
-              <dt>Échéance</dt>
-              <dd>{formatDate(projet.dateEcheance)}</dd>
-            </div>
-          </dl>
-          {projet.commentaires ? (
-            <p className="detail-note">{projet.commentaires}</p>
-          ) : null}
-          <p className="detail-trace">
-            Créé par {projet.creePar.nom} · Modifié par {projet.modifiePar.nom} ·{" "}
-            {formatDate(projet.modifieLe)}
-          </p>
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Équipe projet" defaultOpen>
-          <p className="muted" style={{ marginBottom: "0.65rem" }}>
-            Responsable : {projet.responsable.nom}. Cochez les membres
-            éventuels.
-          </p>
-          {!projet.archive ? (
-            <form action={setProjetMembres}>
-              <input type="hidden" name="projetId" value={projet.id} />
-              <ul className="check-list">
-                {users
-                  .filter((u) => u.id !== projet.responsableId)
-                  .map((u) => (
-                    <li key={u.id}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          name="membreIds"
-                          value={u.id}
-                          defaultChecked={membreIds.has(u.id)}
-                        />
-                        {u.nom}
-                      </label>
-                    </li>
-                  ))}
-              </ul>
-              <div className="form-actions" style={{ marginTop: "0.65rem" }}>
-                <SubmitButton>Enregistrer l&apos;équipe</SubmitButton>
-              </div>
-            </form>
-          ) : (
-            <ul className="entity-list">
-              {projet.membres.length === 0 ? (
-                <li>
-                  <p className="empty">Aucun membre additionnel.</p>
-                </li>
-              ) : (
-                projet.membres.map((m) => (
-                  <li key={m.id}>
-                    <span className="entity-row__main">
-                      <strong>{m.utilisateur.nom}</strong>
-                    </span>
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
-        </CollapsibleSection>
-      </div>
-
-      <div className="detail-grid" style={{ marginTop: "1rem" }}>
-        <CollapsibleSection
-          title="Jalons"
-          badge={projet.jalons.length}
-          defaultOpen
-        >
-          {!projet.archive ? (
-            <form action={createJalon} className="inline-form">
-              <input type="hidden" name="projetId" value={projet.id} />
-              <div className="inline-form__row">
-                <label className="field" htmlFor="jalon-nom">
-                  <span className="field__label">Nom *</span>
-                  <input
-                    id="jalon-nom"
-                    name="nom"
-                    required
-                    placeholder="Ex. Livraison V1"
-                  />
-                </label>
-                <label className="field" htmlFor="jalon-date">
-                  <span className="field__label">Échéance</span>
-                  <input id="jalon-date" name="dateEcheance" type="date" />
-                </label>
-                <SubmitButton>Ajouter</SubmitButton>
-              </div>
-            </form>
-          ) : null}
-          {projet.jalons.length === 0 ? (
-            <p className="empty">Aucun jalon.</p>
-          ) : (
-            <ul className="jalon-list">
-              {projet.jalons.map((j) => (
-                <li key={j.id} className={j.atteint ? "is-done" : undefined}>
-                  <div>
-                    <strong>{j.nom}</strong>
-                    <span className="entity-row__meta">
-                      {" "}
-                      {formatDate(j.dateEcheance)}
-                      {j.atteint && j.dateAtteinte
-                        ? ` · Atteint le ${formatDate(j.dateAtteinte)}`
-                        : ""}
-                    </span>
-                  </div>
-                  {!projet.archive ? (
-                    <div className="form-actions">
-                      <form action={toggleJalon}>
-                        <input type="hidden" name="id" value={j.id} />
-                        <SubmitButton variant="ghost" pendingLabel="…">
-                          {j.atteint ? "Rouvrir" : "Atteint"}
-                        </SubmitButton>
-                      </form>
-                      <form action={deleteJalon}>
-                        <input type="hidden" name="id" value={j.id} />
-                        <SubmitButton variant="danger" pendingLabel="…">
-                          ×
-                        </SubmitButton>
-                      </form>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Documents liés"
-          badge={projet.documents.length}
-          defaultOpen
-        >
-          {!projet.archive && docsDisponibles.length > 0 ? (
-            <form action={linkProjetDocument} className="inline-form">
-              <input type="hidden" name="projetId" value={projet.id} />
-              <div className="inline-form__row">
-                <label className="field" htmlFor="documentId">
-                  <span className="field__label">Document</span>
-                  <select id="documentId" name="documentId" required defaultValue="">
-                    <option value="" disabled>
-                      Choisir…
-                    </option>
-                    {docsDisponibles.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nom} ({TYPE_DOCUMENT_LABELS[d.typeDocument]})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <SubmitButton>Lier</SubmitButton>
-              </div>
-            </form>
-          ) : null}
-          {projet.documents.length === 0 ? (
-            <p className="empty">Aucun document lié.</p>
-          ) : (
-            <ul className="entity-list">
-              {projet.documents.map((link) => (
-                <li key={link.id}>
-                  <div className="entity-row">
-                    <div className="entity-row__main">
-                      <Link href={`/documents/${link.document.id}`}>
-                        <strong>{link.document.nom}</strong>
-                      </Link>
-                      <span className="entity-row__meta">
-                        {TYPE_DOCUMENT_LABELS[link.document.typeDocument]}
-                        {link.document.version
-                          ? ` · v${link.document.version}`
-                          : ""}
-                      </span>
-                    </div>
-                    {!projet.archive ? (
-                      <form action={unlinkProjetDocument}>
-                        <input type="hidden" name="id" value={link.id} />
-                        <SubmitButton variant="ghost" pendingLabel="…">
-                          Retirer
-                        </SubmitButton>
-                      </form>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CollapsibleSection>
-      </div>
-
-      <CollapsibleSection
-        title="Tâches"
-        badge={projet.taches.length}
+      <EditableSection
+        title="Informations générales"
+        sectionKey="INFOS_GENERALES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("INFOS_GENERALES")}
         defaultOpen
+        editChildren={
+          <ProjetForm
+            action={updateProjet}
+            users={users}
+            values={projet}
+            cancelHref={baseHref}
+            submitLabel="Finaliser"
+            section="INFOS_GENERALES"
+            draftActions
+          />
+        }
       >
-        {projet.taches.length === 0 ? (
-          <p className="empty">Aucune tâche rattachée.</p>
+        <dl className="kv">
+          <div>
+            <dt>Code</dt>
+            <dd>{projet.code}</dd>
+          </div>
+          <div>
+            <dt>Unité</dt>
+            <dd>{projet.unite.nom}</dd>
+          </div>
+          <div>
+            <dt>Description</dt>
+            <dd>{projet.description ?? "—"}</dd>
+          </div>
+        </dl>
+        <p className="detail-trace">
+          Créé par {projet.creePar.nom} · Modifié par {projet.modifiePar.nom} ·{" "}
+          {formatDate(projet.modifieLe)}
+        </p>
+      </EditableSection>
+
+      <EditableSection
+        title="Pilotage & dates"
+        sectionKey="PILOTAGE"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("PILOTAGE")}
+        defaultOpen
+        editChildren={
+          <ProjetForm
+            action={updateProjet}
+            users={users}
+            values={projet}
+            cancelHref={baseHref}
+            submitLabel="Finaliser"
+            section="PILOTAGE"
+            draftActions
+          />
+        }
+      >
+        <dl className="kv">
+          <div>
+            <dt>Responsable</dt>
+            <dd>{projet.responsable.nom}</dd>
+          </div>
+          <div>
+            <dt>Statut</dt>
+            <dd>{STATUT_PROJET_LABELS[projet.statut]}</dd>
+          </div>
+          <div>
+            <dt>Priorité</dt>
+            <dd>{PRIORITE_LABELS[projet.priorite]}</dd>
+          </div>
+          <div>
+            <dt>Avancement</dt>
+            <dd>{projet.avancement} %</dd>
+          </div>
+          <div>
+            <dt>Début</dt>
+            <dd>{formatDate(projet.dateDebut)}</dd>
+          </div>
+          <div>
+            <dt>Échéance</dt>
+            <dd>{formatDate(projet.dateEcheance)}</dd>
+          </div>
+        </dl>
+        {projet.commentaires ? (
+          <p className="detail-note">{projet.commentaires}</p>
+        ) : null}
+      </EditableSection>
+
+      <EditableSection
+        title="Équipe projet"
+        sectionKey="EQUIPE"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("EQUIPE")}
+        defaultOpen={false}
+        editChildren={
+          <form action={updateProjet} className="entity-form">
+            <input type="hidden" name="id" value={projet.id} />
+            <input type="hidden" name="sectionKey" value="EQUIPE" />
+            <ul className="check-list">
+              {users
+                .filter((u) => u.id !== projet.responsableId)
+                .map((u) => (
+                  <li key={u.id}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="membreIds"
+                        value={u.id}
+                        defaultChecked={membreIds.has(u.id)}
+                      />
+                      {u.nom}
+                    </label>
+                  </li>
+                ))}
+            </ul>
+            <SectionSaveActions cancelHref={baseHref} />
+          </form>
+        }
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Responsable : {projet.responsable.nom}
+          {projet.membres.length
+            ? ` · Membres : ${projet.membres.map((m) => m.utilisateur.nom).join(", ")}`
+            : " · Aucun membre additionnel."}
+        </p>
+      </EditableSection>
+
+      <EditableSection
+        title="Éléments associés"
+        sectionKey="ELEMENTS_ASSOCIES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("ELEMENTS_ASSOCIES")}
+        defaultOpen
+        badge={`${ownedItems.length}`}
+        editChildren={
+          <>
+            <ElementsAssocies
+              uniteId={uniteId}
+              type="PROJET"
+              id={projet.id}
+              retour={`${baseHref}?edit=ELEMENTS_ASSOCIES`}
+              editable
+              ownedItems={ownedItems}
+              wrapInSection={false}
+            />
+            <p className="muted">
+              Les tâches du projet apparaissent ici.{" "}
+              <Link href={`/taches/nouvelle?projetId=${projet.id}`}>
+                Créer une tâche liée
+              </Link>
+              .
+            </p>
+            <form action={updateProjet} className="entity-form">
+              <input type="hidden" name="id" value={projet.id} />
+              <input type="hidden" name="sectionKey" value="ELEMENTS_ASSOCIES" />
+              <SectionSaveActions cancelHref={baseHref} />
+            </form>
+          </>
+        }
+      >
+        <ElementsAssocies
+          uniteId={uniteId}
+          type="PROJET"
+          id={projet.id}
+          retour={baseHref}
+          editable={false}
+          ownedItems={ownedItems}
+          wrapInSection={false}
+        />
+      </EditableSection>
+
+      <EditableSection
+        title="Réflexion / analyse"
+        sectionKey="REFLEXION"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("REFLEXION")}
+        defaultOpen={Boolean(projet.reflexion)}
+        editChildren={
+          <ProjetForm
+            action={updateProjet}
+            users={users}
+            values={projet}
+            cancelHref={baseHref}
+            submitLabel="Finaliser"
+            section="REFLEXION"
+            draftActions
+          />
+        }
+      >
+        {projet.reflexion ? (
+          <p className="detail-note" style={{ margin: 0 }}>
+            {projet.reflexion}
+          </p>
         ) : (
-          <ul className="entity-list">
-            {projet.taches.map((t) => {
-              const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
-                t.statut,
-              );
-              const urgence = urgenceEcheance(t.dateEcheance, clos);
-              return (
-                <li key={t.id}>
-                  <Link
-                    href={`/taches/${t.id}`}
-                    className={`entity-row entity-row--${urgence}`}
-                  >
-                    <div className="entity-row__main">
-                      <strong>{t.titre}</strong>
-                      <span className="entity-row__meta">
-                        {t.responsable.nom} ·{" "}
-                        {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
-                        {STATUT_TACHE_LABELS[t.statut]}
-                        {urgence === "retard" ? " · En retard" : ""}
-                      </span>
-                    </div>
-                    <span className="entity-row__date">
-                      {formatDate(t.dateEcheance)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <p className="empty">Aucune réflexion documentée.</p>
         )}
-      </CollapsibleSection>
+      </EditableSection>
 
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="PROJET"
-        id={projet.id}
-        retour={`/projets/${projet.id}`}
-      />
-
-      <CollapsibleSection title="Tags" defaultOpen={false}>
-        <p style={{ margin: 0 }}>{projet.tags ?? "Aucun tag."}</p>
-      </CollapsibleSection>
+      <EditableSection
+        title="Tags"
+        sectionKey="TAGS"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("TAGS")}
+        defaultOpen={false}
+        editChildren={
+          <ProjetForm
+            action={updateProjet}
+            users={users}
+            values={projet}
+            cancelHref={baseHref}
+            submitLabel="Finaliser"
+            section="TAGS"
+            draftActions
+          />
+        }
+      >
+        <p style={{ margin: 0 }}>
+          {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
+        </p>
+      </EditableSection>
     </>
   );
 }

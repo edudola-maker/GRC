@@ -9,6 +9,7 @@ import type { TypeObjetMetier } from "@/generated/prisma/client";
 
 const TYPES = new Set<string>([
   "PROCESSUS",
+  "PROCESSUS_ETAPE",
   "PROJET",
   "CONSEIL",
   "MISSION",

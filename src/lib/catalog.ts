@@ -315,15 +315,15 @@ export const MODULE_HELP = {
     sections: [
       {
         heading: "À quoi ça sert ?",
-        body: "Cartographier les processus de l’unité et servir de point d’entrée vers risques, contrôles et documents. La documentation détaillée des procédures reste dans Confluence.",
+        body: "Décrire ce que l’unité fait (processus), pas comment elle le fait (procédure → Confluence). Point d’entrée vers risques, contrôles, documents et missions via Éléments associés.",
       },
       {
         heading: "Que saisir ?",
-        body: "Code (PRC-xxxx), nom, description synthétique, responsable, statut, criticité optionnelle, lien Confluence. Les tags sont secondaires.",
+        body: "Code (PRC-xxxx), nom, description courte, responsable, statut, lien Confluence, étapes ordonnées. Pas de moteur BPMN : une simple séquence d’étapes suffit.",
       },
       {
         heading: "Chaîne cible",
-        body: "Unité → Processus → Risques → Contrôles SCI → Occurrences/Tâches. Projets, conseils, missions et documents se relient transversalement via Éléments associés.",
+        body: "Unité → Processus → Risques → Contrôles SCI → Occurrences/Tâches. Un objet peut être lié au processus ou à une étape précise.",
       },
       {
         heading: "Hiérarchie (plus tard)",
