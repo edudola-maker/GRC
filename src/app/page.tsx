@@ -109,15 +109,12 @@ export default async function DashboardCollaborateurPage({
         </CollapsibleSection>
       </section>
 
-      <section className="section" aria-label="Mes actions">
-        <div className="panel-head" style={{ marginBottom: "0.75rem" }}>
-          <h2 className="section__title" style={{ margin: 0 }}>
-            Mes actions
-            <span className="bucket-count">{actions.totalOuvertes}</span>
-          </h2>
-        </div>
-
-        <div className="filter-bar">
+      <CollapsibleSection
+        title="Mes actions"
+        defaultOpen
+        badge={actions.totalOuvertes}
+      >
+        <div className="filter-bar" style={{ marginBottom: "0.75rem" }}>
           <Link href="/" className={`chip${vue === "toutes" ? " is-active" : ""}`}>
             Actives
           </Link>
@@ -166,12 +163,10 @@ export default async function DashboardCollaborateurPage({
             )}
           </CollapsibleSection>
         ) : actions.totalOuvertes === 0 ? (
-          <div className="panel">
-            <p className="empty empty--success">
-              Aucune action ouverte. Belle progression — consultez l&apos;historique
-              pour revoir les actions terminées.
-            </p>
-          </div>
+          <p className="empty empty--success">
+            Aucune action ouverte. Belle progression — consultez l&apos;historique
+            pour revoir les actions terminées.
+          </p>
         ) : (
           <div className="stack-panels">
             {visible.map((b) => (
@@ -187,7 +182,7 @@ export default async function DashboardCollaborateurPage({
             ))}
           </div>
         )}
-      </section>
+      </CollapsibleSection>
     </>
   );
 }

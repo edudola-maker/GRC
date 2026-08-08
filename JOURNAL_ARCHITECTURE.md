@@ -82,7 +82,7 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Taxinomie :** retirée de l’UI (le besoin réel = **code unique** stable). Colonne DB encore présente mais non exposée ; catégories / tags pour le classement métier.
 
-**Formulaires :** blocs thématiques `FormSection` (un seul Enregistrer). Fiches : `CollapsibleSection`. Cartographie risques repliée par défaut. Zone « À traiter » sobre (plus de jaune global).
+**Formulaires :** blocs thématiques `FormSection` (un seul Enregistrer). **Toutes les grandes box** (fiches, dashboards, inventaires, KPI zone, À traiter, formulaires) passent par le composant transversal `CollapsibleSection` (titre + ▾/▸). Cartographie risques repliée par défaut. Zone « À traiter » sobre (plus de jaune global).
 
 **Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — moteur **Type → Template → Instance**. Équipe + rôles de mission (`MissionRole`, ≠ rôle app). Initiales utilisateur (affichage). Sections template repliables. Check-lists / validations structurées (contenu progressif). Recos `REC-xxxx` indépendantes de la clôture ; soft-delete mission. Routes `/audits` temporaires. Éditeur templates / versioning visas / dashboard validations = roadmap.
 
