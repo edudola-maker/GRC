@@ -10,6 +10,7 @@ import {
 
 /**
  * Grande box : repliable, lecture seule par défaut, édition indépendante.
+ * Le bouton Modifier reste dans l’en-tête (visible même box repliée).
  * Pattern : Lecture seule → Modifier (?edit=KEY) → Brouillon / Finaliser / Annuler.
  */
 export function EditableSection({
@@ -23,6 +24,7 @@ export function EditableSection({
   badge,
   children,
   editChildren,
+  modifyLabel = "Modifier",
 }: {
   title: string;
   sectionKey: string;
@@ -34,6 +36,7 @@ export function EditableSection({
   badge?: ReactNode;
   children: ReactNode;
   editChildren?: ReactNode;
+  modifyLabel?: string;
 }) {
   const editing = edit === sectionKey;
   const etatLabel = formatSectionEtatLabel(redaction);
@@ -47,8 +50,23 @@ export function EditableSection({
           {etatLabel}
         </span>
       ) : null}
+      {editing ? (
+        <span className="section-etat-badge section-etat-badge--editing">
+          En édition
+        </span>
+      ) : null}
     </>
   );
+
+  const headerActions =
+    canEdit && !edit ? (
+      <Link
+        href={`${baseHref}?edit=${sectionKey}`}
+        className="btn btn--ghost collapsible-section__modify"
+      >
+        {modifyLabel}
+      </Link>
+    ) : null;
 
   return (
     <CollapsibleSection
@@ -56,13 +74,8 @@ export function EditableSection({
       defaultOpen={open}
       badge={headerBadge}
       className={editing ? "collapsible-section--editing" : undefined}
+      headerActions={headerActions}
     >
-      {canEdit && !edit ? (
-        <p style={{ marginTop: 0, marginBottom: "0.85rem" }}>
-          <Link href={`${baseHref}?edit=${sectionKey}`}>Modifier</Link>
-        </p>
-      ) : null}
-
       {editing && canEdit ? (editChildren ?? children) : children}
     </CollapsibleSection>
   );
@@ -79,7 +92,7 @@ export function SectionSaveActions({
   finalizeLabel?: string;
 }) {
   return (
-    <div className="form-actions">
+    <div className="form-actions section-save-actions">
       <SubmitButton name="intent" value="brouillon" variant="ghost">
         {draftLabel}
       </SubmitButton>

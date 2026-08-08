@@ -79,23 +79,26 @@ function parseEditSection(raw: string | undefined): EditSection | null {
     : null;
 }
 
-function SectionEditLink({
+function SectionModifyAction({
   href,
   label,
+  visible,
 }: {
   href: string;
   label: string;
+  visible: boolean;
 }) {
+  if (!visible) return null;
   return (
-    <p style={{ marginTop: 0, marginBottom: "0.85rem" }}>
-      <Link href={href}>{label}</Link>
-    </p>
+    <Link href={href} className="btn btn--ghost collapsible-section__modify">
+      {label}
+    </Link>
   );
 }
 
 function SectionCancel({ href }: { href: string }) {
   return (
-    <div className="form-actions" style={{ marginBottom: "0.85rem" }}>
+    <div className="form-actions section-save-actions">
       <BtnLink href={href} variant="ghost">
         Annuler
       </BtnLink>
@@ -269,13 +272,14 @@ export default async function MissionDetailPage({
         title="Vue d'ensemble"
         defaultOpen={openFor("VUE_ENSEMBLE", true)}
         badge={formatSectionEtatLabel(redactions.get("VUE_ENSEMBLE")) ?? undefined}
-      >
-        {canEdit && !edit ? (
-          <SectionEditLink
+        headerActions={
+          <SectionModifyAction
             href={`${baseHref}?edit=VUE_ENSEMBLE`}
-            label="Modifier les informations générales"
+            label="Modifier"
+            visible={canEdit && !edit}
           />
-        ) : null}
+        }
+      >
         {editingVue && canEdit ? (
           <div className="entity-form-wrap">
             <MissionForm
@@ -389,13 +393,15 @@ export default async function MissionDetailPage({
       <CollapsibleSection
         title="1. Planification"
         defaultOpen={openFor("PLANIFICATION", true)}
-      >
-        {canEdit && !edit ? (
-          <SectionEditLink
+        className={editingPlanif ? "collapsible-section--editing" : undefined}
+        headerActions={
+          <SectionModifyAction
             href={`${baseHref}?edit=PLANIFICATION`}
             label="Modifier"
+            visible={canEdit && !edit}
           />
-        ) : null}
+        }
+      >
         {editingPlanif && canEdit ? <SectionCancel href={baseHref} /> : null}
 
         <CollapsibleSection title="Équipe de mission" defaultOpen>
@@ -580,13 +586,15 @@ export default async function MissionDetailPage({
       <CollapsibleSection
         title="2. Substantif"
         defaultOpen={openFor("SUBSTANTIF", false)}
-      >
-        {canEdit && !edit ? (
-          <SectionEditLink
+        className={edit === "SUBSTANTIF" ? "collapsible-section--editing" : undefined}
+        headerActions={
+          <SectionModifyAction
             href={`${baseHref}?edit=SUBSTANTIF`}
             label="Modifier"
+            visible={canEdit && !edit}
           />
-        ) : null}
+        }
+      >
         {edit === "SUBSTANTIF" && canEdit ? (
           <>
             <SectionCancel href={baseHref} />
@@ -604,13 +612,15 @@ export default async function MissionDetailPage({
         title="3. Recommandations"
         defaultOpen={openFor("RECOMMANDATIONS", false)}
         badge={`${mission.recommandations.length}`}
-      >
-        {canEdit && !edit ? (
-          <SectionEditLink
+        className={editingReco ? "collapsible-section--editing" : undefined}
+        headerActions={
+          <SectionModifyAction
             href={`${baseHref}?edit=RECOMMANDATIONS`}
             label="Modifier"
+            visible={canEdit && !edit}
           />
-        ) : null}
+        }
+      >
         {editingReco && canEdit ? <SectionCancel href={baseHref} /> : null}
 
         <p className="muted" style={{ marginTop: 0 }}>
@@ -746,10 +756,15 @@ export default async function MissionDetailPage({
       <CollapsibleSection
         title="4. Rapport"
         defaultOpen={openFor("RAPPORT", false)}
+        className={edit === "RAPPORT" ? "collapsible-section--editing" : undefined}
+        headerActions={
+          <SectionModifyAction
+            href={`${baseHref}?edit=RAPPORT`}
+            label="Modifier"
+            visible={canEdit && !edit}
+          />
+        }
       >
-        {canEdit && !edit ? (
-          <SectionEditLink href={`${baseHref}?edit=RAPPORT`} label="Modifier" />
-        ) : null}
         {edit === "RAPPORT" && canEdit ? (
           <>
             <SectionCancel href={baseHref} />
@@ -766,10 +781,15 @@ export default async function MissionDetailPage({
         title="5. Suivi des recommandations"
         defaultOpen={openFor("SUIVI", false)}
         badge={`${mission.recommandations.filter((r) => !(RECO_STATUTS_CLOS as readonly string[]).includes(r.statut)).length} ouvertes`}
+        className={edit === "SUIVI" ? "collapsible-section--editing" : undefined}
+        headerActions={
+          <SectionModifyAction
+            href={`${baseHref}?edit=SUIVI`}
+            label="Modifier"
+            visible={canEdit && !edit}
+          />
+        }
       >
-        {canEdit && !edit ? (
-          <SectionEditLink href={`${baseHref}?edit=SUIVI`} label="Modifier" />
-        ) : null}
         {edit === "SUIVI" && canEdit ? (
           <SectionCancel href={baseHref} />
         ) : null}

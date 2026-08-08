@@ -27,25 +27,51 @@ export function ProcessusEtapesPanel({
 
   return (
     <div className="processus-etapes">
+      {!editable ? (
+        <p className="muted" style={{ marginTop: 0 }}>
+          Séquence du processus (quoi). Cliquez sur <strong>Modifier</strong> dans
+          l&apos;en-tête de cette box pour ajouter, renommer, supprimer ou
+          réordonner les étapes.
+        </p>
+      ) : (
+        <p className="muted" style={{ marginTop: 0 }}>
+          Modifiez librement la séquence, puis{" "}
+          <strong>Finaliser</strong> ou <strong>Enregistrer comme brouillon</strong>.
+        </p>
+      )}
+
       {sorted.length === 0 ? (
         <p className="empty">
-          Aucune étape. En mode Modifier, ajoutez la séquence du processus (ex.
-          Planification → Substantif → …).
+          Aucune étape pour l&apos;instant
+          {editable
+            ? " — ajoutez la première ci-dessous."
+            : " — passez en Modifier pour en créer."}
         </p>
       ) : (
         <ol className="processus-etapes__list">
           {sorted.map((e, index) => {
             const num = String(index + 1).padStart(2, "0");
             return (
-              <li key={e.id} id={`etape-${e.id}`} className="processus-etapes__row">
+              <li
+                key={e.id}
+                id={`etape-${e.id}`}
+                className="processus-etapes__row"
+              >
                 <span className="processus-etapes__num">{num}</span>
+                <span className="processus-etapes__sep" aria-hidden>
+                  —
+                </span>
                 {editable ? (
                   <>
                     <form
                       action={updateProcessusEtape}
                       className="processus-etapes__rename"
                     >
-                      <input type="hidden" name="processusId" value={processusId} />
+                      <input
+                        type="hidden"
+                        name="processusId"
+                        value={processusId}
+                      />
                       <input type="hidden" name="id" value={e.id} />
                       <input
                         name="libelle"
@@ -54,12 +80,16 @@ export function ProcessusEtapesPanel({
                         aria-label={`Libellé étape ${num}`}
                       />
                       <SubmitButton variant="ghost" pendingLabel="…">
-                        Renommer
+                        OK
                       </SubmitButton>
                     </form>
                     <div className="processus-etapes__actions">
                       <form action={moveProcessusEtape}>
-                        <input type="hidden" name="processusId" value={processusId} />
+                        <input
+                          type="hidden"
+                          name="processusId"
+                          value={processusId}
+                        />
                         <input type="hidden" name="id" value={e.id} />
                         <input type="hidden" name="direction" value="up" />
                         <SubmitButton
@@ -68,19 +98,27 @@ export function ProcessusEtapesPanel({
                           name="noop"
                           value="1"
                         >
-                          ↑
+                          Monter
                         </SubmitButton>
                       </form>
                       <form action={moveProcessusEtape}>
-                        <input type="hidden" name="processusId" value={processusId} />
+                        <input
+                          type="hidden"
+                          name="processusId"
+                          value={processusId}
+                        />
                         <input type="hidden" name="id" value={e.id} />
                         <input type="hidden" name="direction" value="down" />
                         <SubmitButton variant="ghost" pendingLabel="…">
-                          ↓
+                          Descendre
                         </SubmitButton>
                       </form>
                       <form action={deleteProcessusEtape}>
-                        <input type="hidden" name="processusId" value={processusId} />
+                        <input
+                          type="hidden"
+                          name="processusId"
+                          value={processusId}
+                        />
                         <input type="hidden" name="id" value={e.id} />
                         <SubmitButton variant="danger" pendingLabel="…">
                           Supprimer
@@ -89,7 +127,7 @@ export function ProcessusEtapesPanel({
                     </div>
                   </>
                 ) : (
-                  <strong>{e.libelle}</strong>
+                  <strong className="processus-etapes__label">{e.libelle}</strong>
                 )}
               </li>
             );
@@ -98,7 +136,10 @@ export function ProcessusEtapesPanel({
       )}
 
       {editable ? (
-        <form action={addProcessusEtape} className="entity-form" style={{ marginTop: "1rem" }}>
+        <form
+          action={addProcessusEtape}
+          className="entity-form processus-etapes__add"
+        >
           <input type="hidden" name="processusId" value={processusId} />
           <label className="field" htmlFor="nouvelle-etape">
             <span className="field__label">Nouvelle étape</span>

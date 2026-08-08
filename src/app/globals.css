@@ -1806,8 +1806,46 @@ a {
   color: var(--ink-muted);
 }
 
+.collapsible-section__actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.collapsible-section__modify {
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.65rem;
+}
+
 .collapsible-section__body {
   padding: 0.85rem 0.95rem 1rem;
+}
+
+.section-etat-badge--editing {
+  color: #1f4d3a;
+  background: #dceee4;
+}
+
+.section-save-actions {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.processus-etapes__sep {
+  color: var(--ink-muted);
+}
+
+.processus-etapes__label {
+  font-weight: 650;
+}
+
+.processus-etapes__add {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--line);
 }
 
 /* Zones page (KPI, inventaire…) : même composant, fond de zone préservé */

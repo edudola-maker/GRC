@@ -1,11 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Grande box de contenu repliable — composant transversal.
- * Repliée : seul le titre (en-tête) reste visible.
+ * Repliée : en-tête (titre + actions) reste visible.
  * Ne pas utiliser pour KPI individuels, badges, champs ou lignes d’inventaire.
  */
 export function CollapsibleSection({
@@ -15,6 +15,7 @@ export function CollapsibleSection({
   className = "",
   badge,
   id,
+  headerActions,
 }: {
   title: string;
   children: ReactNode;
@@ -22,8 +23,14 @@ export function CollapsibleSection({
   className?: string;
   badge?: ReactNode;
   id?: string;
+  /** Actions visibles même box repliée (ex. bouton Modifier). */
+  headerActions?: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
 
   return (
     <details
@@ -39,6 +46,15 @@ export function CollapsibleSection({
         <span className="collapsible-section__title">{title}</span>
         {badge != null && badge !== "" ? (
           <span className="collapsible-section__badge">{badge}</span>
+        ) : null}
+        {headerActions ? (
+          <span
+            className="collapsible-section__actions"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            {headerActions}
+          </span>
         ) : null}
       </summary>
       <div className="collapsible-section__body">{children}</div>
