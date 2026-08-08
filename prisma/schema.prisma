@@ -104,6 +104,8 @@ enum TypeObjetMetier {
   PROCESSUS
   /// Étape d’un processus (lien facultatif vers une étape précise).
   PROCESSUS_ETAPE
+  /// Modèle de tâche (catalogue).
+  MODELE_TACHE
 }
 
 /// État de rédaction d’une box/section — distinct du statut métier de l’objet.
@@ -235,6 +237,7 @@ model Unite {
   documents        Document[]
   missions         Mission[]
   processus        Processus[]
+  modelesTache     ModeleTache[]
   recommandations  Recommandation[]
   objectifsAnnuels ObjectifAnnuel[]
   objectifsModule  ObjectifModule[]
@@ -297,6 +300,10 @@ model Utilisateur {
   controlesSoumis         ControleSCI[]      @relation("ControleSoumisPar")
   controlesValides        ControleSCI[]      @relation("ControleValidePar")
   checklistFaites         MissionChecklistItem[] @relation("ChecklistFaitPar")
+  tacheChecklistFaites    TacheChecklistItem[] @relation("TacheChecklistFaitPar")
+  modelesTacheCrees       ModeleTache[]        @relation("ModeleTacheCreePar")
+  modelesTacheResponsable ModeleTache[]        @relation("ModeleTacheResponsableDefaut")
+  modelesTacheProcessus   ModeleTacheProcessus[] @relation("ModeleTacheProcessusLiePar")
   validationsPreparees    MissionValidationPoint[] @relation("ValidationPreparePar")
   validationsSoumises     MissionValidationPoint[] @relation("ValidationSoumisPar")
   visasMission            MissionValidationVisa[]
@@ -418,6 +425,8 @@ model Tache {
   missionId      String?
   documentId     String?
   recommandationId String?
+  /// Référence informative au modèle d’origine (pas de sync rétroactive).
+  modeleTacheId  String?
   dateCreation   DateTime       @default(now())
   dateEcheance   DateTime?
   statut         StatutTache    @default(A_FAIRE)
@@ -444,13 +453,34 @@ model Tache {
   mission        Mission?        @relation(fields: [missionId], references: [id], onDelete: SetNull)
   document       Document?       @relation(fields: [documentId], references: [id], onDelete: SetNull)
   recommandation Recommandation? @relation(fields: [recommandationId], references: [id], onDelete: SetNull)
+  modeleTache    ModeleTache?    @relation(fields: [modeleTacheId], references: [id], onDelete: SetNull)
   creePar        Utilisateur     @relation("TacheCreePar", fields: [creeParId], references: [id])
   modifiePar     Utilisateur     @relation("TacheModifiePar", fields: [modifieParId], references: [id])
   soumisPar      Utilisateur?    @relation("TacheSoumisePar", fields: [soumisParId], references: [id])
   validePar      Utilisateur?    @relation("TacheValideePar", fields: [valideParId], references: [id])
   historique     HistoriqueTache[]
+  checklistItems TacheChecklistItem[]
 
   @@index([uniteId, statut, dateEcheance])
+  @@index([modeleTacheId])
+}
+
+/// Étape de checklist d’une tâche (copie d’occurrence — ≠ modèle, ≠ checklist Mission).
+model TacheChecklistItem {
+  id        String    @id @default(cuid())
+  tacheId   String
+  libelle   String
+  ordre     Int       @default(0)
+  fait      Boolean   @default(false)
+  faitParId String?
+  faitLe    DateTime?
+  /// Figé à la copie depuis le modèle (traçabilité, pas de sync).
+  sourceModeleEtapeId String?
+
+  tache   Tache        @relation(fields: [tacheId], references: [id], onDelete: Cascade)
+  faitPar Utilisateur? @relation("TacheChecklistFaitPar", fields: [faitParId], references: [id], onDelete: SetNull)
+
+  @@index([tacheId, ordre])
 }
 
 model HistoriqueTache {
@@ -971,6 +1001,7 @@ model Processus {
   parent      Processus?  @relation("ProcessusHierarchie", fields: [parentId], references: [id])
   enfants     Processus[] @relation("ProcessusHierarchie")
   etapes      ProcessusEtape[]
+  modelesTache ModeleTacheProcessus[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -987,6 +1018,67 @@ model ProcessusEtape {
   processus Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
 
   @@index([processusId, ordre])
+}
+
+// ─── Modèle de tâche ────────────────────────────────────────
+/// Référentiel par unité. Checklist d’occurrence = copie à la création
+/// (TacheChecklistItem) — pas de synchronisation rétroactive.
+/// Distinct de MissionChecklistItem (checklist de mission d’audit).
+
+model ModeleTache {
+  id                  String          @id @default(cuid())
+  uniteId             String
+  code                String
+  nom                 String
+  description         String?
+  delaiJours          Int?
+  responsableDefautId String?
+  categorieDefaut     CategorieTache?
+  actif               Boolean         @default(true)
+  creeParId           String
+  creeLe              DateTime        @default(now())
+  modifieLe           DateTime        @updatedAt
+
+  unite             Unite                  @relation(fields: [uniteId], references: [id])
+  creePar           Utilisateur            @relation("ModeleTacheCreePar", fields: [creeParId], references: [id])
+  responsableDefaut Utilisateur?           @relation("ModeleTacheResponsableDefaut", fields: [responsableDefautId], references: [id], onDelete: SetNull)
+  etapes            ModeleTacheEtape[]
+  processus         ModeleTacheProcessus[]
+  taches            Tache[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, actif])
+  @@index([uniteId, nom])
+}
+
+model ModeleTacheEtape {
+  id            String   @id @default(cuid())
+  modeleTacheId String
+  ordre         Int      @default(0)
+  libelle       String
+  creeLe        DateTime @default(now())
+  modifieLe     DateTime @updatedAt
+
+  modeleTache ModeleTache @relation(fields: [modeleTacheId], references: [id], onDelete: Cascade)
+
+  @@index([modeleTacheId, ordre])
+}
+
+/// Relation N–N dédiée Processus ↔ Modèle de tâche (≠ LienObjet).
+model ModeleTacheProcessus {
+  id            String   @id @default(cuid())
+  modeleTacheId String
+  processusId   String
+  lieParId      String
+  lieLe         DateTime @default(now())
+
+  modeleTache ModeleTache @relation(fields: [modeleTacheId], references: [id], onDelete: Cascade)
+  processus   Processus   @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  liePar      Utilisateur @relation("ModeleTacheProcessusLiePar", fields: [lieParId], references: [id])
+
+  @@unique([modeleTacheId, processusId])
+  @@index([processusId])
+  @@index([modeleTacheId])
 }
 
 /// État de rédaction d’une box (brouillon / finalisé…) — transversal, ≠ statut métier.

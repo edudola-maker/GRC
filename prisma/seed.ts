@@ -28,6 +28,7 @@ async function main() {
 
   await prisma.journalEvenement.deleteMany();
   await prisma.historiqueTache.deleteMany();
+  await prisma.tacheChecklistItem.deleteMany();
   await prisma.tache.deleteMany();
   await prisma.missionValidationVisa.deleteMany();
   await prisma.missionValidationPoint.deleteMany();
@@ -44,6 +45,9 @@ async function main() {
   await prisma.controleSCI.deleteMany();
   await prisma.projetDocument.deleteMany();
   await prisma.sectionRedaction.deleteMany();
+  await prisma.modeleTacheProcessus.deleteMany();
+  await prisma.modeleTacheEtape.deleteMany();
+  await prisma.modeleTache.deleteMany();
   await prisma.processusEtape.deleteMany();
   await prisma.projetMembre.deleteMany();
   await prisma.conseil.deleteMany();
@@ -521,7 +525,7 @@ async function main() {
     },
   });
 
-  await prisma.processus.create({
+  const processusAudit = await prisma.processus.create({
     data: {
       uniteId,
       code: "PRC-0004",
@@ -544,6 +548,73 @@ async function main() {
         ],
       },
     },
+  });
+
+  const modeleEntree = await prisma.modeleTache.create({
+    data: {
+      uniteId,
+      code: "MDL-0001",
+      nom: "Entrée d’un collaborateur",
+      description:
+        "Checklist standard d’onboarding opérationnel (accès, matériel, brief).",
+      delaiJours: 5,
+      responsableDefautId: bernard.id,
+      categorieDefaut: "ADMINISTRATIF",
+      actif: true,
+      creeParId: bernard.id,
+      etapes: {
+        create: [
+          { libelle: "Créer le compte applicatif", ordre: 0 },
+          { libelle: "Attribuer les droits d’accès", ordre: 1 },
+          { libelle: "Remettre le matériel", ordre: 2 },
+          { libelle: "Brief sécurité / LPD", ordre: 3 },
+          { libelle: "Confirmer la prise de poste", ordre: 4 },
+        ],
+      },
+    },
+  });
+
+  await prisma.modeleTacheProcessus.create({
+    data: {
+      modeleTacheId: modeleEntree.id,
+      processusId: processusAcces.id,
+      lieParId: bernard.id,
+    },
+  });
+
+  const modeleAudit = await prisma.modeleTache.create({
+    data: {
+      uniteId,
+      code: "MDL-0002",
+      nom: "Préparer le lancement d’une mission",
+      description:
+        "Étapes transverses avant démarrage substantif d’une mission d’assurance.",
+      delaiJours: 10,
+      responsableDefautId: alice.id,
+      categorieDefaut: "MISSION",
+      actif: true,
+      creeParId: alice.id,
+      etapes: {
+        create: [
+          { libelle: "Valider le périmètre", ordre: 0 },
+          { libelle: "Constituer l’équipe", ordre: 1 },
+          { libelle: "Planifier les entretiens", ordre: 2 },
+          { libelle: "Préparer le dossier de travail", ordre: 3 },
+        ],
+      },
+    },
+  });
+
+  await prisma.modeleTacheProcessus.create({
+    data: {
+      modeleTacheId: modeleAudit.id,
+      processusId: processusAudit.id,
+      lieParId: alice.id,
+    },
+  });
+
+  await prisma.sequenceCode.create({
+    data: { uniteId, prefixe: "MDL", dernier: 2 },
   });
 
   const controle = await prisma.controleSCI.create({

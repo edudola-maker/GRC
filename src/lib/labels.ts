@@ -130,6 +130,7 @@ export const TYPE_OBJET_LABELS: Record<string, string> = {
   TACHE: "Tâche",
   PROCESSUS: "Processus",
   PROCESSUS_ETAPE: "Étape de processus",
+  MODELE_TACHE: "Modèle de tâche",
 };
 
 export const ETAT_SECTION_REDACTION_LABELS: Record<string, string> = {

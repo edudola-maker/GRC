@@ -78,7 +78,9 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Contrôles SCI :** statut de *définition* `ACTIF` | `SUSPENDU` (+ archive) ; exécution = tâches/occurrences ; pas de « Marquer réalisé » ni de box Preuves sur la définition (preuves → occurrence). Table `ControleDocument` conservée pour migration ultérieure vers preuves de tâche.
 
-**Processus :** volontairement simple — **quoi** (app) vs **comment** (Confluence). Étapes ordonnées `ProcessusEtape` (CRUD + réordonnancement, pas de BPMN). Associations `LienObjet` (objet ou étape `PROCESSUS_ETAPE`). Nav Gouvernance : Processus → Risques → Contrôles → Documents.
+**Processus :** volontairement simple — **quoi** (app) vs **comment** (Confluence). Étapes ordonnées `ProcessusEtape` (CRUD + réordonnancement, pas de BPMN). Associations `LienObjet` (objet ou étape `PROCESSUS_ETAPE`). Nav Gouvernance : Processus → Modèles de tâches → Risques → Contrôles → Documents.
+
+**Modèles de tâches :** chaîne `Processus (optionnel) → ModeleTache → Tache → TacheChecklistItem`. Checklist d’occurrence = **copie** à la création (pas de sync rétroactive). Relation N–N dédiée `ModeleTacheProcessus` (≠ `LienObjet`). Séparation stricte avec `MissionChecklistItem`. Sur une tâche : cocher en consultation ; structure checklist uniquement en `?edit=CHECKLIST`.
 
 **Projets :** plus de **Jalons** (redondants avec Tâches) — suivi via `Projet → Tâches`. Une seule section **Éléments associés** (tâches owned + liens libres, filtre par type).
 

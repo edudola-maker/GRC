@@ -157,15 +157,15 @@ Socle livré : types & templates seedés, équipe + rôles, initiales, sections 
 
 Socle flags livré. Plus tard : règles de conservation, accès besoin de connaître, Active Directory, traçabilité renforcée, recherche/exports filtrés par droits, pilotage LPD. Pas de données personnelles réelles en démo/test. Éviter un dépôt parallèle de documents sensibles (Confluence reste la référence).
 
-### 5ter-ter. Modèles de tâches (roadmap)
+### 5ter-ter. Modèles de tâches
 
-**Modèle de tâche → Tâche réelle → Checklist d’exécution** (étapes à cocher dans la tâche, sauf besoin de responsable/échéance propre).
+**Socle livré :** `ModeleTache` (MDL-xxxx) + `ModeleTacheEtape` + relation N–N `ModeleTacheProcessus` ; copie → `TacheChecklistItem` à la création ; `Tache.modeleTacheId` informatif (pas de sync rétroactive). Distinct de la checklist Mission.
 
-Un modèle peut être lié à un ou plusieurs **Processus** (ex. Gestion du personnel → Entrée / Départ / Changement de fonction) ou rester transversal.
+**UX checklist d’occurrence :** cocher/décocher en consultation ; renommer / ajouter / supprimer / réordonner uniquement en mode Modifier de la box Checklist.
 
-Éditeur (plus tard) : nom, description, checklist, processus associés, délai standard, rôle/responsable par défaut, unités autorisées.
+**CRUD minimal** modèles (box-by-box), création de tâche depuis modèle, affichage des modèles liés sur la fiche Processus.
 
-Chaîne cible : **Processus → Modèle de tâche → Tâche → Checklist** (cohérent avec Contrôle → Occurrence, Mission → Section → Validation).
+**Roadmap :** Éditeur complet (key user), rôles métier complexes, unités autorisées avancées, fonctions avancées.
 
 ### 5quater. Export Excel (roadmap)
 

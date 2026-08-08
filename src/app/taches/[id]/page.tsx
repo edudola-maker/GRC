@@ -4,7 +4,9 @@ import { ConfirmDeleteButton } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { EditableSection } from "@/components/module/EditableSection";
 import { TacheActionsRapides } from "@/components/TacheActionsRapides";
+import { TacheChecklistPanel } from "@/components/taches/TacheChecklistPanel";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { deleteTache } from "../actions";
 import {
@@ -19,6 +21,16 @@ import { prisma } from "@/lib/prisma";
 import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
+
+const EDIT_SECTIONS = ["CHECKLIST"] as const;
+type EditSection = (typeof EDIT_SECTIONS)[number];
+
+function parseEdit(raw: string | undefined): EditSection | null {
+  if (!raw) return null;
+  return (EDIT_SECTIONS as readonly string[]).includes(raw)
+    ? (raw as EditSection)
+    : null;
+}
 
 const CHAMP_LABELS: Record<string, string> = {
   titre: "Titre",
@@ -52,10 +64,11 @@ export default async function TacheDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const edit = parseEdit(sp.edit);
 
   const [tache, users] = await Promise.all([
     prisma.tache.findUnique({
@@ -68,10 +81,15 @@ export default async function TacheDetailPage({
         mission: true,
         document: true,
         recommandation: true,
+        modeleTache: { select: { id: true, code: true, nom: true } },
         creePar: true,
         modifiePar: true,
         soumisPar: true,
         validePar: true,
+        checklistItems: {
+          include: { faitPar: { select: { nom: true } } },
+          orderBy: { ordre: "asc" },
+        },
         historique: {
           include: { modifiePar: true },
           orderBy: { modifieLe: "desc" },
@@ -86,6 +104,15 @@ export default async function TacheDetailPage({
 
   const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(tache.statut);
   const urgence = urgenceEcheance(tache.dateEcheance, clos);
+  const baseHref = `/taches/${tache.id}`;
+  const checklistVues = tache.checklistItems.map((i) => ({
+    id: i.id,
+    libelle: i.libelle,
+    ordre: i.ordre,
+    fait: i.fait,
+    faitParNom: i.faitPar?.nom ?? null,
+    faitLeLabel: i.faitLe ? formatDate(i.faitLe) : null,
+  }));
 
   return (
     <>
@@ -187,6 +214,20 @@ export default async function TacheDetailPage({
                 <dd>{tache.recommandation.titre}</dd>
               </div>
             ) : null}
+            {tache.modeleTache ? (
+              <div>
+                <dt>Modèle d’origine</dt>
+                <dd>
+                  <Link href={`/modeles-taches/${tache.modeleTache.id}`}>
+                    {tache.modeleTache.code} — {tache.modeleTache.nom}
+                  </Link>
+                  <span className="muted">
+                    {" "}
+                    (référence informative — pas de sync)
+                  </span>
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt>Statut</dt>
               <dd>{STATUT_TACHE_LABELS[tache.statut]}</dd>
@@ -271,6 +312,40 @@ export default async function TacheDetailPage({
           </CollapsibleSection>
         </div>
       </div>
+
+      <EditableSection
+        title="Checklist d’exécution"
+        sectionKey="CHECKLIST"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit
+        defaultOpen
+        badge={
+          tache.checklistItems.length
+            ? `${tache.checklistItems.filter((i) => i.fait).length}/${tache.checklistItems.length}`
+            : "0"
+        }
+        editChildren={
+          <>
+            <TacheChecklistPanel
+              tacheId={tache.id}
+              items={checklistVues}
+              structureEditable
+            />
+            <div className="form-actions">
+              <BtnLink href={baseHref} variant="ghost">
+                Terminer
+              </BtnLink>
+            </div>
+          </>
+        }
+      >
+        <TacheChecklistPanel
+          tacheId={tache.id}
+          items={checklistVues}
+          structureEditable={false}
+        />
+      </EditableSection>
 
       <ElementsAssocies
         uniteId={tache.uniteId}

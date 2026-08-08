@@ -402,6 +402,173 @@ export async function deleteTache(formData: FormData) {
   redirect("/taches?ok=supprime");
 }
 
+function checklistEditHref(tacheId: string) {
+  return `/taches/${tacheId}?edit=CHECKLIST`;
+}
+
+/** Cocher / décocher une étape — autorisé en consultation (exécution). */
+export async function toggleTacheChecklistItem(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const tacheId = str(formData, "tacheId");
+  if (!id || !tacheId) redirectWithError("/taches", "Identifiant manquant.");
+
+  const item = await prisma.tacheChecklistItem.findFirst({
+    where: { id, tacheId },
+  });
+  if (!item) redirectWithError(`/taches/${tacheId}`, "Étape introuvable.");
+
+  const fait = formData.get("fait") === "1";
+  await prisma.tacheChecklistItem.update({
+    where: { id },
+    data: {
+      fait,
+      faitParId: fait ? current.id : null,
+      faitLe: fait ? new Date() : null,
+    },
+  });
+  await prisma.tache.update({
+    where: { id: tacheId },
+    data: { modifieParId: current.id },
+  });
+
+  revalidateTacheViews(tacheId);
+  redirectWithOk(`/taches/${tacheId}`, "checklist");
+}
+
+export async function addTacheChecklistItem(formData: FormData) {
+  const current = await getCurrentUser();
+  const tacheId = str(formData, "tacheId");
+  if (!tacheId) redirectWithError("/taches", "Identifiant manquant.");
+
+  const tache = await prisma.tache.findUnique({ where: { id: tacheId } });
+  if (!tache) redirectWithError("/taches", "Tâche introuvable.");
+
+  const libelle = str(formData, "libelle");
+  if (!libelle) {
+    redirectWithError(checklistEditHref(tacheId), "Libellé d’étape obligatoire.");
+  }
+
+  const max = await prisma.tacheChecklistItem.aggregate({
+    where: { tacheId },
+    _max: { ordre: true },
+  });
+  await prisma.tacheChecklistItem.create({
+    data: {
+      tacheId,
+      libelle,
+      ordre: (max._max.ordre ?? -1) + 1,
+    },
+  });
+  await prisma.tache.update({
+    where: { id: tacheId },
+    data: { modifieParId: current.id },
+  });
+
+  revalidateTacheViews(tacheId);
+  redirectWithOk(checklistEditHref(tacheId), "etape");
+}
+
+export async function updateTacheChecklistItem(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const tacheId = str(formData, "tacheId");
+  if (!id || !tacheId) redirectWithError("/taches", "Identifiant manquant.");
+
+  const item = await prisma.tacheChecklistItem.findFirst({
+    where: { id, tacheId },
+  });
+  if (!item) redirectWithError(`/taches/${tacheId}`, "Étape introuvable.");
+
+  const libelle = str(formData, "libelle");
+  if (!libelle) {
+    redirectWithError(checklistEditHref(tacheId), "Libellé d’étape obligatoire.");
+  }
+
+  await prisma.tacheChecklistItem.update({ where: { id }, data: { libelle } });
+  await prisma.tache.update({
+    where: { id: tacheId },
+    data: { modifieParId: current.id },
+  });
+
+  revalidateTacheViews(tacheId);
+  redirectWithOk(checklistEditHref(tacheId), "etape");
+}
+
+export async function deleteTacheChecklistItem(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const tacheId = str(formData, "tacheId");
+  if (!id || !tacheId) redirectWithError("/taches", "Identifiant manquant.");
+
+  const item = await prisma.tacheChecklistItem.findFirst({
+    where: { id, tacheId },
+  });
+  if (!item) redirectWithError(`/taches/${tacheId}`, "Étape introuvable.");
+
+  await prisma.tacheChecklistItem.delete({ where: { id } });
+  const rest = await prisma.tacheChecklistItem.findMany({
+    where: { tacheId },
+    orderBy: { ordre: "asc" },
+  });
+  await prisma.$transaction(
+    rest.map((e, i) =>
+      prisma.tacheChecklistItem.update({
+        where: { id: e.id },
+        data: { ordre: i },
+      }),
+    ),
+  );
+  await prisma.tache.update({
+    where: { id: tacheId },
+    data: { modifieParId: current.id },
+  });
+
+  revalidateTacheViews(tacheId);
+  redirectWithOk(checklistEditHref(tacheId), "etape");
+}
+
+export async function moveTacheChecklistItem(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const tacheId = str(formData, "tacheId");
+  const direction = str(formData, "direction");
+  if (!id || !tacheId) redirectWithError("/taches", "Identifiant manquant.");
+
+  const items = await prisma.tacheChecklistItem.findMany({
+    where: { tacheId },
+    orderBy: { ordre: "asc" },
+  });
+  const index = items.findIndex((e) => e.id === id);
+  if (index < 0) {
+    redirectWithError(checklistEditHref(tacheId), "Étape introuvable.");
+  }
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= items.length) {
+    redirect(checklistEditHref(tacheId));
+  }
+
+  const a = items[index]!;
+  const b = items[swapWith]!;
+  await prisma.$transaction([
+    prisma.tacheChecklistItem.update({
+      where: { id: a.id },
+      data: { ordre: b.ordre },
+    }),
+    prisma.tacheChecklistItem.update({
+      where: { id: b.id },
+      data: { ordre: a.ordre },
+    }),
+  ]);
+  await prisma.tache.update({
+    where: { id: tacheId },
+    data: { modifieParId: current.id },
+  });
+
+  revalidateTacheViews(tacheId);
+  redirectWithOk(checklistEditHref(tacheId), "etape");
+}
+
 /** Terminer rapidement une tâche depuis le backlog */
 export async function completeTacheRapide(formData: FormData) {
   const current = await getCurrentUser();

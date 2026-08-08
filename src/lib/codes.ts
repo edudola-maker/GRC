@@ -9,6 +9,7 @@ const PREFIXES = {
   CONTROLE_SCI: "CTL",
   DOCUMENT: "DOC",
   PROCESSUS: "PRC",
+  MODELE_TACHE: "MDL",
 } as const;
 
 export type PrefixeCode = keyof typeof PREFIXES;
@@ -120,6 +121,17 @@ export async function assertNomUnique(
       },
     });
     if (existing) return "Un processus actif porte déjà ce nom.";
+  }
+  if (type === "MODELE_TACHE") {
+    const existing = await prisma.modeleTache.findFirst({
+      where: {
+        uniteId,
+        nom: n,
+        actif: true,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un modèle de tâche actif porte déjà ce nom.";
   }
   return null;
 }

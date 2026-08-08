@@ -1848,6 +1848,100 @@ a {
   border-top: 1px dashed var(--line);
 }
 
+.tache-checklist__progress {
+  margin: 0 0 0.65rem;
+}
+
+.tache-checklist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.tache-checklist__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.tache-checklist__row--fait .tache-checklist__label {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.tache-checklist__toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+.tache-checklist__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  flex: 1 1 auto;
+  min-width: 12rem;
+}
+
+.tache-checklist__num {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, #667);
+  font-size: 0.85rem;
+}
+
+.tache-checklist__label {
+  font-weight: 600;
+}
+
+.tache-checklist__meta {
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.processus-modeles__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.processus-modeles__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.modele-processus-panel .link-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.modele-processus-panel .link-list__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
 /* Zones page (KPI, inventaire…) : même composant, fond de zone préservé */
 .collapsible-section--zone.page-zone--attention {
   background: #f5f7f6;

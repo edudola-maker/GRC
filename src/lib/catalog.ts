@@ -331,4 +331,21 @@ export const MODULE_HELP = {
       },
     ],
   },
+  modelesTaches: {
+    title: "Comprendre les modèles de tâches",
+    sections: [
+      {
+        heading: "À quoi ça sert ?",
+        body: "Un modèle définit une checklist standard réutilisable. À la création d’une tâche, la checklist est copiée — les occurrences ne se resynchronisent pas ensuite.",
+      },
+      {
+        heading: "Chaîne",
+        body: "Processus (optionnel) → Modèle de tâche → Tâche → Checklist d’occurrence. Distinct de la checklist de mission d’audit.",
+      },
+      {
+        heading: "Que saisir ?",
+        body: "Nom, description, délai standard, responsable et catégorie par défaut, étapes ordonnées, processus associés.",
+      },
+    ],
+  },
 } as const;

@@ -39,6 +39,9 @@ export function FlashBanner({
     brouillon: "Brouillon enregistré.",
     etape: "Étape mise à jour.",
     equipe: "Équipe mise à jour.",
+    checklist: "Checklist mise à jour.",
+    desactive: "Élément désactivé.",
+    active: "Élément réactivé.",
   };
 
   return (

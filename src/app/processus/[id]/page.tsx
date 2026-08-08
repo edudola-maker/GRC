@@ -11,6 +11,8 @@ import {
   SectionSaveActions,
 } from "@/components/module/EditableSection";
 import { ProcessusEtapesPanel } from "@/components/processus/ProcessusEtapesPanel";
+import { ProcessusModelesTachesPanel } from "@/components/processus/ProcessusModelesTachesPanel";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
 import {
   archiveProcessus,
@@ -67,6 +69,21 @@ export default async function ProcessusDetailPage({
         modifiePar: true,
         unite: true,
         etapes: { orderBy: { ordre: "asc" } },
+        modelesTache: {
+          include: {
+            modeleTache: {
+              select: {
+                id: true,
+                code: true,
+                nom: true,
+                actif: true,
+                delaiJours: true,
+                _count: { select: { etapes: true } },
+              },
+            },
+          },
+          orderBy: { lieLe: "asc" },
+        },
       },
     }),
     listUtilisateursActifsForCurrentUnite(),
@@ -211,6 +228,23 @@ export default async function ProcessusDetailPage({
           editable={false}
         />
       </EditableSection>
+
+      <CollapsibleSection
+        title="Modèles de tâches associés"
+        defaultOpen
+        badge={`${processus.modelesTache.length}`}
+      >
+        <ProcessusModelesTachesPanel
+          modeles={processus.modelesTache.map((l) => ({
+            id: l.modeleTache.id,
+            code: l.modeleTache.code,
+            nom: l.modeleTache.nom,
+            actif: l.modeleTache.actif,
+            delaiJours: l.modeleTache.delaiJours,
+            etapesCount: l.modeleTache._count.etapes,
+          }))}
+        />
+      </CollapsibleSection>
 
       <EditableSection
         title="Éléments associés"
