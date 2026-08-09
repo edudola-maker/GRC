@@ -8,6 +8,7 @@ import {
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   addNoteJournal,
@@ -42,10 +43,11 @@ export default async function ConseilDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
   const user = await getCurrentUser();
   const [conseil, journal] = await Promise.all([
     prisma.conseil.findUnique({
@@ -302,12 +304,33 @@ export default async function ConseilDetailPage({
         </CollapsibleSection>
       ) : null}
 
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="CONSEIL"
-        id={conseil.id}
-        retour={`/conseils/${conseil.id}`}
-      />
+      <EditableSection
+        title="Éléments associés"
+        sectionKey="ELEMENTS_ASSOCIES"
+        baseHref={`/conseils/${conseil.id}`}
+        edit={edit}
+        canEdit={!conseil.archive}
+        defaultOpen={false}
+        editChildren={
+          <ElementsAssocies
+            uniteId={user.uniteId}
+            type="CONSEIL"
+            id={conseil.id}
+            retour={`/conseils/${conseil.id}?edit=ELEMENTS_ASSOCIES`}
+            editable
+            wrapInSection={false}
+          />
+        }
+      >
+        <ElementsAssocies
+          uniteId={user.uniteId}
+          type="CONSEIL"
+          id={conseil.id}
+          retour={`/conseils/${conseil.id}`}
+          editable={false}
+          wrapInSection={false}
+        />
+      </EditableSection>
 
       <CollapsibleSection title="Tags" defaultOpen={false}>
         <p style={{ margin: 0 }}>

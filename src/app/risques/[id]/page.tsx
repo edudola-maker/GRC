@@ -7,6 +7,7 @@ import {
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { archiveRisque, deleteRisque } from "../actions";
 import {
@@ -29,10 +30,11 @@ export default async function RisqueDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
   const user = await getCurrentUser();
 
   const risque = await prisma.risque.findUnique({
@@ -207,13 +209,33 @@ export default async function RisqueDetailPage({
         )}
       </CollapsibleSection>
 
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="RISQUE"
-        id={risque.id}
-        retour={`/risques/${risque.id}`}
-        editable={false}
-      />
+      <EditableSection
+        title="Éléments associés"
+        sectionKey="ELEMENTS_ASSOCIES"
+        baseHref={`/risques/${risque.id}`}
+        edit={edit}
+        canEdit={!risque.archive}
+        defaultOpen={false}
+        editChildren={
+          <ElementsAssocies
+            uniteId={user.uniteId}
+            type="RISQUE"
+            id={risque.id}
+            retour={`/risques/${risque.id}?edit=ELEMENTS_ASSOCIES`}
+            editable
+            wrapInSection={false}
+          />
+        }
+      >
+        <ElementsAssocies
+          uniteId={user.uniteId}
+          type="RISQUE"
+          id={risque.id}
+          retour={`/risques/${risque.id}`}
+          editable={false}
+          wrapInSection={false}
+        />
+      </EditableSection>
 
       <CollapsibleSection title="Tags" defaultOpen={false}>
         <p style={{ margin: 0 }}>

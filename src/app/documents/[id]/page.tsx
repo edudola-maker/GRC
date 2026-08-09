@@ -8,6 +8,7 @@ import {
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveDocument,
@@ -37,10 +38,11 @@ export default async function DocumentDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
   const user = await getCurrentUser();
   const document = await prisma.document.findUnique({
     where: { id },
@@ -197,13 +199,33 @@ export default async function DocumentDetailPage({
         </p>
       </CollapsibleSection>
 
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="DOCUMENT"
-        id={document.id}
-        retour={`/documents/${document.id}`}
-        editable={false}
-      />
+      <EditableSection
+        title="Éléments associés"
+        sectionKey="ELEMENTS_ASSOCIES"
+        baseHref={`/documents/${document.id}`}
+        edit={edit}
+        canEdit={!document.archive}
+        defaultOpen={false}
+        editChildren={
+          <ElementsAssocies
+            uniteId={user.uniteId}
+            type="DOCUMENT"
+            id={document.id}
+            retour={`/documents/${document.id}?edit=ELEMENTS_ASSOCIES`}
+            editable
+            wrapInSection={false}
+          />
+        }
+      >
+        <ElementsAssocies
+          uniteId={user.uniteId}
+          type="DOCUMENT"
+          id={document.id}
+          retour={`/documents/${document.id}`}
+          editable={false}
+          wrapInSection={false}
+        />
+      </EditableSection>
 
       <CollapsibleSection
         title="Tâches de revue"

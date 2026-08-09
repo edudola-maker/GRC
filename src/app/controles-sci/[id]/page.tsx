@@ -26,6 +26,7 @@ import { parseTags } from "@/lib/tags";
 import { getCurrentUser } from "@/lib/session";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { EditableSection } from "@/components/module/EditableSection";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +35,11 @@ export default async function ControleSCIDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
   const user = await getCurrentUser();
 
   const controle = await prisma.controleSCI.findUnique({
@@ -199,13 +201,33 @@ export default async function ControleSCIDetailPage({
         )}
       </CollapsibleSection>
 
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="CONTROLE_SCI"
-        id={controle.id}
-        retour={`/controles-sci/${controle.id}`}
-        editable={false}
-      />
+      <EditableSection
+        title="Éléments associés"
+        sectionKey="ELEMENTS_ASSOCIES"
+        baseHref={`/controles-sci/${controle.id}`}
+        edit={edit}
+        canEdit={!controle.archive}
+        defaultOpen={false}
+        editChildren={
+          <ElementsAssocies
+            uniteId={user.uniteId}
+            type="CONTROLE_SCI"
+            id={controle.id}
+            retour={`/controles-sci/${controle.id}?edit=ELEMENTS_ASSOCIES`}
+            editable
+            wrapInSection={false}
+          />
+        }
+      >
+        <ElementsAssocies
+          uniteId={user.uniteId}
+          type="CONTROLE_SCI"
+          id={controle.id}
+          retour={`/controles-sci/${controle.id}`}
+          editable={false}
+          wrapInSection={false}
+        />
+      </EditableSection>
 
       <CollapsibleSection
         title="Occurrences / tâches"

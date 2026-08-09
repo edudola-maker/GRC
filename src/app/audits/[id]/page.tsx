@@ -8,6 +8,7 @@ import { MissionForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { EditableSection } from "@/components/module/EditableSection";
 import {
   MissionEquipePanel,
   type MissionEquipeMembre,
@@ -59,6 +60,7 @@ const EDIT_SECTIONS = [
   "RECOMMANDATIONS",
   "RAPPORT",
   "SUIVI",
+  "ELEMENTS_ASSOCIES",
 ] as const;
 
 type EditSection = (typeof EDIT_SECTIONS)[number];
@@ -815,13 +817,34 @@ export default async function MissionDetailPage({
         )}
       </CollapsibleSection>
 
-      <ElementsAssocies
-        uniteId={uniteId}
-        type="MISSION"
-        id={mission.id}
-        retour={`/audits/${mission.id}`}
-        editable={false}
-      />
+      <EditableSection
+        title="Éléments associés"
+        sectionKey="ELEMENTS_ASSOCIES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("ELEMENTS_ASSOCIES")}
+        defaultOpen={false}
+        editChildren={
+          <ElementsAssocies
+            uniteId={uniteId}
+            type="MISSION"
+            id={mission.id}
+            retour={`${baseHref}?edit=ELEMENTS_ASSOCIES`}
+            editable
+            wrapInSection={false}
+          />
+        }
+      >
+        <ElementsAssocies
+          uniteId={uniteId}
+          type="MISSION"
+          id={mission.id}
+          retour={baseHref}
+          editable={false}
+          wrapInSection={false}
+        />
+      </EditableSection>
 
       <CollapsibleSection title="Tags" defaultOpen={false}>
         <p style={{ margin: 0 }}>
