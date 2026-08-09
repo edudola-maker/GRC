@@ -165,6 +165,8 @@ Socle flags livré. Plus tard : règles de conservation, accès besoin de conna�
 
 **CRUD minimal** modèles (box-by-box), création de tâche depuis modèle, affichage des modèles liés sur la fiche Processus.
 
+**Fiche modèle :** définition (infos, checklist, paramètres, processus) + box **Suivi des tâches** (occurrences via `modeleTacheId`, progression checklist, lien vers fiche Tâche) — lecture/pilotage, pas de sync modèle ↔ occurrences.
+
 **Roadmap :** Éditeur complet (key user), rôles métier complexes, unités autorisées avancées, fonctions avancées.
 
 ### 5quater. Export Excel (roadmap)

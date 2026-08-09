@@ -1942,25 +1942,6 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
-.unite-activite__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: 1rem 1.25rem;
-}
-
-.unite-activite__slice-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.unite-activite__slice-head h3 {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
 .unite-activite__list,
 .unite-objectifs__list,
 .unite-equipe__list {
@@ -1979,6 +1960,41 @@ a {
   gap: 0.35rem 0.75rem;
   padding: 0.35rem 0;
   border-bottom: 1px solid var(--line);
+}
+
+.modele-suivi__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.modele-suivi__row {
+  border-bottom: 1px solid var(--line);
+}
+
+.modele-suivi__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.modele-suivi__link:hover .modele-suivi__titre {
+  text-decoration: underline;
+}
+
+.modele-suivi__titre {
+  font-weight: 650;
+}
+
+.modele-suivi__meta {
+  font-size: 0.9rem;
+  color: var(--muted, #667);
 }
 
 /* Zones page (KPI, inventaire…) : même composant, fond de zone préservé */

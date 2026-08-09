@@ -26,6 +26,12 @@ function daysFromNow(days: number) {
 async function main() {
   console.log("🌱 Seed Sprint 2 Vague C…");
 
+  // Nettoyage défensif si la DB a été enrichie par une branche ultérieure (Unité / Objectif).
+  await prisma.$executeRawUnsafe(
+    `UPDATE "Unite" SET "responsableId" = NULL, "adjointId" = NULL`,
+  ).catch(() => undefined);
+  await prisma.$executeRawUnsafe(`DELETE FROM "Objectif"`).catch(() => undefined);
+
   await prisma.journalEvenement.deleteMany();
   await prisma.historiqueTache.deleteMany();
   await prisma.tacheChecklistItem.deleteMany();
@@ -642,6 +648,86 @@ async function main() {
 
   await prisma.sequenceCode.create({
     data: { uniteId, prefixe: "MDL", dernier: 2 },
+  });
+
+  const etapesEntree = await prisma.modeleTacheEtape.findMany({
+    where: { modeleTacheId: modeleEntree.id },
+    orderBy: { ordre: "asc" },
+  });
+  const etapesAudit = await prisma.modeleTacheEtape.findMany({
+    where: { modeleTacheId: modeleAudit.id },
+    orderBy: { ordre: "asc" },
+  });
+
+  // Occurrences depuis modèles (snapshots — pas de sync)
+  await prisma.tache.create({
+    data: {
+      uniteId,
+      titre: "Entrée d’un collaborateur — Claire Bernard",
+      description: modeleEntree.description,
+      responsableId: bernard.id,
+      modeleTacheId: modeleEntree.id,
+      dateEcheance: daysFromNow(3),
+      statut: "EN_COURS",
+      priorite: "MOYENNE",
+      categorie: "ADMINISTRATIF",
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+      checklistItems: {
+        create: etapesEntree.map((e, i) => ({
+          libelle: e.libelle,
+          ordre: e.ordre,
+          sourceModeleEtapeId: e.id,
+          fait: i < 2,
+          faitParId: i < 2 ? bernard.id : null,
+          faitLe: i < 2 ? daysFromNow(-1) : null,
+        })),
+      },
+    },
+  });
+  await prisma.tache.create({
+    data: {
+      uniteId,
+      titre: "Entrée d’un collaborateur — stagiaire été",
+      description: modeleEntree.description,
+      responsableId: claire.id,
+      modeleTacheId: modeleEntree.id,
+      dateEcheance: daysFromNow(-2),
+      statut: "A_FAIRE",
+      priorite: "HAUTE",
+      categorie: "ADMINISTRATIF",
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+      checklistItems: {
+        create: etapesEntree.map((e) => ({
+          libelle: e.libelle,
+          ordre: e.ordre,
+          sourceModeleEtapeId: e.id,
+        })),
+      },
+    },
+  });
+  await prisma.tache.create({
+    data: {
+      uniteId,
+      titre: "Préparer le lancement — mission subventions",
+      description: modeleAudit.description,
+      responsableId: alice.id,
+      modeleTacheId: modeleAudit.id,
+      dateEcheance: daysFromNow(10),
+      statut: "A_FAIRE",
+      priorite: "MOYENNE",
+      categorie: "MISSION",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+      checklistItems: {
+        create: etapesAudit.map((e) => ({
+          libelle: e.libelle,
+          ordre: e.ordre,
+          sourceModeleEtapeId: e.id,
+        })),
+      },
+    },
   });
 
   const controle = await prisma.controleSCI.create({

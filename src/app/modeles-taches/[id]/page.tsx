@@ -5,6 +5,7 @@ import {
   SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import {
   EditableSection,
   SectionSaveActions,
@@ -12,6 +13,7 @@ import {
 import { ModeleTacheEtapesPanel } from "@/components/modeles-taches/ModeleTacheEtapesPanel";
 import { ModeleTacheForm } from "@/components/modeles-taches/ModeleTacheForm";
 import { ModeleTacheProcessusPanel } from "@/components/modeles-taches/ModeleTacheProcessusPanel";
+import { ModeleTacheSuiviPanel } from "@/components/modeles-taches/ModeleTacheSuiviPanel";
 import { PageHeader } from "@/components/ui";
 import {
   activerModeleTache,
@@ -58,34 +60,52 @@ export default async function ModeleTacheDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [modele, users, processusCandidats, redactions] = await Promise.all([
-    prisma.modeleTache.findUnique({
-      where: { id },
-      include: {
-        creePar: true,
-        responsableDefaut: true,
-        unite: true,
-        etapes: { orderBy: { ordre: "asc" } },
-        processus: {
-          include: {
-            processus: { select: { id: true, code: true, nom: true } },
+  const [modele, users, processusCandidats, redactions, occurrences] =
+    await Promise.all([
+      prisma.modeleTache.findUnique({
+        where: { id },
+        include: {
+          creePar: true,
+          responsableDefaut: true,
+          unite: true,
+          etapes: { orderBy: { ordre: "asc" } },
+          processus: {
+            include: {
+              processus: { select: { id: true, code: true, nom: true } },
+            },
+            orderBy: { lieLe: "asc" },
           },
-          orderBy: { lieLe: "asc" },
         },
-      },
-    }),
-    listUtilisateursActifsForCurrentUnite(),
-    prisma.processus.findMany({
-      where: { uniteId: user.uniteId, archive: false },
-      select: { id: true, code: true, nom: true },
-      orderBy: { nom: "asc" },
-    }),
-    listSectionRedactions("MODELE_TACHE", id),
-  ]);
+      }),
+      listUtilisateursActifsForCurrentUnite(),
+      prisma.processus.findMany({
+        where: { uniteId: user.uniteId, archive: false },
+        select: { id: true, code: true, nom: true },
+        orderBy: { nom: "asc" },
+      }),
+      listSectionRedactions("MODELE_TACHE", id),
+      prisma.tache.findMany({
+        where: { modeleTacheId: id },
+        include: {
+          responsable: { select: { nom: true } },
+          checklistItems: { select: { fait: true } },
+        },
+        orderBy: [{ dateEcheance: "asc" }, { modifieLe: "desc" }],
+      }),
+    ]);
   if (!modele) notFound();
 
   const canEdit = true;
   const baseHref = `/modeles-taches/${modele.id}`;
+  const occurrencesVue = occurrences.map((t) => ({
+    id: t.id,
+    titre: t.titre,
+    statut: t.statut,
+    dateEcheance: t.dateEcheance,
+    responsableNom: t.responsable.nom,
+    checklistFaits: t.checklistItems.filter((i) => i.fait).length,
+    checklistTotal: t.checklistItems.length,
+  }));
 
   return (
     <>
@@ -285,6 +305,14 @@ export default async function ModeleTacheDetailPage({
           </div>
         </dl>
       </EditableSection>
+
+      <CollapsibleSection
+        title="Suivi des tâches"
+        defaultOpen
+        badge={`${occurrencesVue.length}`}
+      >
+        <ModeleTacheSuiviPanel occurrences={occurrencesVue} />
+      </CollapsibleSection>
     </>
   );
 }
