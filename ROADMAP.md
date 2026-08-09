@@ -79,7 +79,7 @@ Conséquence UI :
 | Documents | MVP | Inventaire + revues planifiées |
 | Équipe | Absorbé | Section de `/unite` (redirect `/equipe`) |
 | Missions d’assurance | MVP | Routes `/missions` (redirect `/audits`) |
-| Protection des données | Roadmap | Vue de pilotage LPD transversale |
+| Protection des données | Roadmap | Pilotage LPD + consolidation (voir §5ter-bis / `docs/LPD.md`) |
 | Boîte de réception | Long terme | Entrée commune sans double saisie |
 
 ---
@@ -157,21 +157,31 @@ Socle livré : types & templates seedés, équipe + rôles, initiales, sections 
 
 **Roadmap — routes :** migrer `/missions` vers le nom définitif du module.
 
-### 5ter-bis. LPD / Privacy by design + onglet Protection des données (roadmap)
+### 5ter-bis. LPD by design + Protection des données (roadmap)
 
-Socle flags livré (`contientDonneesPersonnelles`, `niveauConfidentialite`). Pas de données personnelles réelles en démo/test. Confluence reste la référence documentaire.
+Vision détaillée : [`docs/LPD.md`](./docs/LPD.md).
 
-**Roadmap — onglet distinct « Protection des données »** (vue de pilotage, pas un module juridique) :
+**Principe :** documenter et démontrer les bonnes réflexions **sans** questionnaire LPD lourd. Intégré au quotidien, secondaire, repliable, peu contraignant.
 
-- objets contenant des données personnelles ;
-- niveaux de confidentialité ;
-- règles / stratégies de conservation ;
-- objets sans classification ;
-- périmètres / accès sensibles ;
-- points d’attention ;
-- indicateurs de conformité synthétiques.
+**Socle livré :** `contientDonneesPersonnelles`, `niveauConfidentialite` (Mission / Template / Document / Processus). Pas de données personnelles réelles en démo. Confluence = référence documentaire détaillée.
 
-Complète l’approche LPD by design ; exports futurs soumis aux mêmes permissions.
+**Au fil du travail (futur enrichissement léger) :** présence DP ; confidentialité ; courte réflexion / mesures ; règle de conservation si connue ; périmètre d’accès éventuel.
+
+**Éviter la ressaisie :** héritage depuis Processus / Template / référentiel — l’utilisateur confirme ou adapte (ex. template de mission préqualifié).
+
+**Onglet transversal « Protection des données »** — vue de **pilotage / consolidation** (pas un écran de saisie principal) :
+
+- objets concernés (processus, missions, documents…) ;
+- classifications, mesures, règles de conservation ;
+- éléments non qualifiés / points d’attention ;
+- indicateurs synthétiques.
+
+**Rapport / extraction LPD (terme) :**  
+`réflexion légère → données structurées → consolidation → rapport` paramétrable (unité, période, processus…). Remplace le document manuel parallèle. Mêmes permissions que les fiches sources.
+
+**Versioning :** historiser les champs LPD structurants via `HistoriqueModification` (évolution classification / réflexion dans le temps). Conservation / purge des historiques paramétrables — propriétaire naturel de ce chantier.
+
+**Ne pas développer maintenant** un gros module LPD ; rester compatible (pas de silo, pas de double saisie).
 
 ### 5ter-ter. Modèles de tâches
 

@@ -70,4 +70,6 @@ HistoriqueModification
 ## Compatibilité LPD / droits
 
 - Lecture historique = mêmes permissions que la fiche.
-- Pas de purge auto en Phase 1 ; paramétrage conservation → Protection des données.
+- Pas de purge auto en Phase 1 ; paramétrage conservation → Protection des données ([`LPD.md`](./LPD.md)).
+- **Champs LPD structurants** (`contientDonneesPersonnelles`, `niveauConfidentialite`, futures réflexion / conservation / périmètre) : à historiser comme les autres champs structurants dès qu’ils sont enregistrés — pour retrouver classification / réflexion applicables à une période et leur évolution.
+- Ne pas stocker les faits LPD structurants uniquement hors système (sinon consolidation / rapport impossibles).

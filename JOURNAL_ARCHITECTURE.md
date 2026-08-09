@@ -252,3 +252,8 @@ Décisions validées (pas de snapshot Phase 1 ; champs structurants enregistrés
 - Fiche Risque : boxes **Historique** et **Journal d’activité** (séparées).
 - Branchement `create` / `update` / `archive` / liaisons contrôles.
 
+## 2026-08-09 — Vision LPD by design (doc only)
+
+Complément roadmap : protection des données documentée, traçable, démontrable — discrète UX.  
+Détail : [`docs/LPD.md`](./docs/LPD.md) — héritage template/processus, onglet pilotage, rapport, historisation des champs LPD. **Pas de module développé.**
+

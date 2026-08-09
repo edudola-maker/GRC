@@ -26,6 +26,10 @@ Inventaire des éléments encore **hardcodés ou semi-configurables** qui devron
 | Modèles de tâches | CRUD métier `/modeles-taches` | Key user = même fiche ou Éditeur dédié |
 | Sections / champs futurs | — | Méta-modèle (roadmap) |
 
+## LPD / Protection des données (compatibilité Éditeur)
+
+Voir [`LPD.md`](./LPD.md). L’Éditeur (templates missions, processus, modèles) devra permettre de **préqualifier** les infos LPD légères pour héritage vers les instances — sans imposer un questionnaire lourd. Pas d’écran LPD dédié dans l’Éditeur comme module juridique.
+
 ## Règle
 
 Tant que l’Éditeur n’existe pas : **ne pas dupliquer** en hardcodant de nouvelles listes métier sans passer par `ReferentielValeur` / modèles en base lorsque c’est simple.
