@@ -1,27 +1,40 @@
 import type { ReactNode } from "react";
-import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import {
+  PilotageStrip,
+  type PilotageItem,
+} from "@/components/module/PilotageStrip";
 
-/** Zone de pilotage commune à tous les modules (repliable). */
+export type { PilotageItem };
+
+/**
+ * Zone de pilotage — bandeau compact (plus de grandes cartes).
+ * Préférer `items` ; `children` reste supporté en secours (grille dense).
+ */
 export function KpiZone({
-  label = "Vue de pilotage",
+  items,
   children,
-  defaultOpen = true,
+  label = "Pilotage",
 }: {
+  items?: PilotageItem[];
+  children?: ReactNode;
   label?: string;
-  children: ReactNode;
+  /** Ignoré — conservé pour compatibilité d’appel. */
   defaultOpen?: boolean;
 }) {
+  if (items && items.length > 0) {
+    return <PilotageStrip items={items} label={label} />;
+  }
+
+  if (!children) return null;
+
   return (
-    <CollapsibleSection
-      title={label}
-      defaultOpen={defaultOpen}
-      className="page-zone page-zone--kpi collapsible-section--zone"
-    >
-      <div className="stats">{children}</div>
-    </CollapsibleSection>
+    <div className="pilotage-strip pilotage-strip--legacy" aria-label={label}>
+      <div className="stats stats--compact">{children}</div>
+    </div>
   );
 }
 
+/** @deprecated Utiliser PilotageStrip items — conservé pour pages non migrées. */
 export function KpiStat({
   value,
   label,
@@ -30,7 +43,7 @@ export function KpiStat({
   label: string;
 }) {
   return (
-    <div className="stat">
+    <div className="stat stat--compact">
       <strong>{value}</strong>
       {label}
     </div>

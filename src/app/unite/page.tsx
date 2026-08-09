@@ -8,33 +8,27 @@ import {
   SectionSaveActions,
 } from "@/components/module/EditableSection";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { PilotageStrip } from "@/components/module/PilotageStrip";
 import { PageHeader, BtnLink } from "@/components/ui";
-import { UniteForm } from "@/components/unite/UniteForm";
-import { UnitePilotagePanel } from "@/components/unite/UnitePilotagePanel";
 import { updateUnite } from "./actions";
 import { MODULE_HELP } from "@/lib/catalog";
 import {
   PRIORITE_LABELS,
+  ROLE_UTILISATEUR_LABELS,
+  STATUT_MISSION_LABELS,
   STATUT_OBJECTIF_LABELS,
   STATUT_PROCESSUS_LABELS,
   formatDate,
 } from "@/lib/labels";
+import { isAdministrateur } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { listSectionRedactions } from "@/lib/section-redaction";
-import {
-  formatUtilisateurNom,
-  getCurrentUser,
-  listUtilisateursActifsForCurrentUnite,
-} from "@/lib/session";
+import { formatUtilisateurNom, getCurrentUser } from "@/lib/session";
 import { getUnitePilotage } from "@/lib/unite-overview";
 
 export const dynamic = "force-dynamic";
 
-const EDIT_SECTIONS = [
-  "VUE_ENSEMBLE",
-  "OBJECTIFS",
-  "ELEMENTS_ASSOCIES",
-] as const;
+const EDIT_SECTIONS = ["OBJECTIFS", "ELEMENTS_ASSOCIES"] as const;
 
 type EditSection = (typeof EDIT_SECTIONS)[number];
 
@@ -61,7 +55,7 @@ export default async function UnitePage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [unite, users, redactions, pilotage, objectifs, membres, processus] =
+  const [unite, redactions, pilotage, objectifs, membres, processus, missions] =
     await Promise.all([
       prisma.unite.findUnique({
         where: { id: uniteId },
@@ -70,7 +64,6 @@ export default async function UnitePage({
           adjoint: true,
         },
       }),
-      listUtilisateursActifsForCurrentUnite(),
       listSectionRedactions("UNITE", uniteId),
       getUnitePilotage(uniteId),
       prisma.objectif.findMany({
@@ -87,6 +80,7 @@ export default async function UnitePage({
           prenom: true,
           role: true,
           initiales: true,
+          fonction: true,
           email: true,
         },
       }),
@@ -94,6 +88,14 @@ export default async function UnitePage({
         where: { uniteId, archive: false },
         orderBy: { nom: "asc" },
         select: { id: true, code: true, nom: true, statut: true },
+      }),
+      prisma.mission.findMany({
+        where: { uniteId, archive: false },
+        include: {
+          type: { select: { libelle: true } },
+          responsable: { select: { nom: true, prenom: true } },
+        },
+        orderBy: [{ dateDebut: "desc" }, { titre: "asc" }],
       }),
     ]);
 
@@ -108,83 +110,51 @@ export default async function UnitePage({
         title={`${unite.code} — ${unite.nom}`}
         description={
           unite.description ??
-          "Fiche métier de l’unité : identité, objectifs, activité agrégée."
+          "Fiche métier de l’unité — agrégation, pas de double saisie."
         }
+        help={<ModuleHelp {...MODULE_HELP.unite} />}
         actions={
           <>
-            <BtnLink href="/objectifs/nouveau">+ Nouvel objectif</BtnLink>
-            <BtnLink href="/projets/nouveau" variant="ghost">
-              + Nouveau projet
-            </BtnLink>
-            <BtnLink href="/missions/nouveau" variant="ghost">
-              + Nouvelle mission
-            </BtnLink>
-            <BtnLink href="/taches/nouvelle" variant="ghost">
-              + Nouvelle tâche
-            </BtnLink>
-            <BtnLink href="/processus/nouveau" variant="ghost">
-              + Nouveau processus
-            </BtnLink>
+            <BtnLink href="/objectifs/nouveau">+ Objectif</BtnLink>
+            {isAdministrateur(user) ? (
+              <BtnLink href="/administration/unites" variant="ghost">
+                Administration
+              </BtnLink>
+            ) : null}
           </>
         }
       />
-      <ModuleHelp {...MODULE_HELP.unite} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
       {!unite.actif ? (
         <div className="flash flash--warn">Cette unité est inactive.</div>
       ) : null}
 
-      <EditableSection
-        title="Vue d’ensemble"
-        sectionKey="VUE_ENSEMBLE"
-        baseHref={baseHref}
-        edit={edit}
-        canEdit={canEdit}
-        redaction={redactions.get("VUE_ENSEMBLE")}
-        defaultOpen
-        editChildren={
-          <UniteForm
-            action={updateUnite}
-            users={users}
-            values={unite}
-            cancelHref={baseHref}
-          />
-        }
-      >
-        <dl className="kv">
-          <div>
-            <dt>Code</dt>
-            <dd>{unite.code}</dd>
-          </div>
-          <div>
-            <dt>Nom</dt>
-            <dd>{unite.nom}</dd>
-          </div>
-          <div>
-            <dt>Mission</dt>
-            <dd>{unite.description ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Responsable</dt>
-            <dd>{unite.responsable?.nom ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Adjoint</dt>
-            <dd>{unite.adjoint?.nom ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Statut</dt>
-            <dd>{unite.actif ? "Actif" : "Inactif"}</dd>
-          </div>
-          <div>
-            <dt>Membres</dt>
-            <dd>{membres.length} collaborateur{membres.length === 1 ? "" : "s"}</dd>
-          </div>
-        </dl>
-      </EditableSection>
-
-      <CollapsibleSection title="Pilotage" defaultOpen badge="synthèse">
-        <UnitePilotagePanel pilotage={pilotage} />
+      <CollapsibleSection title="Pilotage" defaultOpen>
+        <PilotageStrip
+          items={[
+            {
+              value: pilotage.objectifsEnCours,
+              label: "objectifs",
+              tone: "ok",
+            },
+            { value: pilotage.projetsActifs, label: "projets" },
+            { value: pilotage.missionsEnCours, label: "missions" },
+            { value: pilotage.processusActifs, label: "processus" },
+            {
+              value: pilotage.tachesEnRetard,
+              label: "à traiter",
+              tone: pilotage.tachesEnRetard > 0 ? "danger" : "default",
+              href:
+                pilotage.tachesEnRetard > 0
+                  ? "/?vue=retard"
+                  : undefined,
+            },
+          ]}
+        />
+        <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.82rem" }}>
+          Compteurs calculés — « à traiter » ouvre les tâches en retard du
+          tableau de bord.
+        </p>
       </CollapsibleSection>
 
       <EditableSection
@@ -195,14 +165,10 @@ export default async function UnitePage({
         canEdit={canEdit}
         redaction={redactions.get("OBJECTIFS")}
         defaultOpen
-        badge={`${objectifs.filter((o) => o.statut === "EN_COURS").length} en cours`}
+        badge={`${objectifs.filter((o) => o.statut === "EN_COURS").length}`}
         editChildren={
           <>
-            <p className="muted" style={{ marginTop: 0 }}>
-              Créez ou ouvrez un objectif pour le modifier. Les liens se gèrent
-              sur la fiche de chaque objectif.
-            </p>
-            <div className="form-actions" style={{ marginBottom: "1rem" }}>
+            <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
               <BtnLink href="/objectifs/nouveau">+ Nouvel objectif</BtnLink>
             </div>
             <ObjectifsList objectifs={objectifs} />
@@ -226,26 +192,34 @@ export default async function UnitePage({
           badge={`${membres.length}`}
         >
           <p className="muted" style={{ marginTop: 0 }}>
-            Collaborateurs rattachés à l’unité (lecture). Gestion des comptes →
-            Administration.
+            Collaborateurs issus du référentiel Utilisateurs — gestion des
+            comptes dans Administration.
           </p>
           {membres.length === 0 ? (
             <p className="empty">Aucun collaborateur actif.</p>
           ) : (
             <ul className="unite-equipe__list">
               {membres.map((m) => {
-                let roleLabel = "Collaborateur";
-                if (m.id === unite.responsableId) roleLabel = "Responsable";
-                else if (m.id === unite.adjointId) roleLabel = "Adjoint";
-                else if (m.role === "RESPONSABLE") {
-                  roleLabel = "Responsable (rôle)";
+                let roleLabel =
+                  ROLE_UTILISATEUR_LABELS[m.role] ?? "Collaborateur";
+                if (m.id === unite.responsableId) {
+                  roleLabel = "Responsable d’unité";
+                } else if (m.id === unite.adjointId) {
+                  roleLabel = "Adjoint";
                 }
                 return (
                   <li key={m.id} className="unite-equipe__row">
-                    <strong>
-                      {m.initiales ? `${m.initiales} · ` : ""}
-                      {formatUtilisateurNom(m)}
-                    </strong>
+                    <span className="unite-equipe__id">
+                      <span className="initiales-badge" aria-hidden>
+                        {m.initiales?.trim() || "—"}
+                      </span>
+                      <span>
+                        <strong>{formatUtilisateurNom(m)}</strong>
+                        {m.fonction ? (
+                          <span className="muted"> · {m.fonction}</span>
+                        ) : null}
+                      </span>
+                    </span>
                     <span className="muted">{roleLabel}</span>
                   </li>
                 );
@@ -260,13 +234,7 @@ export default async function UnitePage({
         defaultOpen={false}
         badge={`${processus.length}`}
       >
-        <p className="muted" style={{ marginTop: 0 }}>
-          Processus de l’unité — détail et étapes sur chaque fiche Processus.
-        </p>
-        <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
-          <BtnLink href="/processus/nouveau" variant="ghost">
-            + Nouveau processus
-          </BtnLink>
+        <div className="form-actions" style={{ marginBottom: "0.65rem" }}>
           <BtnLink href="/processus" variant="ghost">
             Voir tous
           </BtnLink>
@@ -284,6 +252,41 @@ export default async function UnitePage({
                 </Link>
                 <span className="muted">
                   {STATUT_PROCESSUS_LABELS[p.statut] ?? p.statut}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Missions"
+        defaultOpen={false}
+        badge={`${missions.length}`}
+      >
+        <div className="form-actions" style={{ marginBottom: "0.65rem" }}>
+          <BtnLink href="/missions" variant="ghost">
+            Voir toutes
+          </BtnLink>
+        </div>
+        {missions.length === 0 ? (
+          <p className="empty">Aucune mission.</p>
+        ) : (
+          <ul className="unite-activite__list">
+            {missions.map((m) => (
+              <li key={m.id}>
+                <Link href={`/missions/${m.id}`}>
+                  <strong>
+                    {m.code} — {m.titre}
+                  </strong>
+                </Link>
+                <span className="muted">
+                  {m.type.libelle} ·{" "}
+                  {STATUT_MISSION_LABELS[m.statut] ?? m.statut} ·{" "}
+                  {formatUtilisateurNom(m.responsable)}
+                  {m.dateDebut || m.dateFin
+                    ? ` · ${m.dateDebut ? formatDate(m.dateDebut) : "—"} → ${m.dateFin ? formatDate(m.dateFin) : "—"}`
+                    : ""}
                 </span>
               </li>
             ))}
@@ -345,7 +348,7 @@ function ObjectifsList({
     statut: string;
     priorite: string;
     dateEcheance: Date | null;
-    responsable: { nom: string };
+    responsable: { nom: string; prenom?: string | null };
   }>;
 }) {
   if (objectifs.length === 0) {
@@ -370,7 +373,8 @@ function ObjectifsList({
             <span className="muted">
               {" "}
               · {o.annee} · {STATUT_OBJECTIF_LABELS[o.statut] ?? o.statut} ·{" "}
-              {PRIORITE_LABELS[o.priorite] ?? o.priorite} · {o.responsable.nom}
+              {PRIORITE_LABELS[o.priorite] ?? o.priorite} ·{" "}
+              {formatUtilisateurNom(o.responsable)}
               {o.dateEcheance ? ` · éch. ${formatDate(o.dateEcheance)}` : ""}
             </span>
           </div>

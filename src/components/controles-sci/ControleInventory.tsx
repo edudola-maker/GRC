@@ -47,12 +47,14 @@ const QUICK_LABELS: Record<QuickFilter, string> = {
 export function ControleInventory({
   items,
   responsables,
+  initialQuick,
 }: {
   items: ControleInventoryItem[];
   responsables: { id: string; nom: string }[];
+  initialQuick?: QuickFilter;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
-  const [quick, setQuick] = useState<QuickFilter>("actifs");
+  const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
   const [responsableQuick, setResponsableQuick] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [statut, setStatut] = useState("");

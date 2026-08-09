@@ -53,12 +53,14 @@ const QUICK_LABELS: Record<QuickFilter, string> = {
 export function RisqueInventory({
   items,
   responsables,
+  initialQuick,
 }: {
   items: RisqueInventoryItem[];
   responsables: { id: string; nom: string }[];
+  initialQuick?: QuickFilter;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
-  const [quick, setQuick] = useState<QuickFilter>("tous");
+  const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "tous");
   const [responsableQuick, setResponsableQuick] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [statut, setStatut] = useState("");

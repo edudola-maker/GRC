@@ -1,22 +1,27 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 export function PageHeader({
   title,
   description,
   actions,
   badge,
+  help,
 }: {
   title: string;
   description?: string;
-  actions?: React.ReactNode;
+  actions?: ReactNode;
   /** Indicateur discret (ex. vue responsable) */
-  badge?: React.ReactNode;
+  badge?: ReactNode;
+  /** Icône ⓘ d’aide à côté du titre */
+  help?: ReactNode;
 }) {
   return (
-    <header className="page-header page-header--row">
+    <header className="page-header page-header--row page-header--compact">
       <div>
         <div className="page-header__title-row">
           <h1>{title}</h1>
+          {help ? <span className="page-header__help">{help}</span> : null}
           {badge ? <span className="page-header__badge">{badge}</span> : null}
         </div>
         {description ? <p>{description}</p> : null}

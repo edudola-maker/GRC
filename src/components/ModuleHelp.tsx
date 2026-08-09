@@ -6,8 +6,7 @@ export type ModuleHelpSection = {
 };
 
 /**
- * Aide contextuelle pédagogique (≈ 1–2 min de lecture).
- * Repliable pour ne pas surcharger l’interface.
+ * Aide contextuelle — icône ⓘ discrète (popover), plus de grande box.
  */
 export function ModuleHelp({
   title,
@@ -15,20 +14,18 @@ export function ModuleHelp({
   sections,
 }: {
   title: string;
-  /** Texte court de secours si pas de sections structurées */
   body?: string;
   sections?: readonly ModuleHelpSection[];
 }) {
   return (
-    <details className="module-help">
-      <summary aria-label={title}>
+    <details className="module-help module-help--icon">
+      <summary aria-label={`Aide : ${title}`} title={`Aide — ${title}`}>
         <span className="module-help__icon" aria-hidden>
           ⓘ
         </span>
-        <span className="module-help__title">{title}</span>
-        <span className="module-help__hint muted">Aide du module</span>
       </summary>
-      <div className="module-help__content">
+      <div className="module-help__popover" role="note">
+        <p className="module-help__popover-title">{title}</p>
         {sections && sections.length > 0 ? (
           sections.map((s) => (
             <div key={s.heading} className="module-help__block">
@@ -63,15 +60,16 @@ export function ModuleHelpRich({
   children: ReactNode;
 }) {
   return (
-    <details className="module-help">
-      <summary aria-label={title}>
+    <details className="module-help module-help--icon">
+      <summary aria-label={`Aide : ${title}`} title={`Aide — ${title}`}>
         <span className="module-help__icon" aria-hidden>
           ⓘ
         </span>
-        <span className="module-help__title">{title}</span>
-        <span className="module-help__hint muted">Aide du module</span>
       </summary>
-      <div className="module-help__content">{children}</div>
+      <div className="module-help__popover" role="note">
+        <p className="module-help__popover-title">{title}</p>
+        <div className="module-help__content">{children}</div>
+      </div>
     </details>
   );
 }

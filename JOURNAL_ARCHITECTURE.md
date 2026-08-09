@@ -224,3 +224,12 @@ Les correctifs UI issus de la revue Vague A sont consolidés dans l’entrée Va
 - `/modifier` globales : redirects vers `?edit=INFOS_GENERALES` ; édition box-by-box sur fiches Conseils, Risques, Documents, Contrôles, Tâches.
 - Objectifs : conserver trois modèles ; document `docs/OBJECTIFS.md` ; geler ObjectifAnnuel / ObjectifModule.
 
+## 2026-08-09 — UX trimming transversal
+
+**Branche / PR :** `cursor/ux-trimming-transversal-72a6`
+
+- Aide ⓘ inline (popover) ; inventaire = outils + lignes dans une seule box.
+- Pilotage compact ; « À traiter » → indicateur cliquable `?filtre=…#inventaire`.
+- `/unite` : suppression Vue d’ensemble ; Équipe enrichie ; section Missions ; identité via Admin.
+- Détail : `docs/UX_TRIMMING.md`.
+

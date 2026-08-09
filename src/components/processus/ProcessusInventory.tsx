@@ -27,26 +27,31 @@ export type ProcessusInventoryItem = {
   tags: string | null;
   archive: boolean;
   estActif: boolean;
+  /** True si un lien Confluence / référence est renseigné. */
+  aLienConfluence: boolean;
 };
 
-type QuickFilter = "tous" | "actifs" | "suspendus" | "archives";
+type QuickFilter = "tous" | "actifs" | "suspendus" | "sans_confluence" | "archives";
 
 const QUICK_LABELS: Record<QuickFilter, string> = {
   tous: "Tous",
   actifs: "Actifs",
   suspendus: "Suspendus",
+  sans_confluence: "Sans Confluence",
   archives: "Archivés",
 };
 
 export function ProcessusInventory({
   items,
   responsables,
+  initialQuick,
 }: {
   items: ProcessusInventoryItem[];
   responsables: { id: string; nom: string }[];
+  initialQuick?: QuickFilter;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
-  const [quick, setQuick] = useState<QuickFilter>("actifs");
+  const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
   const [responsableQuick, setResponsableQuick] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [statut, setStatut] = useState("");
@@ -58,6 +63,8 @@ export function ProcessusInventory({
       list = list.filter((p) => p.estActif && !p.archive);
     else if (quick === "suspendus")
       list = list.filter((p) => p.statut === "SUSPENDU" && !p.archive);
+    else if (quick === "sans_confluence")
+      list = list.filter((p) => !p.archive && !p.aLienConfluence);
     else if (quick === "archives") list = list.filter((p) => p.archive);
     else list = list.filter((p) => !p.archive);
 

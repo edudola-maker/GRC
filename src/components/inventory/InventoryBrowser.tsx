@@ -6,8 +6,8 @@ import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { filterByQuery } from "@/lib/inventory-filters";
 
 /**
- * Socle réutilisable : recherche dynamique + panneau avancé + filtres actifs.
- * Structure en zones repliables : outils puis inventaire.
+ * Inventaire unique : recherche / filtres intégrés dans la box (plus de box outils séparée).
+ * Filtrage client — pas de rechargement de page.
  */
 export function InventoryBrowser({
   searchPlaceholder,
@@ -19,7 +19,6 @@ export function InventoryBrowser({
   advancedPanel,
   resultCount,
   totalCount,
-  toolsLabel = "Filtres et recherche",
   inventoryLabel = "Inventaire",
   activeFilterChips = [],
   onResetFilters,
@@ -35,6 +34,7 @@ export function InventoryBrowser({
   advancedPanel: ReactNode;
   resultCount: number;
   totalCount: number;
+  /** @deprecated Ignoré — les outils sont dans l’inventaire. */
   toolsLabel?: string;
   inventoryLabel?: string;
   activeFilterChips?: string[];
@@ -44,62 +44,58 @@ export function InventoryBrowser({
 }) {
   const countLabel =
     resultCount === totalCount
-      ? `${totalCount} élément${totalCount > 1 ? "s" : ""}`
-      : `${resultCount} sur ${totalCount}`;
+      ? `${totalCount}`
+      : `${resultCount}/${totalCount}`;
 
   return (
-    <div className="inventory inventory-shell">
-      <CollapsibleSection
-        title={toolsLabel}
-        defaultOpen
-        className="page-zone page-zone--tools collapsible-section--zone"
-      >
-        <div className="inventory__search-row">
-          <label className="inventory__search" htmlFor="inventory-q">
-            <span className="sr-only">Recherche</span>
-            <input
-              id="inventory-q"
-              type="search"
-              value={searchValue}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={searchPlaceholder}
-              autoComplete="off"
-            />
-          </label>
-          <button
-            type="button"
-            className={`btn btn--ghost inventory__advanced-toggle${advancedOpen ? " is-open" : ""}`}
-            onClick={onAdvancedToggle}
-            aria-expanded={advancedOpen}
-          >
-            Recherche avancée
-          </button>
-        </div>
-
-        {advancedOpen ? (
-          <div className="inventory__advanced panel panel--inset">
-            {advancedPanel}
-          </div>
-        ) : null}
-
-        <div className="filter-bar inventory__filters">{quickFilters}</div>
-
-        {onResetFilters ? (
-          <ActiveFiltersBar
-            chips={activeFilterChips}
-            onReset={onResetFilters}
-            canReset={canResetFilters}
-          />
-        ) : null}
-      </CollapsibleSection>
-
+    <div id="inventaire" className="inventory inventory-shell">
       <CollapsibleSection
         title={inventoryLabel}
         defaultOpen
         badge={countLabel}
         className="page-zone page-zone--inventory collapsible-section--zone"
       >
-        {children}
+        <div className="inventory__toolbar">
+          <div className="inventory__search-row">
+            <label className="inventory__search" htmlFor="inventory-q">
+              <span className="sr-only">Recherche</span>
+              <input
+                id="inventory-q"
+                type="search"
+                value={searchValue}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={searchPlaceholder}
+                autoComplete="off"
+              />
+            </label>
+            <button
+              type="button"
+              className={`btn btn--ghost inventory__advanced-toggle${advancedOpen ? " is-open" : ""}`}
+              onClick={onAdvancedToggle}
+              aria-expanded={advancedOpen}
+            >
+              Recherche avancée
+            </button>
+          </div>
+
+          {advancedOpen ? (
+            <div className="inventory__advanced panel panel--inset">
+              {advancedPanel}
+            </div>
+          ) : null}
+
+          <div className="filter-bar inventory__filters">{quickFilters}</div>
+
+          {onResetFilters ? (
+            <ActiveFiltersBar
+              chips={activeFilterChips}
+              onReset={onResetFilters}
+              canReset={canResetFilters}
+            />
+          ) : null}
+        </div>
+
+        <div className="inventory__body">{children}</div>
       </CollapsibleSection>
     </div>
   );

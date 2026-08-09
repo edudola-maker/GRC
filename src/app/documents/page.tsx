@@ -1,8 +1,7 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { AttentionZone } from "@/components/module/AttentionZone";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
 import {
   DocumentInventory,
   type DocumentInventoryItem,
@@ -13,7 +12,6 @@ import {
   STATUT_DOCUMENT_LABELS,
   TYPE_DOCUMENT_LABELS,
   addDays,
-  formatDateDot,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -27,7 +25,7 @@ const DOC_STATUTS_CLOS = ["OBSOLETE", "ARCHIVE"] as const;
 export default async function DocumentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
 }) {
   const sp = await searchParams;
   const today = startOfToday();
@@ -95,7 +93,6 @@ export default async function DocumentsPage({
     };
   });
 
-  const enRetardItems = items.filter((d) => d.estRetard && !d.archive);
   const responsables = Array.from(
     new Map(
       items
@@ -107,34 +104,42 @@ export default async function DocumentsPage({
     ).values(),
   );
 
+  const initialQuick =
+    sp.filtre === "retard"
+      ? "retard"
+      : sp.filtre === "en_vigueur"
+        ? "en_vigueur"
+        : undefined;
+
   return (
     <>
       <PageHeader
         title="Documents"
-        description="Inventaire, métadonnées et planification des revues — le contenu reste dans Confluence."
+        description="Inventaire et planification des revues — contenu dans Confluence."
+        help={<ModuleHelp {...MODULE_HELP.documents} />}
         actions={<BtnLink href="/documents/nouveau">Nouveau document</BtnLink>}
       />
-      <ModuleHelp {...MODULE_HELP.documents} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={inventorie} label="Inventoriés" />
-        <KpiStat value={revuesProchaines} label="Revues à effectuer (30 j.)" />
-        <KpiStat value={enRetard} label="En retard" />
-        <KpiStat value={enVigueur} label="En vigueur" />
-      </KpiZone>
-
-      <AttentionZone
-        items={enRetardItems.map((d) => ({
-          id: d.id,
-          href: `/documents/${d.id}`,
-          code: d.code,
-          title: d.nom,
-          meta: `${d.responsableNom}${d.prochaineRevue ? ` · revue ${formatDateDot(d.prochaineRevue)}` : ""}`,
-        }))}
+      <KpiZone
+        items={[
+          { value: inventorie, label: "inventoriés", tone: "ok" },
+          { value: revuesProchaines, label: "à surveiller (30 j.)" },
+          { value: enVigueur, label: "en vigueur" },
+          {
+            value: enRetard,
+            label: "à traiter",
+            tone: enRetard > 0 ? "danger" : "default",
+            href: enRetard > 0 ? "?filtre=retard#inventaire" : undefined,
+          },
+        ]}
       />
 
-      <DocumentInventory items={items} responsables={responsables} />
+      <DocumentInventory
+        items={items}
+        responsables={responsables}
+        initialQuick={initialQuick}
+      />
     </>
   );
 }

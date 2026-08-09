@@ -25,7 +25,9 @@ Les fusionner mélangerait stratégie, management individuel et métrologie — 
 - **Dashboard** : `/responsable` affiche KPIs modules **et** stats synthétiques qui peuvent se chevaucher visuellement — à clarifier en UX, pas en fusion de schéma.
 - **Nommage** : le verbe « objectif » est partagé ; les codes / écrans doivent toujours préciser le grain (OBJ-xxxx vs individu vs KPI).
 
-## Décision de consolidation (sprint courant)
+## Décision de consolidation (confirmée)
+
+**Verdict : ne pas fusionner.** Les trois grains restent nécessaires.
 
 - **Conserver les trois modèles.**
 - **Enrichir en priorité `Objectif`** (déjà produit) ; ne pas ajouter de champs OKR.
@@ -34,6 +36,8 @@ Les fusionner mélangerait stratégie, management individuel et métrologie — 
   - `ObjectifModule` : CRUD Admin / Éditeur (voir `docs/EDITEUR_PREPARATION.md`)
 - **Ne pas** créer de FK artificielles entre les trois tant que le besoin de cascade n’est pas explicite.
 - L’ancien module `/equipe` (édition `ObjectifAnnuel`) est **supprimé** → redirection `/unite?focus=equipe`. Les actions d’écriture associées sont retirées.
+
+Une fusion `Objectif`↔`ObjectifModule` ou `Objectif`↔`ObjectifAnnuel` entraînerait une **perte fonctionnelle** (liens métier vs KPI chiffrés vs suivi individuel).
 
 ## Règle pour les prochains sprints
 

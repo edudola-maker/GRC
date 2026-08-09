@@ -54,12 +54,14 @@ const QUICK_LABELS: Record<ConseilQuickFilter, string> = {
 export function ConseilInventory({
   items,
   responsables,
+  initialQuick,
 }: {
   items: ConseilInventoryItem[];
   responsables: { id: string; nom: string }[];
+  initialQuick?: ConseilQuickFilter;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
-  const [quick, setQuick] = useState<ConseilQuickFilter>("ouverts");
+  const [quick, setQuick] = useState<ConseilQuickFilter>(initialQuick ?? "ouverts");
   const [responsableQuick, setResponsableQuick] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [advanced, setAdvanced] = useState<ConseilAdvancedFilters>(
