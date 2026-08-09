@@ -25,8 +25,8 @@ export default async function NouveauConseilPage({
       <PageHeader
         title="Nouveau conseil"
         description="Demande ponctuelle — échéance par défaut à 5 jours ouvrés."
+        help={<ModuleHelp {...MODULE_HELP.conseils} />}
       />
-      <ModuleHelp {...MODULE_HELP.conseils} />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <ConseilForm

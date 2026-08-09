@@ -1,8 +1,7 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { AttentionZone } from "@/components/module/AttentionZone";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
 import {
   ProjetInventory,
   type ProjetInventoryItem,
@@ -10,7 +9,6 @@ import {
 import {
   PRIORITE_LABELS,
   STATUT_PROJET_LABELS,
-  formatDateDot,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -23,7 +21,7 @@ export const dynamic = "force-dynamic";
 export default async function ProjetsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
 }) {
   const sp = await searchParams;
   const today = startOfToday();
@@ -111,51 +109,53 @@ export default async function ProjetsPage({
     };
   });
 
-  const enRetardItems = items.filter((p) => p.estRetard && !p.archive);
   const responsables = Array.from(
     new Map(
       items.map((p) => [p.responsableId, { id: p.responsableId, nom: p.responsableNom }]),
     ).values(),
   );
 
+  const initialQuick = sp.filtre === "retard" ? "retard" : undefined;
+
   return (
     <>
       <PageHeader
         title="Projets"
-        description="Initiatives structurées de l'unité — du statut Idée à la clôture."
+        description="Initiatives structurées — du statut Idée à la clôture."
+        help={<ModuleHelp {...MODULE_HELP.projets} />}
         actions={<BtnLink href="/projets/nouveau">Nouveau projet</BtnLink>}
       />
-      <ModuleHelp {...MODULE_HELP.projets} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={actifs} label="Actifs" />
-        <KpiStat value={termines} label="Clôturés" />
-        <KpiStat value={enRetard} label="En retard" />
-        <KpiStat value={`${avancementGlobal}%`} label="Avancement global" />
-        <KpiStat value={tachesOuvertes} label="Tâches ouvertes" />
-        <KpiStat
-          value={
-            <>
-              {respectEcheances ?? "—"}
-              {respectEcheances != null ? "%" : ""}
-            </>
-          }
-          label="Clôtures / volume"
-        />
-      </KpiZone>
-
-      <AttentionZone
-        items={enRetardItems.map((p) => ({
-          id: p.id,
-          href: `/projets/${p.id}`,
-          code: p.code,
-          title: p.nom,
-          meta: `${p.responsableNom}${p.dateEcheance ? ` · éch. ${formatDateDot(p.dateEcheance)}` : ""}`,
-        }))}
+      <KpiZone
+        items={[
+          { value: actifs, label: "actifs" },
+          { value: termines, label: "clôturés", tone: "ok" },
+          { value: `${avancementGlobal}%`, label: "avancement global" },
+          { value: tachesOuvertes, label: "tâches ouvertes" },
+          {
+            value: (
+              <>
+                {respectEcheances ?? "—"}
+                {respectEcheances != null ? "%" : ""}
+              </>
+            ),
+            label: "clôtures / volume",
+          },
+          {
+            value: enRetard,
+            label: "à traiter",
+            tone: enRetard > 0 ? "danger" : "default",
+            href: enRetard > 0 ? "?filtre=retard#inventaire" : undefined,
+          },
+        ]}
       />
 
-      <ProjetInventory items={items} responsables={responsables} />
+      <ProjetInventory
+        items={items}
+        responsables={responsables}
+        initialQuick={initialQuick}
+      />
     </>
   );
 }

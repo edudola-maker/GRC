@@ -1,8 +1,7 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { AttentionZone } from "@/components/module/AttentionZone";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
 import {
   ControleInventory,
   type ControleInventoryItem,
@@ -12,7 +11,6 @@ import {
   FREQUENCE_LABELS,
   STATUT_CONTROLE_LABELS,
   TYPE_CONTROLE_LABELS,
-  formatDateDot,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -24,7 +22,7 @@ export const dynamic = "force-dynamic";
 export default async function ControlesSCIPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
 }) {
   const sp = await searchParams;
   const today = startOfToday();
@@ -97,7 +95,7 @@ export default async function ControlesSCIPage({
     };
   });
 
-  const enRetardItems = items.filter((c) => c.estRetard && !c.archive);
+  const enRetard = items.filter((c) => c.estRetard && !c.archive).length;
   const responsables = Array.from(
     new Map(
       items.map((c) => [
@@ -107,36 +105,40 @@ export default async function ControlesSCIPage({
     ).values(),
   );
 
+  const initialQuick = sp.filtre === "retard" ? "retard" : undefined;
+
   return (
     <>
       <PageHeader
         title="Contrôles SCI"
-        description="Définitions permanentes des contrôles — l’exécution se fait via les occurrences (tâches)."
+        description="Définitions permanentes — l'exécution passe par les occurrences (tâches)."
+        help={<ModuleHelp {...MODULE_HELP.controles} />}
         actions={
           <BtnLink href="/controles-sci/nouveau">Nouveau contrôle</BtnLink>
         }
       />
-      <ModuleHelp {...MODULE_HELP.controles} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={actifs} label="Actifs" />
-        <KpiStat value={suspendus} label="Suspendus" />
-        <KpiStat value={occOuvertes} label="Occurrences ouvertes" />
-        <KpiStat value={occRetard} label="Occurrences en retard" />
-      </KpiZone>
-
-      <AttentionZone
-        items={enRetardItems.map((c) => ({
-          id: c.id,
-          href: `/controles-sci/${c.id}`,
-          code: c.code,
-          title: c.nom,
-          meta: `${c.responsableNom}${c.dateProchaineEcheance ? ` · éch. ${formatDateDot(c.dateProchaineEcheance)}` : ""}`,
-        }))}
+      <KpiZone
+        items={[
+          { value: actifs, label: "actifs", tone: "ok" },
+          { value: suspendus, label: "suspendus" },
+          { value: occOuvertes, label: "occurrences ouvertes" },
+          { value: occRetard, label: "occ. en retard" },
+          {
+            value: enRetard,
+            label: "à traiter",
+            tone: enRetard > 0 ? "danger" : "default",
+            href: enRetard > 0 ? "?filtre=retard#inventaire" : undefined,
+          },
+        ]}
       />
 
-      <ControleInventory items={items} responsables={responsables} />
+      <ControleInventory
+        items={items}
+        responsables={responsables}
+        initialQuick={initialQuick}
+      />
     </>
   );
 }

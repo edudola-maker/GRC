@@ -22,8 +22,8 @@ export default async function NouveauModeleTachePage({
       <PageHeader
         title="Nouveau modèle de tâche"
         description="Définissez le référentiel ; la checklist sera copiée à chaque création de tâche."
+        help={<ModuleHelp {...MODULE_HELP.modelesTaches} />}
       />
-      <ModuleHelp {...MODULE_HELP.modelesTaches} />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <ModeleTacheForm

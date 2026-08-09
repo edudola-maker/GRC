@@ -1,8 +1,7 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { AttentionZone } from "@/components/module/AttentionZone";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
 import {
   MissionInventory,
   type MissionInventoryItem,
@@ -10,7 +9,6 @@ import {
 import { MODULE_HELP } from "@/lib/catalog";
 import {
   STATUT_MISSION_LABELS,
-  formatDateDot,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
@@ -24,7 +22,7 @@ const MISSION_STATUTS_CLOS = ["TERMINE", "ANNULE"] as const;
 export default async function AuditsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
 }) {
   const sp = await searchParams;
   const today = startOfToday();
@@ -98,7 +96,7 @@ export default async function AuditsPage({
     };
   });
 
-  const enRetardItems = items.filter((a) => a.estRetard && !a.archive);
+  const enRetard = items.filter((a) => a.estRetard && !a.archive).length;
   const responsables = Array.from(
     new Map(
       items.map((a) => [
@@ -108,35 +106,39 @@ export default async function AuditsPage({
     ).values(),
   );
 
+  const initialQuick = sp.filtre === "retard" ? "retard" : undefined;
+
   return (
     <>
       <PageHeader
         title="Missions d'assurance"
-        description="Audits et revues de processus — planification, travaux, recommandations et suivi."
+        description="Audits et revues — planification, travaux, recommandations et suivi."
+        help={<ModuleHelp {...MODULE_HELP.audits} />}
         actions={<BtnLink href="/missions/nouveau">Nouvelle mission</BtnLink>}
       />
-      <ModuleHelp {...MODULE_HELP.audits} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={planifies} label="Planifiés" />
-        <KpiStat value={enCours} label="En cours" />
-        <KpiStat value={termines} label="Terminés" />
-        <KpiStat value={recoOuvertes} label="Reco ouvertes" />
-        <KpiStat value={recoCloturees} label="Reco clôturées" />
-      </KpiZone>
-
-      <AttentionZone
-        items={enRetardItems.map((a) => ({
-          id: a.id,
-          href: `/missions/${a.id}`,
-          code: a.code,
-          title: a.titre,
-          meta: `${a.responsableNom}${a.dateFin ? ` · fin ${formatDateDot(a.dateFin)}` : ""}`,
-        }))}
+      <KpiZone
+        items={[
+          { value: planifies, label: "planifiés" },
+          { value: enCours, label: "en cours" },
+          { value: termines, label: "terminés" },
+          { value: recoOuvertes, label: "reco ouvertes" },
+          { value: recoCloturees, label: "reco clôturées", tone: "ok" },
+          {
+            value: enRetard,
+            label: "à traiter",
+            tone: enRetard > 0 ? "danger" : "default",
+            href: enRetard > 0 ? "?filtre=retard#inventaire" : undefined,
+          },
+        ]}
       />
 
-      <MissionInventory items={items} responsables={responsables} />
+      <MissionInventory
+        items={items}
+        responsables={responsables}
+        initialQuick={initialQuick}
+      />
     </>
   );
 }

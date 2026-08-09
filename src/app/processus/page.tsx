@@ -1,8 +1,7 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { AttentionZone } from "@/components/module/AttentionZone";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
 import {
   ProcessusInventory,
   type ProcessusInventoryItem,
@@ -17,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function ProcessusPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
@@ -53,11 +52,12 @@ export default async function ProcessusPage({
     tags: p.tags,
     archive: p.archive,
     estActif: !p.archive && p.statut === "ACTIF",
+    aLienConfluence: Boolean(p.reference),
   }));
 
-  const sansLienConfluence = items.filter(
-    (p) => p.estActif && !rows.find((r) => r.id === p.id)?.reference,
-  );
+  const sansConfluence = items.filter(
+    (p) => p.estActif && !p.aLienConfluence,
+  ).length;
   const responsables = Array.from(
     new Map(
       items.map((p) => [
@@ -67,36 +67,43 @@ export default async function ProcessusPage({
     ).values(),
   );
 
+  const initialQuick =
+    sp.filtre === "sans_confluence" ? "sans_confluence" : undefined;
+
   return (
     <>
       <PageHeader
         title="Processus"
-        description="Référentiel et cartographie des processus — point d’entrée vers risques, contrôles et documents. La documentation détaillée reste dans Confluence."
+        description="Référentiel et cartographie — point d'entrée vers risques, contrôles et documents."
+        help={<ModuleHelp {...MODULE_HELP.processus} />}
         actions={
           <BtnLink href="/processus/nouveau">Nouveau processus</BtnLink>
         }
       />
-      <ModuleHelp {...MODULE_HELP.processus} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={actifs} label="Actifs" />
-        <KpiStat value={suspendus} label="Suspendus" />
-        <KpiStat value={rows.length} label="Total" />
-      </KpiZone>
-
-      <AttentionZone
-        label="À compléter"
-        items={sansLienConfluence.slice(0, 5).map((p) => ({
-          id: p.id,
-          href: `/processus/${p.id}`,
-          code: p.code,
-          title: p.nom,
-          meta: `${p.responsableNom} · lien Confluence manquant`,
-        }))}
+      <KpiZone
+        items={[
+          { value: actifs, label: "actifs", tone: "ok" },
+          { value: suspendus, label: "suspendus" },
+          { value: rows.length, label: "total" },
+          {
+            value: sansConfluence,
+            label: "à compléter",
+            tone: sansConfluence > 0 ? "warn" : "default",
+            href:
+              sansConfluence > 0
+                ? "?filtre=sans_confluence#inventaire"
+                : undefined,
+          },
+        ]}
       />
 
-      <ProcessusInventory items={items} responsables={responsables} />
+      <ProcessusInventory
+        items={items}
+        responsables={responsables}
+        initialQuick={initialQuick}
+      />
     </>
   );
 }

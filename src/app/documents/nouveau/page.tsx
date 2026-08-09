@@ -22,8 +22,8 @@ export default async function NouveauDocumentPage({
       <PageHeader
         title="Nouveau document"
         description="Inventoriez un document et référencez sa page Confluence. Le contenu détaillé reste dans Confluence."
+        help={<ModuleHelp {...MODULE_HELP.documents} />}
       />
-      <ModuleHelp {...MODULE_HELP.documents} />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <DocumentForm

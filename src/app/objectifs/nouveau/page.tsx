@@ -22,8 +22,8 @@ export default async function NouveauObjectifPage({
       <PageHeader
         title="Nouvel objectif"
         description="Objectif stratégique de l’unité — le pourquoi. Liez ensuite les objets qui y contribuent."
+        help={<ModuleHelp {...MODULE_HELP.objectifs} />}
       />
-      <ModuleHelp {...MODULE_HELP.objectifs} />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <ObjectifForm

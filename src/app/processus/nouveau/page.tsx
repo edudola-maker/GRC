@@ -22,8 +22,8 @@ export default async function NouveauProcessusPage({
       <PageHeader
         title="Nouveau processus"
         description="Processus = quoi l’on fait. La procédure détaillée reste dans Confluence."
+        help={<ModuleHelp {...MODULE_HELP.processus} />}
       />
-      <ModuleHelp {...MODULE_HELP.processus} />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <ProcessusForm

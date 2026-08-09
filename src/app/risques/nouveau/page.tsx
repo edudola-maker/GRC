@@ -22,8 +22,8 @@ export default async function NouveauRisquePage({
       <PageHeader
         title="Nouveau risque"
         description="Identifiez un risque et évaluez sa criticité (probabilité × impact)."
+        help={<ModuleHelp {...MODULE_HELP.risques} />}
       />
-      <ModuleHelp {...MODULE_HELP.risques} />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <RisqueForm

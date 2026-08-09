@@ -1,8 +1,8 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { AttentionZone } from "@/components/module/AttentionZone";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
+import type { PilotageItem } from "@/components/module/PilotageStrip";
 import { RiskMatrix } from "@/components/risques/RiskMatrix";
 import {
   RisqueInventory,
@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function RisquesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
@@ -79,9 +79,6 @@ export default async function RisquesPage({
     };
   });
 
-  const attentionItems = items.filter(
-    (r) => !r.archive && (r.estCritique || r.sansStrategie),
-  );
   const responsables = Array.from(
     new Map(
       items.map((r) => [
@@ -104,40 +101,53 @@ export default async function RisquesPage({
     criticiteResiduelle: r.criticiteResiduelle,
   }));
 
+  const initialQuick =
+    sp.filtre === "critiques"
+      ? "critiques"
+      : sp.filtre === "sans_strategie"
+        ? "sans_strategie"
+        : undefined;
+
+  const kpiItems: PilotageItem[] = [
+    { value: total, label: "total" },
+    { value: eleves, label: "élevés" },
+    { value: maitrises, label: "maîtrisés", tone: "ok" },
+    {
+      value: critiques,
+      label: "à traiter",
+      tone: critiques > 0 ? "danger" : "default",
+      href: critiques > 0 ? "?filtre=critiques#inventaire" : undefined,
+    },
+  ];
+
+  if (sansStrategie > 0) {
+    kpiItems.splice(2, 0, {
+      value: sansStrategie,
+      label: "sans stratégie",
+      tone: "warn",
+      href: "?filtre=sans_strategie#inventaire",
+    });
+  }
+
   return (
     <>
       <PageHeader
         title="Risques"
-        description="Cartographie des risques — criticité = probabilité × impact (inhérent et résiduel)."
+        description="Cartographie des risques — criticité = probabilité × impact."
+        help={<ModuleHelp {...MODULE_HELP.risques} />}
         actions={<BtnLink href="/risques/nouveau">Nouveau risque</BtnLink>}
       />
-      <ModuleHelp {...MODULE_HELP.risques} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={total} label="Total" />
-        <KpiStat value={critiques} label="Critiques" />
-        <KpiStat value={eleves} label="Élevés" />
-        <KpiStat value={maitrises} label="Maîtrisés" />
-        <KpiStat value={sansStrategie} label="Sans stratégie" />
-      </KpiZone>
+      <KpiZone items={kpiItems} />
 
       <RiskMatrix risques={matrixPoints} />
 
-      <AttentionZone
-        label="Attention requise"
-        items={attentionItems.map((r) => ({
-          id: r.id,
-          href: `/risques/${r.id}`,
-          code: r.code,
-          title: r.nom,
-          meta: r.estCritique
-            ? `Critique · ${r.responsableNom}`
-            : `Sans stratégie · ${r.responsableNom}`,
-        }))}
+      <RisqueInventory
+        items={items}
+        responsables={responsables}
+        initialQuick={initialQuick}
       />
-
-      <RisqueInventory items={items} responsables={responsables} />
     </>
   );
 }

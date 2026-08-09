@@ -1,7 +1,7 @@
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
-import { KpiStat, KpiZone } from "@/components/module/KpiZone";
+import { KpiZone } from "@/components/module/KpiZone";
 import {
   InventoryEmpty,
   InventoryList,
@@ -39,19 +39,21 @@ export default async function ModelesTachesPage({
     <>
       <PageHeader
         title="Modèles de tâches"
-        description="Catalogue de checklists standard. Une tâche créée depuis un modèle reçoit une copie — sans synchronisation rétroactive."
+        description="Catalogue de checklists standard — copiées à la création, sans sync rétroactive."
+        help={<ModuleHelp {...MODULE_HELP.modelesTaches} />}
         actions={
           <BtnLink href="/modeles-taches/nouveau">Nouveau modèle</BtnLink>
         }
       />
-      <ModuleHelp {...MODULE_HELP.modelesTaches} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <KpiZone>
-        <KpiStat value={actifs} label="Actifs" />
-        <KpiStat value={rows.length - actifs} label="Inactifs" />
-        <KpiStat value={rows.length} label="Total" />
-      </KpiZone>
+      <KpiZone
+        items={[
+          { value: actifs, label: "actifs", tone: "ok" },
+          { value: rows.length - actifs, label: "inactifs" },
+          { value: rows.length, label: "total" },
+        ]}
+      />
 
       {rows.length === 0 ? (
         <InventoryEmpty>Aucun modèle pour cette unité.</InventoryEmpty>
