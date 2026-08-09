@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser, isResponsable } from "@/lib/session";
 
-/** Vue Équipe absorbée par le Dashboard responsable. */
-export default async function EquipeRedirect() {
-  const user = await getCurrentUser();
-  if (isResponsable(user)) redirect("/responsable");
-  redirect("/");
+/**
+ * Ancien module Équipe autonome — absorbé par la fiche Unité (§ Équipe).
+ * Redirection temporaire conservée pour les favoris / liens externes.
+ */
+export default function EquipeRedirect() {
+  redirect("/unite?focus=equipe");
 }

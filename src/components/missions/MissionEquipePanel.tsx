@@ -6,7 +6,7 @@ import {
   addMissionMembre,
   removeMissionMembre,
   setMissionMembreRoles,
-} from "@/app/audits/actions";
+} from "@/app/missions/actions";
 import { deriveInitiales } from "@/lib/initiales";
 
 export type MissionEquipeMembre = {

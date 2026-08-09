@@ -74,8 +74,8 @@ Conséquence UI : le **Backlog** est la vue de travail quotidienne. L’onglet �
 | Conseils | Futur | Objet métier (migration depuis catégorie tâche) |
 | Risques | Futur | Registre + matrice 5×5 + génération de contrôles |
 | Documents | Futur | Inventaire + revues planifiées |
-| Équipe | Futur | Vue responsable d’unité |
-| Audits | Futur | Module dédié |
+| Équipe | Absorbé | Section de `/unite` (redirect `/equipe`) |
+| Missions d’assurance | MVP | Routes `/missions` (redirect `/audits`) |
 | Boîte de réception | Long terme | Entrée commune sans double saisie |
 
 ---
@@ -151,7 +151,7 @@ Socle livré : types & templates seedés, équipe + rôles, initiales, sections 
 
 **Roadmap — programmes récurrents :** ex. revue des processus tous les 3 ans → instances automatiques.
 
-**Roadmap — routes :** migrer `/audits` vers le nom définitif du module.
+**Roadmap — routes :** migrer `/missions` vers le nom définitif du module.
 
 ### 5ter-bis. LPD / Privacy by design (roadmap avancée)
 
@@ -198,7 +198,7 @@ Distinguer :
 - **Administration** (`/administration/*`) — paramétrage utilisateurs / unités / rôles (v1 livré) ;
 - **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx), pilotage synthétique (compteurs), **Objectifs** (OBJ-xxxx), équipe, processus, éléments associés — pas de listes d’activité (réservées aux modules / Dashboards).
 
-**Objectifs d’unité** ≠ `ObjectifAnnuel` (individuel) ≠ `ObjectifModule` (KPI module). Liens libres via `LienObjet`. Pas d’OKR / scoring auto dans cette version.
+**Objectifs d’unité** ≠ `ObjectifAnnuel` (individuel) ≠ `ObjectifModule` (KPI module). Liens libres via `LienObjet`. Pas d’OKR / scoring auto dans cette version. Détail et risque de doublon : [`docs/OBJECTIFS.md`](./docs/OBJECTIFS.md).
 
 Cette vue **agrège** les informations déjà présentes — pas de double saisie. CTAs vers les moteurs existants. Dashboard responsable pourra lire les Objectifs plus tard (agrégateur lecture seule).
 

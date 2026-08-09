@@ -22,7 +22,7 @@ export function origineAction(t: TacheAction): { label: string; href?: string } 
   if (t.conseil) return { label: t.conseil.objet, href: `/conseils/${t.conseil.id}` };
   if (t.controleSCI)
     return { label: t.controleSCI.nom, href: `/controles-sci/${t.controleSCI.id}` };
-  if (t.mission) return { label: t.mission.titre, href: `/audits/${t.mission.id}` };
+  if (t.mission) return { label: t.mission.titre, href: `/missions/${t.mission.id}` };
   if (t.document) return { label: t.document.nom, href: `/documents/${t.document.id}` };
   return { label: "Action libre" };
 }

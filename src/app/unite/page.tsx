@@ -22,6 +22,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { listSectionRedactions } from "@/lib/section-redaction";
 import {
+  formatUtilisateurNom,
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
@@ -47,10 +48,16 @@ function parseEdit(raw: string | undefined): EditSection | null {
 export default async function UnitePage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    erreur?: string;
+    edit?: string;
+    focus?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const edit = parseEdit(sp.edit);
+  const focusEquipe = sp.focus === "equipe";
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
@@ -73,8 +80,15 @@ export default async function UnitePage({
       }),
       prisma.utilisateur.findMany({
         where: { uniteId, actif: true },
-        orderBy: { nom: "asc" },
-        select: { id: true, nom: true, role: true, initiales: true, email: true },
+        orderBy: [{ nom: "asc" }, { prenom: "asc" }],
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          role: true,
+          initiales: true,
+          email: true,
+        },
       }),
       prisma.processus.findMany({
         where: { uniteId, archive: false },
@@ -102,7 +116,7 @@ export default async function UnitePage({
             <BtnLink href="/projets/nouveau" variant="ghost">
               + Nouveau projet
             </BtnLink>
-            <BtnLink href="/audits/nouveau" variant="ghost">
+            <BtnLink href="/missions/nouveau" variant="ghost">
               + Nouvelle mission
             </BtnLink>
             <BtnLink href="/taches/nouvelle" variant="ghost">
@@ -205,39 +219,41 @@ export default async function UnitePage({
         </div>
       </EditableSection>
 
-      <CollapsibleSection
-        title="Équipe"
-        defaultOpen={false}
-        badge={`${membres.length}`}
-      >
-        <p className="muted" style={{ marginTop: 0 }}>
-          Collaborateurs rattachés à l’unité (lecture). Gestion des comptes et
-          droits → Administration (roadmap).
-        </p>
-        {membres.length === 0 ? (
-          <p className="empty">Aucun collaborateur actif.</p>
-        ) : (
-          <ul className="unite-equipe__list">
-            {membres.map((m) => {
-              let roleLabel = "Collaborateur";
-              if (m.id === unite.responsableId) roleLabel = "Responsable";
-              else if (m.id === unite.adjointId) roleLabel = "Adjoint";
-              else if (m.role === "RESPONSABLE") {
-                roleLabel = "Responsable (rôle)";
-              }
-              return (
-                <li key={m.id} className="unite-equipe__row">
-                  <strong>
-                    {m.initiales ? `${m.initiales} · ` : ""}
-                    {m.nom}
-                  </strong>
-                  <span className="muted">{roleLabel}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CollapsibleSection>
+      <div id="equipe">
+        <CollapsibleSection
+          title="Équipe"
+          defaultOpen={focusEquipe}
+          badge={`${membres.length}`}
+        >
+          <p className="muted" style={{ marginTop: 0 }}>
+            Collaborateurs rattachés à l’unité (lecture). Gestion des comptes →
+            Administration.
+          </p>
+          {membres.length === 0 ? (
+            <p className="empty">Aucun collaborateur actif.</p>
+          ) : (
+            <ul className="unite-equipe__list">
+              {membres.map((m) => {
+                let roleLabel = "Collaborateur";
+                if (m.id === unite.responsableId) roleLabel = "Responsable";
+                else if (m.id === unite.adjointId) roleLabel = "Adjoint";
+                else if (m.role === "RESPONSABLE") {
+                  roleLabel = "Responsable (rôle)";
+                }
+                return (
+                  <li key={m.id} className="unite-equipe__row">
+                    <strong>
+                      {m.initiales ? `${m.initiales} · ` : ""}
+                      {formatUtilisateurNom(m)}
+                    </strong>
+                    <span className="muted">{roleLabel}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CollapsibleSection>
+      </div>
 
       <CollapsibleSection
         title="Processus"

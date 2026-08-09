@@ -6,6 +6,7 @@ import {
   SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { DocumentForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
@@ -15,6 +16,7 @@ import {
   creerTacheRevue,
   deleteDocument,
   unarchiveDocument,
+  updateDocument,
 } from "../actions";
 import {
   CATEGORIE_TACHE_LABELS,
@@ -28,7 +30,7 @@ import {
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -42,9 +44,13 @@ export default async function DocumentDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
+  const edit =
+    sp.edit === "INFOS_GENERALES" || sp.edit === "ELEMENTS_ASSOCIES"
+      ? sp.edit
+      : null;
   const user = await getCurrentUser();
-  const document = await prisma.document.findUnique({
+  const [document, users] = await Promise.all([
+  prisma.document.findUnique({
     where: { id },
     include: {
       responsable: true,
@@ -55,9 +61,13 @@ export default async function DocumentDetailPage({
         orderBy: { dateEcheance: "asc" },
       },
     },
-  });
+  }),
+  listUtilisateursActifsForCurrentUnite(),
+  ]);
   if (!document) notFound();
 
+  const baseHref = `/documents/${document.id}`;
+  const canEdit = !document.archive;
   const revueUrgence = urgenceEcheance(
     document.prochaineRevue,
     document.archive ||
@@ -78,11 +88,6 @@ export default async function DocumentDetailPage({
         description={document.description ?? "Aucune description."}
         actions={
           <>
-            {!document.archive ? (
-              <BtnLink href={`/documents/${document.id}/modifier`}>
-                Modifier
-              </BtnLink>
-            ) : null}
             {document.archive ? (
               <ConfirmActionButton
                 action={unarchiveDocument}
@@ -118,7 +123,23 @@ export default async function DocumentDetailPage({
         </div>
       ) : null}
 
-      <CollapsibleSection title="Informations" defaultOpen>
+      <EditableSection
+        title="Informations"
+        sectionKey="INFOS_GENERALES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen
+        editChildren={
+          <DocumentForm
+            action={updateDocument}
+            users={users}
+            values={document}
+            cancelHref={baseHref}
+            submitLabel="Enregistrer"
+          />
+        }
+      >
         <dl className="kv">
           <div>
             <dt>Code</dt>
@@ -197,7 +218,7 @@ export default async function DocumentDetailPage({
             : ""}{" "}
           · {formatDate(document.modifieLe)}
         </p>
-      </CollapsibleSection>
+      </EditableSection>
 
       <EditableSection
         title="Éléments associés"

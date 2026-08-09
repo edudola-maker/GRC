@@ -10,6 +10,7 @@ import {
   archiveControleSCI,
   deleteControleSCI,
   unarchiveControleSCI,
+  updateControleSCI,
 } from "../actions";
 import {
   CATEGORIE_TACHE_LABELS,
@@ -23,7 +24,8 @@ import {
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { ControleSCIForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
@@ -39,10 +41,14 @@ export default async function ControleSCIDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
+  const edit =
+    sp.edit === "INFOS_GENERALES" || sp.edit === "ELEMENTS_ASSOCIES"
+      ? sp.edit
+      : null;
   const user = await getCurrentUser();
 
-  const controle = await prisma.controleSCI.findUnique({
+  const [controle, users] = await Promise.all([
+  prisma.controleSCI.findUnique({
     where: { id },
     include: {
       responsable: true,
@@ -57,9 +63,13 @@ export default async function ControleSCIDetailPage({
         orderBy: { dateEcheance: "asc" },
       },
     },
-  });
+  }),
+  listUtilisateursActifsForCurrentUnite(),
+  ]);
   if (!controle) notFound();
 
+  const baseHref = `/controles-sci/${controle.id}`;
+  const canEdit = !controle.archive;
   const urgence = urgenceEcheance(
     controle.dateProchaineEcheance,
     controle.archive || controle.statut === "SUSPENDU",
@@ -74,11 +84,6 @@ export default async function ControleSCIDetailPage({
         description={controle.description ?? "Aucune description."}
         actions={
           <>
-            {!controle.archive ? (
-              <BtnLink href={`/controles-sci/${controle.id}/modifier`}>
-                Modifier
-              </BtnLink>
-            ) : null}
             {controle.archive ? (
               <ConfirmActionButton
                 action={unarchiveControleSCI}
@@ -114,7 +119,23 @@ export default async function ControleSCIDetailPage({
         </div>
       ) : null}
 
-      <CollapsibleSection title="Informations" defaultOpen>
+      <EditableSection
+        title="Informations"
+        sectionKey="INFOS_GENERALES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen
+        editChildren={
+          <ControleSCIForm
+            action={updateControleSCI}
+            users={users}
+            values={controle}
+            cancelHref={baseHref}
+            submitLabel="Enregistrer"
+          />
+        }
+      >
         <dl className="kv">
           <div>
             <dt>Code</dt>
@@ -168,7 +189,7 @@ export default async function ControleSCIDetailPage({
           Créé par {controle.creePar.nom} · Modifié par{" "}
           {controle.modifiePar.nom} · {formatDate(controle.modifieLe)}
         </p>
-      </CollapsibleSection>
+      </EditableSection>
 
       <CollapsibleSection
         title="Risques couverts"
@@ -176,7 +197,7 @@ export default async function ControleSCIDetailPage({
         defaultOpen
       >
         <p className="muted" style={{ marginTop: 0 }}>
-          Consultation — pour modifier les liens, utilisez Modifier.
+          Consultation — associations libres via Éléments associés (mode Modifier de la box).
         </p>
         {controle.risques.length === 0 ? (
           <p className="empty">Aucun risque associé.</p>

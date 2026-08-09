@@ -62,5 +62,6 @@ export function formatUtilisateurNom(u: {
   prenom?: string | null;
 }) {
   const prenom = u.prenom?.trim();
-  return prenom ? `${prenom} ${u.nom}` : u.nom;
+  const nom = u.nom.trim();
+  return prenom ? `${prenom} ${nom}` : nom;
 }

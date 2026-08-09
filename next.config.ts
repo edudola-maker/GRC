@@ -16,6 +16,25 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/audits",
+        destination: "/missions",
+        permanent: false,
+      },
+      {
+        source: "/audits/:path*",
+        destination: "/missions/:path*",
+        permanent: false,
+      },
+      {
+        source: "/equipe",
+        destination: "/unite?focus=equipe",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

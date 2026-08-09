@@ -193,7 +193,7 @@ export default async function MissionDetailPage({
   );
   const tags = parseTags(mission.tags);
   const canEdit = !mission.archive;
-  const baseHref = `/audits/${mission.id}`;
+  const baseHref = `/missions/${mission.id}`;
 
   const def = (mission.template.definition ?? {}) as TemplateDefinition;
   const sections =
@@ -232,7 +232,7 @@ export default async function MissionDetailPage({
 
   return (
     <>
-      <BackLink href="/audits" label="← Retour aux missions" />
+      <BackLink href="/missions" label="← Retour aux missions" />
       <PageHeader
         title={`${mission.code} — ${mission.titre}`}
         description={`${mission.type.libelle} · ${mission.template.libelle}`}

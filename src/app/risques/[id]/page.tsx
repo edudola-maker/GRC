@@ -5,11 +5,12 @@ import {
   ConfirmDeleteButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { RisqueForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
-import { PageHeader, BtnLink } from "@/components/ui";
-import { archiveRisque, deleteRisque } from "../actions";
+import { PageHeader } from "@/components/ui";
+import { archiveRisque, deleteRisque, updateRisque } from "../actions";
 import {
   CATEGORIE_RISQUE_LABELS,
   STATUT_CONTROLE_LABELS,
@@ -21,7 +22,7 @@ import {
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +35,14 @@ export default async function RisqueDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
+  const edit =
+    sp.edit === "INFOS_GENERALES" || sp.edit === "ELEMENTS_ASSOCIES"
+      ? sp.edit
+      : null;
   const user = await getCurrentUser();
 
-  const risque = await prisma.risque.findUnique({
+  const [risque, users] = await Promise.all([
+  prisma.risque.findUnique({
     where: { id },
     include: {
       responsable: true,
@@ -51,12 +56,16 @@ export default async function RisqueDetailPage({
         orderBy: { creeLe: "asc" },
       },
     },
-  });
+  }),
+  listUtilisateursActifsForCurrentUnite(),
+  ]);
 
   if (!risque) notFound();
 
   const niveau = criticiteNiveau(risque.criticite);
   const tags = parseTags(risque.tags);
+  const baseHref = `/risques/${risque.id}`;
+  const canEdit = !risque.archive;
 
   return (
     <>
@@ -66,9 +75,6 @@ export default async function RisqueDetailPage({
         description={risque.description ?? "Aucune description."}
         actions={
           <>
-            {!risque.archive ? (
-              <BtnLink href={`/risques/${risque.id}/modifier`}>Modifier</BtnLink>
-            ) : null}
             <ConfirmActionButton
               action={archiveRisque}
               id={risque.id}
@@ -96,7 +102,23 @@ export default async function RisqueDetailPage({
         </div>
       ) : null}
 
-      <CollapsibleSection title="Description" defaultOpen>
+      <EditableSection
+        title="Informations"
+        sectionKey="INFOS_GENERALES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen
+        editChildren={
+          <RisqueForm
+            action={updateRisque}
+            users={users}
+            values={risque}
+            cancelHref={baseHref}
+            submitLabel="Enregistrer"
+          />
+        }
+      >
         <dl className="kv">
           <div>
             <dt>Code</dt>
@@ -110,18 +132,6 @@ export default async function RisqueDetailPage({
             <dt>Processus (libellé)</dt>
             <dd>{risque.processus ?? "—"}</dd>
           </div>
-          <div>
-            <dt>Créé par</dt>
-            <dd>{risque.creePar.nom}</dd>
-          </div>
-        </dl>
-        {risque.commentaires ? (
-          <p className="detail-note">{risque.commentaires}</p>
-        ) : null}
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Évaluation" defaultOpen>
-        <dl className="kv">
           <div>
             <dt>Inhérent (P × I)</dt>
             <dd>
@@ -140,21 +150,13 @@ export default async function RisqueDetailPage({
             </dd>
           </div>
           <div>
-            <dt>Stratégie de traitement</dt>
+            <dt>Stratégie</dt>
             <dd>
               {risque.strategie
                 ? STRATEGIE_RISQUE_LABELS[risque.strategie]
                 : "—"}
             </dd>
           </div>
-        </dl>
-        {risque.justificationEvaluation ? (
-          <p className="detail-note">{risque.justificationEvaluation}</p>
-        ) : null}
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Pilotage" defaultOpen>
-        <dl className="kv">
           <div>
             <dt>Responsable</dt>
             <dd>{risque.responsable.nom}</dd>
@@ -163,8 +165,18 @@ export default async function RisqueDetailPage({
             <dt>Statut</dt>
             <dd>{STATUT_RISQUE_LABELS[risque.statut]}</dd>
           </div>
+          <div>
+            <dt>Créé par</dt>
+            <dd>{risque.creePar.nom}</dd>
+          </div>
         </dl>
-      </CollapsibleSection>
+        {risque.justificationEvaluation ? (
+          <p className="detail-note">{risque.justificationEvaluation}</p>
+        ) : null}
+        {risque.commentaires ? (
+          <p className="detail-note">{risque.commentaires}</p>
+        ) : null}
+      </EditableSection>
 
       <CollapsibleSection
         title="Contrôles SCI liés"

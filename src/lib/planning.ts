@@ -311,7 +311,7 @@ export async function getPlanningCollaborateur(
       id: `mission-${a.id}`,
       kind: "MISSION",
       title: `${a.code} — ${a.titre}`,
-      href: `/audits/${a.id}`,
+      href: `/missions/${a.id}`,
       start: new Date(s),
       end: new Date(e),
       source: "Mission",

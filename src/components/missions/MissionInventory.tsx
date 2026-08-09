@@ -15,7 +15,7 @@ import {
 import { toneFromStatut } from "@/components/ui/StatusBadge";
 import { formatDateDot } from "@/lib/labels";
 
-export type AuditInventoryItem = {
+export type MissionInventoryItem = {
   id: string;
   code: string;
   titre: string;
@@ -44,11 +44,11 @@ const QUICK_LABELS: Record<QuickFilter, string> = {
   archives: "Archivés",
 };
 
-export function AuditInventory({
+export function MissionInventory({
   items,
   responsables,
 }: {
-  items: AuditInventoryItem[];
+  items: MissionInventoryItem[];
   responsables: { id: string; nom: string }[];
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
@@ -225,7 +225,7 @@ export function AuditInventory({
           {filtered.map((a) => (
             <li key={a.id}>
               <InventoryRow
-                href={`/audits/${a.id}`}
+                href={`/missions/${a.id}`}
                 urgence={a.urgence}
                 archived={a.archive}
                 primary={[

@@ -198,7 +198,8 @@ async function main() {
   const alice = await prisma.utilisateur.create({
     data: {
       uniteId,
-      nom: "Alice Martin",
+      prenom: "Alice",
+      nom: "Martin",
       initiales: deriveInitiales("Alice Martin"),
       email: "alice.martin@exemple.fr",
       motDePasse: "demo-hash-alice",
@@ -208,7 +209,8 @@ async function main() {
   const bernard = await prisma.utilisateur.create({
     data: {
       uniteId,
-      nom: "Bernard Dupont",
+      prenom: "Bernard",
+      nom: "Dupont",
       initiales: deriveInitiales("Bernard Dupont"),
       email: "bernard.dupont@exemple.fr",
       motDePasse: "demo-hash-bernard",
@@ -218,7 +220,8 @@ async function main() {
   const claire = await prisma.utilisateur.create({
     data: {
       uniteId,
-      nom: "Claire Bernard",
+      prenom: "Claire",
+      nom: "Bernard",
       initiales: deriveInitiales("Claire Bernard"),
       email: "claire.bernard@exemple.fr",
       motDePasse: "demo-hash-claire",
@@ -228,8 +231,8 @@ async function main() {
   await prisma.utilisateur.create({
     data: {
       uniteId,
-      nom: "Dominique Admin",
-      prenom: null,
+      prenom: "Dominique",
+      nom: "Admin",
       fonction: "Administrateur plateforme",
       initiales: deriveInitiales("Dominique Admin"),
       email: "admin@exemple.fr",
@@ -1180,7 +1183,8 @@ async function main() {
   const denis = await prisma.utilisateur.create({
     data: {
       uniteId: uniteFinance.id,
-      nom: "Denis Leroy",
+      prenom: "Denis",
+      nom: "Leroy",
       initiales: deriveInitiales("Denis Leroy"),
       email: "denis.leroy@exemple.fr",
       motDePasse: "demo-hash-denis",

@@ -62,7 +62,7 @@ async function resolveTemplateId(
 export async function createMission(formData: FormData) {
   const current = await getCurrentUser();
   const uniteId = current.uniteId;
-  const fallback = "/audits/nouveau";
+  const fallback = "/missions/nouveau";
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(fallback, "Le titre de la mission est obligatoire.");
@@ -144,21 +144,21 @@ export async function createMission(formData: FormData) {
     }
   }
 
-  revalidateApp([`/audits/${mission.id}`]);
-  redirectWithOk(`/audits/${mission.id}`, "cree");
+  revalidateApp([`/missions/${mission.id}`]);
+  redirectWithOk(`/missions/${mission.id}`, "cree");
 }
 
 export async function updateMission(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant mission manquant.");
+  if (!id) redirectWithError("/missions", "Identifiant mission manquant.");
 
   const existing = await prisma.mission.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/audits", "Mission introuvable.");
+  if (!existing) redirectWithError("/missions", "Mission introuvable.");
 
   const sectionKey = optStr(formData, "sectionKey") ?? "VUE_ENSEMBLE";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/audits/${id}?edit=${sectionKey}`;
+  const editFallback = `/missions/${id}?edit=${sectionKey}`;
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(editFallback, "Le titre de la mission est obligatoire.");
@@ -232,9 +232,9 @@ export async function updateMission(formData: FormData) {
     bumpVersion: intent === "finaliser",
   });
 
-  revalidateApp([`/audits/${id}`]);
+  revalidateApp([`/missions/${id}`]);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/audits/${id}`,
+    intent === "brouillon" ? editFallback : `/missions/${id}`,
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }
@@ -242,35 +242,35 @@ export async function updateMission(formData: FormData) {
 export async function archiveMission(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant mission manquant.");
+  if (!id) redirectWithError("/missions", "Identifiant mission manquant.");
 
   const existing = await prisma.mission.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/audits", "Mission introuvable.");
+  if (!existing) redirectWithError("/missions", "Mission introuvable.");
 
   await prisma.mission.update({
     where: { id },
     data: { archive: true, modifieParId: current.id },
   });
 
-  revalidateApp([`/audits/${id}`]);
-  redirectWithOk(`/audits/${id}`, "archive");
+  revalidateApp([`/missions/${id}`]);
+  redirectWithOk(`/missions/${id}`, "archive");
 }
 
 export async function unarchiveMission(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant mission manquant.");
+  if (!id) redirectWithError("/missions", "Identifiant mission manquant.");
 
   const existing = await prisma.mission.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/audits", "Mission introuvable.");
+  if (!existing) redirectWithError("/missions", "Mission introuvable.");
 
   await prisma.mission.update({
     where: { id },
     data: { archive: false, modifieParId: current.id },
   });
 
-  revalidateApp([`/audits/${id}`]);
-  redirectWithOk(`/audits/${id}`, "desarchive");
+  revalidateApp([`/missions/${id}`]);
+  redirectWithOk(`/missions/${id}`, "desarchive");
 }
 
 /**
@@ -280,17 +280,17 @@ export async function unarchiveMission(formData: FormData) {
 export async function deleteMission(formData: FormData) {
   const current = await getCurrentUser();
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant mission manquant.");
+  if (!id) redirectWithError("/missions", "Identifiant mission manquant.");
 
   const existing = await prisma.mission.findUnique({
     where: { id },
     include: { _count: { select: { recommandations: true } } },
   });
-  if (!existing) redirectWithError("/audits", "Mission introuvable.");
+  if (!existing) redirectWithError("/missions", "Mission introuvable.");
 
   if (existing._count.recommandations > 0 && existing.archive) {
     redirectWithError(
-      `/audits/${id}`,
+      `/missions/${id}`,
       "Impossible de supprimer définitivement une mission qui a des recommandations — elle reste archivée.",
     );
   }
@@ -300,24 +300,24 @@ export async function deleteMission(formData: FormData) {
     data: { archive: true, modifieParId: current.id },
   });
 
-  revalidateApp([`/audits/${id}`]);
-  redirectWithOk(`/audits/${id}`, "archive");
+  revalidateApp([`/missions/${id}`]);
+  redirectWithOk(`/missions/${id}`, "archive");
 }
 
 export async function createRecommandation(formData: FormData) {
   const missionId =
     str(formData, "missionId") || str(formData, "auditId");
   if (!missionId) {
-    redirectWithError("/audits", "Identifiant mission manquant.");
+    redirectWithError("/missions", "Identifiant mission manquant.");
   }
 
   const mission = await prisma.mission.findUnique({ where: { id: missionId } });
-  if (!mission) redirectWithError("/audits", "Mission introuvable.");
+  if (!mission) redirectWithError("/missions", "Mission introuvable.");
 
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(
-      `/audits/${missionId}`,
+      `/missions/${missionId}`,
       "Le titre de la recommandation est obligatoire.",
     );
   }
@@ -325,14 +325,14 @@ export async function createRecommandation(formData: FormData) {
   const statut = str(formData, "statut") || "OUVERTE";
   if (!STATUTS_RECO.has(statut)) {
     redirectWithError(
-      `/audits/${missionId}`,
+      `/missions/${missionId}`,
       "Statut de recommandation invalide.",
     );
   }
 
   const responsableId = optStr(formData, "responsableId");
   if (responsableId && !(await assertResponsable(responsableId))) {
-    redirectWithError(`/audits/${missionId}`, "Responsable introuvable.");
+    redirectWithError(`/missions/${missionId}`, "Responsable introuvable.");
   }
 
   const current = await getCurrentUser();
@@ -370,23 +370,23 @@ export async function createRecommandation(formData: FormData) {
     });
   }
 
-  revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}?edit=RECOMMANDATIONS`, "reco");
+  revalidateApp([`/missions/${missionId}`]);
+  redirectWithOk(`/missions/${missionId}?edit=RECOMMANDATIONS`, "reco");
 }
 
 export async function updateRecommandation(formData: FormData) {
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant recommandation manquant.");
+  if (!id) redirectWithError("/missions", "Identifiant recommandation manquant.");
 
   const existing = await prisma.recommandation.findUnique({ where: { id } });
   if (!existing) {
-    redirectWithError("/audits", "Recommandation introuvable.");
+    redirectWithError("/missions", "Recommandation introuvable.");
   }
 
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(
-      `/audits/${existing.missionId}`,
+      `/missions/${existing.missionId}`,
       "Le titre de la recommandation est obligatoire.",
     );
   }
@@ -394,7 +394,7 @@ export async function updateRecommandation(formData: FormData) {
   const statut = str(formData, "statut") || "OUVERTE";
   if (!STATUTS_RECO.has(statut)) {
     redirectWithError(
-      `/audits/${existing.missionId}`,
+      `/missions/${existing.missionId}`,
       "Statut de recommandation invalide.",
     );
   }
@@ -402,7 +402,7 @@ export async function updateRecommandation(formData: FormData) {
   const responsableId = optStr(formData, "responsableId");
   if (responsableId && !(await assertResponsable(responsableId))) {
     redirectWithError(
-      `/audits/${existing.missionId}`,
+      `/missions/${existing.missionId}`,
       "Responsable introuvable.",
     );
   }
@@ -419,17 +419,17 @@ export async function updateRecommandation(formData: FormData) {
     },
   });
 
-  revalidateApp([`/audits/${existing.missionId}`]);
-  redirectWithOk(`/audits/${existing.missionId}?edit=RECOMMANDATIONS`, "modifie");
+  revalidateApp([`/missions/${existing.missionId}`]);
+  redirectWithOk(`/missions/${existing.missionId}?edit=RECOMMANDATIONS`, "modifie");
 }
 
 export async function deleteRecommandation(formData: FormData) {
   const id = str(formData, "id");
-  if (!id) redirectWithError("/audits", "Identifiant recommandation manquant.");
+  if (!id) redirectWithError("/missions", "Identifiant recommandation manquant.");
 
   const existing = await prisma.recommandation.findUnique({ where: { id } });
   if (!existing) {
-    redirectWithError("/audits", "Recommandation introuvable.");
+    redirectWithError("/missions", "Recommandation introuvable.");
   }
 
   const missionId = existing.missionId;
@@ -437,8 +437,8 @@ export async function deleteRecommandation(formData: FormData) {
     where: { id },
     data: { archive: true },
   });
-  revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}?edit=RECOMMANDATIONS`, "supprime");
+  revalidateApp([`/missions/${missionId}`]);
+  redirectWithOk(`/missions/${missionId}?edit=RECOMMANDATIONS`, "supprime");
 }
 
 export async function createTacheDepuisMission(formData: FormData) {
@@ -449,11 +449,11 @@ export async function createTacheDepuisMission(formData: FormData) {
     str(formData, "auditId") ||
     str(formData, "id");
   if (!missionId) {
-    redirectWithError("/audits", "Identifiant mission manquant.");
+    redirectWithError("/missions", "Identifiant mission manquant.");
   }
 
   const mission = await prisma.mission.findUnique({ where: { id: missionId } });
-  if (!mission) redirectWithError("/audits", "Mission introuvable.");
+  if (!mission) redirectWithError("/missions", "Mission introuvable.");
 
   const tache = await prisma.tache.create({
     data: {
@@ -471,7 +471,7 @@ export async function createTacheDepuisMission(formData: FormData) {
     },
   });
 
-  revalidateApp([`/audits/${mission.id}`, `/taches/${tache.id}`]);
+  revalidateApp([`/missions/${mission.id}`, `/taches/${tache.id}`]);
   redirectWithOk(`/taches/${tache.id}`, "tache");
 }
 
@@ -481,14 +481,14 @@ export async function createTacheDepuisReco(formData: FormData) {
   const recommandationId =
     str(formData, "recommandationId") || str(formData, "id");
   if (!recommandationId) {
-    redirectWithError("/audits", "Identifiant recommandation manquant.");
+    redirectWithError("/missions", "Identifiant recommandation manquant.");
   }
 
   const reco = await prisma.recommandation.findUnique({
     where: { id: recommandationId },
     include: { mission: true },
   });
-  if (!reco) redirectWithError("/audits", "Recommandation introuvable.");
+  if (!reco) redirectWithError("/missions", "Recommandation introuvable.");
 
   const tache = await prisma.tache.create({
     data: {
@@ -508,7 +508,7 @@ export async function createTacheDepuisReco(formData: FormData) {
     },
   });
 
-  revalidateApp([`/audits/${reco.missionId}`, `/taches/${tache.id}`]);
+  revalidateApp([`/missions/${reco.missionId}`, `/taches/${tache.id}`]);
   redirectWithOk(`/taches/${tache.id}`, "tache");
 }
 
@@ -517,19 +517,19 @@ export async function linkDocument(formData: FormData) {
     str(formData, "missionId") || str(formData, "auditId");
   const documentId = str(formData, "documentId");
   if (!missionId) {
-    redirectWithError("/audits", "Identifiant mission manquant.");
+    redirectWithError("/missions", "Identifiant mission manquant.");
   }
   if (!documentId) {
-    redirectWithError(`/audits/${missionId}`, "Sélectionnez un document.");
+    redirectWithError(`/missions/${missionId}`, "Sélectionnez un document.");
   }
 
   const [mission, document] = await Promise.all([
     prisma.mission.findUnique({ where: { id: missionId } }),
     prisma.document.findUnique({ where: { id: documentId } }),
   ]);
-  if (!mission) redirectWithError("/audits", "Mission introuvable.");
+  if (!mission) redirectWithError("/missions", "Mission introuvable.");
   if (!document) {
-    redirectWithError(`/audits/${missionId}`, "Document introuvable.");
+    redirectWithError(`/missions/${missionId}`, "Document introuvable.");
   }
 
   const existing = await prisma.missionDocument.findUnique({
@@ -539,7 +539,7 @@ export async function linkDocument(formData: FormData) {
   });
   if (existing) {
     redirectWithError(
-      `/audits/${missionId}`,
+      `/missions/${missionId}`,
       "Ce document est déjà lié à la mission.",
     );
   }
@@ -548,8 +548,8 @@ export async function linkDocument(formData: FormData) {
     data: { missionId, documentId },
   });
 
-  revalidateApp([`/audits/${missionId}`, `/documents/${documentId}`]);
-  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "lien");
+  revalidateApp([`/missions/${missionId}`, `/documents/${documentId}`]);
+  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "lien");
 }
 
 export async function addMissionMembre(formData: FormData) {
@@ -557,19 +557,19 @@ export async function addMissionMembre(formData: FormData) {
   const missionId = str(formData, "missionId");
   const utilisateurId = str(formData, "utilisateurId");
   if (!missionId || !utilisateurId) {
-    redirectWithError("/audits", "Données équipe incomplètes.");
+    redirectWithError("/missions", "Données équipe incomplètes.");
   }
 
   const mission = await prisma.mission.findUnique({ where: { id: missionId } });
   if (!mission || mission.uniteId !== current.uniteId) {
-    redirectWithError("/audits", "Mission introuvable.");
+    redirectWithError("/missions", "Mission introuvable.");
   }
 
   const user = await prisma.utilisateur.findFirst({
     where: { id: utilisateurId, uniteId: current.uniteId, actif: true },
   });
   if (!user) {
-    redirectWithError(`/audits/${missionId}`, "Utilisateur introuvable.");
+    redirectWithError(`/missions/${missionId}`, "Utilisateur introuvable.");
   }
 
   const roleIds = formData
@@ -601,8 +601,8 @@ export async function addMissionMembre(formData: FormData) {
     data: { modifieParId: current.id },
   });
 
-  revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "equipe");
+  revalidateApp([`/missions/${missionId}`]);
+  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "equipe");
 }
 
 export async function removeMissionMembre(formData: FormData) {
@@ -610,14 +610,14 @@ export async function removeMissionMembre(formData: FormData) {
   const missionId = str(formData, "missionId");
   const membreId = str(formData, "membreId");
   if (!missionId || !membreId) {
-    redirectWithError("/audits", "Données équipe incomplètes.");
+    redirectWithError("/missions", "Données équipe incomplètes.");
   }
 
   const membre = await prisma.missionMembre.findFirst({
     where: { id: membreId, missionId, mission: { uniteId: current.uniteId } },
   });
   if (!membre) {
-    redirectWithError(`/audits/${missionId}`, "Membre introuvable.");
+    redirectWithError(`/missions/${missionId}`, "Membre introuvable.");
   }
 
   await prisma.missionMembre.delete({ where: { id: membreId } });
@@ -626,8 +626,8 @@ export async function removeMissionMembre(formData: FormData) {
     data: { modifieParId: current.id },
   });
 
-  revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "equipe");
+  revalidateApp([`/missions/${missionId}`]);
+  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "equipe");
 }
 
 export async function setMissionMembreRoles(formData: FormData) {
@@ -635,14 +635,14 @@ export async function setMissionMembreRoles(formData: FormData) {
   const missionId = str(formData, "missionId");
   const membreId = str(formData, "membreId");
   if (!missionId || !membreId) {
-    redirectWithError("/audits", "Données équipe incomplètes.");
+    redirectWithError("/missions", "Données équipe incomplètes.");
   }
 
   const membre = await prisma.missionMembre.findFirst({
     where: { id: membreId, missionId, mission: { uniteId: current.uniteId } },
   });
   if (!membre) {
-    redirectWithError(`/audits/${missionId}`, "Membre introuvable.");
+    redirectWithError(`/missions/${missionId}`, "Membre introuvable.");
   }
 
   const roleIds = formData
@@ -665,8 +665,8 @@ export async function setMissionMembreRoles(formData: FormData) {
     }),
   ]);
 
-  revalidateApp([`/audits/${missionId}`]);
-  redirectWithOk(`/audits/${missionId}?edit=PLANIFICATION`, "equipe");
+  revalidateApp([`/missions/${missionId}`]);
+  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "equipe");
 }
 
 /** Alias de transition — préférer les noms Mission. */

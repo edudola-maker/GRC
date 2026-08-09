@@ -94,7 +94,7 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Formulaires :** blocs thématiques `FormSection`. **Toutes les grandes box** passent par `CollapsibleSection`.
 
-**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — Type → Template → Instance. Édition par section ; Recos `REC-xxxx` ; LPD socle ; réflexion documentée. Routes `/audits` temporaires.
+**Missions (nom provisoire) :** objet `Mission` (MIS-xxxx) — Type → Template → Instance. Édition par section ; Recos `REC-xxxx` ; LPD socle ; réflexion documentée. Routes `/missions` temporaires.
 
 **Relations :** `LienObjet` + **Éléments associés** unifiés (édition uniquement en mode Modifier de la box).
 
@@ -147,7 +147,7 @@ Objectif : même logique de navigation d’un module à l’autre, sans personna
 
 ### Décisions métier en attente
 
-Voir `docs/SPRINT_CONSOLIDATION.md` (scission prénom/nom, rename `/audits`→`/missions`, abandon pages `/modifier`, sort de `/equipe`).
+Voir `docs/SPRINT_CONSOLIDATION.md` (scission prénom/nom, rename `/missions`→`/missions`, abandon pages `/modifier`, sort de `/equipe`).
 
 ---
 
@@ -215,3 +215,12 @@ Voir `docs/SPRINT_CONSOLIDATION.md` (scission prénom/nom, rename `/audits`→`/
 - Backlog / Tâches / Équipe retirés de la nav principale (redirections conservées).
 
 Les correctifs UI issus de la revue Vague A sont consolidés dans l’entrée Vague B ci-dessus.
+
+## 2026-08-09 — Décisions post-consolidation
+
+- Utilisateurs : `prenom` et `nom` **obligatoires**.
+- Routes Missions : `/missions` (redirect temporaire `/audits` → `/missions`).
+- `/equipe` supprimé comme module → `/unite?focus=equipe`.
+- `/modifier` globales : redirects vers `?edit=INFOS_GENERALES` ; édition box-by-box sur fiches Conseils, Risques, Documents, Contrôles, Tâches.
+- Objectifs : conserver trois modèles ; document `docs/OBJECTIFS.md` ; geler ObjectifAnnuel / ObjectifModule.
+

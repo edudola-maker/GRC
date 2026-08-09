@@ -1,57 +1,13 @@
-import { notFound, redirect } from "next/navigation";
-import { DocumentForm } from "@/components/EntityForms";
-import { FlashBanner, BackLink } from "@/components/Flash";
-import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
-import { PageHeader } from "@/components/ui";
-import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
-import { updateDocument } from "../../actions";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function ModifierDocumentPage({
+/** Édition box-by-box sur la fiche détail — page /modifier conservée en redirection. */
+export default async function ModifierRedirectPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ erreur?: string }>;
 }) {
   const { id } = await params;
-  const sp = await searchParams;
-  const user = await getCurrentUser();
-  const [document, users] = await Promise.all([
-    prisma.document.findUnique({ where: { id } }),
-    listUtilisateursActifsForCurrentUnite(),
-  ]);
-
-  if (!document) notFound();
-  if (document.archive) {
-    redirect(
-      `/documents/${id}?erreur=${encodeURIComponent("Document archivé : désarchivez-le pour le modifier.")}`,
-    );
-  }
-
-  return (
-    <>
-      <BackLink href={`/documents/${document.id}`} label="← Retour au document" />
-      <PageHeader title="Modifier le document" description={document.nom} />
-      <FlashBanner erreur={sp.erreur} />
-      <div className="entity-form-wrap">
-        <DocumentForm
-          action={updateDocument}
-          users={users}
-          values={document}
-          cancelHref={`/documents/${document.id}`}
-          submitLabel="Enregistrer"
-        />
-      </div>
-      <ElementsAssocies
-        uniteId={user.uniteId}
-        type="DOCUMENT"
-        id={document.id}
-        retour={`/documents/${document.id}/modifier`}
-        editable
-      />
-    </>
-  );
+  redirect(`/documents/${id}?edit=INFOS_GENERALES`);
 }

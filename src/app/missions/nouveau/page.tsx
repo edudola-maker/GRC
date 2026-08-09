@@ -34,7 +34,7 @@ export default async function NouveauAuditPage({
 
   return (
     <>
-      <BackLink href="/audits" label="← Retour aux missions" />
+      <BackLink href="/missions" label="← Retour aux missions" />
       <PageHeader
         title="Nouvelle mission"
         description="Choisissez le type, le descriptif et le calendrier."
@@ -47,7 +47,7 @@ export default async function NouveauAuditPage({
           types={types}
           templates={templates}
           descriptifs={descriptifs}
-          cancelHref="/audits"
+          cancelHref="/missions"
           submitLabel="Créer la mission"
         />
       </div>

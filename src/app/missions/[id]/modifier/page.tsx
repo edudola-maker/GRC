@@ -8,5 +8,5 @@ export default async function ModifierAuditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/audits/${id}?edit=VUE_ENSEMBLE`);
+  redirect(`/missions/${id}?edit=VUE_ENSEMBLE`);
 }

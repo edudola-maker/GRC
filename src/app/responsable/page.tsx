@@ -214,7 +214,7 @@ export default async function DashboardResponsablePage({
             ...data.operationnel.audits.map((a) => ({
               key: `a-${a.id}`,
               rag: ragEcheance(a.dateFin),
-              href: `/audits/${a.id}`,
+              href: `/missions/${a.id}`,
               title: a.titre,
               meta: `${a.responsable.nom} · Mission · ${STATUT_MISSION_LABELS[a.statut]}`,
               date: a.dateFin,

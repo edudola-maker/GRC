@@ -275,7 +275,7 @@ model Utilisateur {
   id         String           @id @default(cuid())
   uniteId    String
   nom        String
-  prenom     String?
+  prenom     String
   /// Fonction / titre (ex. Responsable GRC).
   fonction   String?
   /// Représentation visuelle compacte (ex. JD) — jamais l’identifiant technique.

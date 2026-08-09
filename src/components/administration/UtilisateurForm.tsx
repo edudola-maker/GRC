@@ -56,10 +56,11 @@ export function UtilisateurForm({
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
       <div className="form-grid">
-        <Field label="Prénom" htmlFor="prenom">
+        <Field label="Prénom *" htmlFor="prenom">
           <input
             id="prenom"
             name="prenom"
+            required
             defaultValue={values?.prenom ?? ""}
           />
         </Field>

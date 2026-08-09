@@ -37,7 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Métier",
     items: [
       { href: "/projets", label: "Projets", icon: "▦" },
-      { href: "/audits", label: "Missions d'assurance", icon: "◉" },
+      { href: "/missions", label: "Missions d'assurance", icon: "◉" },
       { href: "/conseils", label: "Conseils", icon: "💬" },
     ],
   },

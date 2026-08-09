@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/FormControls";
+import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
@@ -8,7 +9,7 @@ import { EditableSection } from "@/components/module/EditableSection";
 import { TacheActionsRapides } from "@/components/TacheActionsRapides";
 import { TacheChecklistPanel } from "@/components/taches/TacheChecklistPanel";
 import { PageHeader, BtnLink } from "@/components/ui";
-import { deleteTache } from "../actions";
+import { deleteTache, updateTache } from "../actions";
 import {
   CATEGORIE_TACHE_LABELS,
   PRIORITE_LABELS,
@@ -18,11 +19,11 @@ import {
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-const EDIT_SECTIONS = ["CHECKLIST"] as const;
+const EDIT_SECTIONS = ["INFOS_GENERALES", "CHECKLIST"] as const;
 type EditSection = (typeof EDIT_SECTIONS)[number];
 
 function parseEdit(raw: string | undefined): EditSection | null {
@@ -70,41 +71,74 @@ export default async function TacheDetailPage({
   const sp = await searchParams;
   const edit = parseEdit(sp.edit);
 
-  const [tache, users] = await Promise.all([
-    prisma.tache.findUnique({
-      where: { id },
-      include: {
-        responsable: true,
-        projet: true,
-        conseil: true,
-        controleSCI: true,
-        mission: true,
-        document: true,
-        recommandation: true,
-        modeleTache: { select: { id: true, code: true, nom: true } },
-        creePar: true,
-        modifiePar: true,
-        soumisPar: true,
-        validePar: true,
-        checklistItems: {
-          include: { faitPar: { select: { nom: true } } },
-          orderBy: { ordre: "asc" },
+  const user = await getCurrentUser();
+  const uniteId = user.uniteId;
+  const [tache, users, projets, conseils, controles, missions, documents] =
+    await Promise.all([
+      prisma.tache.findUnique({
+        where: { id },
+        include: {
+          responsable: true,
+          projet: true,
+          conseil: true,
+          controleSCI: true,
+          mission: true,
+          document: true,
+          recommandation: true,
+          modeleTache: { select: { id: true, code: true, nom: true } },
+          creePar: true,
+          modifiePar: true,
+          soumisPar: true,
+          validePar: true,
+          checklistItems: {
+            include: { faitPar: { select: { nom: true } } },
+            orderBy: { ordre: "asc" },
+          },
+          historique: {
+            include: { modifiePar: true },
+            orderBy: { modifieLe: "desc" },
+            take: 20,
+          },
         },
-        historique: {
-          include: { modifiePar: true },
-          orderBy: { modifieLe: "desc" },
-          take: 20,
+      }),
+      listUtilisateursActifsForCurrentUnite(),
+      prisma.projet.findMany({
+        where: {
+          uniteId,
+          archive: false,
+          statut: { notIn: ["CLOTURE", "ABANDONNE"] },
         },
-      },
-    }),
-    listUtilisateursActifsForCurrentUnite(),
-  ]);
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+      prisma.conseil.findMany({
+        where: { uniteId, archive: false },
+        orderBy: { objet: "asc" },
+        select: { id: true, objet: true },
+      }),
+      prisma.controleSCI.findMany({
+        where: { uniteId, archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+      prisma.mission.findMany({
+        where: { uniteId, archive: false },
+        orderBy: { titre: "asc" },
+        select: { id: true, titre: true },
+      }),
+      prisma.document.findMany({
+        where: { uniteId, archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, nom: true },
+      }),
+    ]);
 
   if (!tache) notFound();
 
   const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(tache.statut);
   const urgence = urgenceEcheance(tache.dateEcheance, clos);
   const baseHref = `/taches/${tache.id}`;
+  const canEdit = true;
   const checklistVues = tache.checklistItems.map((i) => ({
     id: i.id,
     libelle: i.libelle,
@@ -121,14 +155,11 @@ export default async function TacheDetailPage({
         title={tache.titre}
         description={tache.description ?? "Aucune description."}
         actions={
-          <>
-            <BtnLink href={`/taches/${tache.id}/modifier`}>Modifier</BtnLink>
-            <ConfirmDeleteButton
-              action={deleteTache}
-              id={tache.id}
-              confirmMessage="Supprimer définitivement cette tâche ?"
-            />
-          </>
+          <ConfirmDeleteButton
+            action={deleteTache}
+            id={tache.id}
+            confirmMessage="Supprimer définitivement cette tâche ?"
+          />
         }
       />
 
@@ -145,7 +176,29 @@ export default async function TacheDetailPage({
       ) : null}
 
       <div className="detail-grid">
-        <CollapsibleSection title="Informations" defaultOpen>
+        <EditableSection
+          title="Informations"
+          sectionKey="INFOS_GENERALES"
+          baseHref={baseHref}
+          edit={edit}
+          canEdit={canEdit}
+          defaultOpen
+          editChildren={
+            <TacheForm
+              action={updateTache}
+              users={users}
+              projets={projets}
+              conseils={conseils.map((c) => ({ id: c.id, nom: c.objet }))}
+              controles={controles}
+              missions={missions.map((m) => ({ id: m.id, nom: m.titre }))}
+              documents={documents}
+              values={tache}
+              cancelHref={baseHref}
+              submitLabel="Enregistrer"
+            />
+
+          }
+        >
           <dl className="kv">
             <div>
               <dt>Catégorie</dt>
@@ -192,7 +245,7 @@ export default async function TacheDetailPage({
               <div>
                 <dt>Mission</dt>
                 <dd>
-                  <Link href={`/audits/${tache.mission.id}`}>
+                  <Link href={`/missions/${tache.mission.id}`}>
                     {tache.mission.titre}
                   </Link>
                 </dd>
@@ -279,7 +332,9 @@ export default async function TacheDetailPage({
             Créé par {tache.creePar.nom} · Modifié par {tache.modifiePar.nom} ·{" "}
             {formatDate(tache.modifieLe)}
           </p>
-        </CollapsibleSection>
+        </EditableSection>
+
+
 
         <div className="stack-panels">
           <TacheActionsRapides

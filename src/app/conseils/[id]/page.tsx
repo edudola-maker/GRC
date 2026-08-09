@@ -6,6 +6,7 @@ import {
   SubmitButton,
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ConseilForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
@@ -13,6 +14,7 @@ import { PageHeader, BtnLink } from "@/components/ui";
 import {
   addNoteJournal,
   archiveConseil,
+  updateConseil,
   createTacheDepuisConseil,
   deleteConseil,
   reopenConseil,
@@ -33,7 +35,7 @@ import {
 import { businessDaysBetween } from "@/lib/dates";
 import { listerJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -47,9 +49,12 @@ export default async function ConseilDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const edit = sp.edit === "ELEMENTS_ASSOCIES" ? "ELEMENTS_ASSOCIES" : null;
+  const edit =
+    sp.edit === "INFOS_GENERALES" || sp.edit === "ELEMENTS_ASSOCIES"
+      ? sp.edit
+      : null;
   const user = await getCurrentUser();
-  const [conseil, journal] = await Promise.all([
+  const [conseil, journal, users] = await Promise.all([
     prisma.conseil.findUnique({
       where: { id },
       include: {
@@ -63,8 +68,11 @@ export default async function ConseilDetailPage({
       },
     }),
     listerJournal("CONSEIL", id),
+    listUtilisateursActifsForCurrentUnite(),
   ]);
   if (!conseil) notFound();
+  const baseHref = `/conseils/${conseil.id}`;
+  const canEdit = !conseil.archive;
 
   const fin = conseil.dateCloture ?? conseil.dateReponse;
   const delai = fin ? businessDaysBetween(conseil.dateReception, fin) : null;
@@ -86,11 +94,6 @@ export default async function ConseilDetailPage({
         description={conseil.description ?? "Aucune description."}
         actions={
           <>
-            {!conseil.archive ? (
-              <BtnLink href={`/conseils/${conseil.id}/modifier`}>
-                Modifier
-              </BtnLink>
-            ) : null}
             {estClos && !conseil.archive ? (
               <ConfirmActionButton
                 action={reopenConseil}
@@ -135,7 +138,23 @@ export default async function ConseilDetailPage({
       ) : null}
 
       <div className="detail-grid">
-        <CollapsibleSection title="Informations" defaultOpen>
+        <EditableSection
+          title="Informations"
+          sectionKey="INFOS_GENERALES"
+          baseHref={baseHref}
+          edit={edit}
+          canEdit={canEdit}
+          defaultOpen
+          editChildren={
+            <ConseilForm
+              action={updateConseil}
+              users={users}
+              values={conseil}
+              cancelHref={baseHref}
+              submitLabel="Enregistrer"
+            />
+          }
+        >
           <dl className="kv">
             <div>
               <dt>Code</dt>
@@ -192,7 +211,7 @@ export default async function ConseilDetailPage({
             Créé par {conseil.creePar.nom} · Modifié par {conseil.modifiePar.nom}{" "}
             · {formatDate(conseil.modifieLe)}
           </p>
-        </CollapsibleSection>
+        </EditableSection>
 
         <div className="stack-panels">
           <CollapsibleSection

@@ -23,7 +23,7 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
     case "CONSEIL":
       return `/conseils/${id}`;
     case "MISSION":
-      return `/audits/${id}`;
+      return `/missions/${id}`;
     case "RISQUE":
       return `/risques/${id}`;
     case "CONTROLE_SCI":

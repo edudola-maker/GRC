@@ -41,13 +41,14 @@ export async function createUtilisateur(formData: FormData) {
   const fallback = "/administration/utilisateurs/nouveau";
 
   const nom = str(formData, "nom");
+  const prenom = str(formData, "prenom");
   const email = str(formData, "email").toLowerCase();
   const uniteId = str(formData, "uniteId");
   const role = parseRole(str(formData, "role"));
-  const prenom = optStr(formData, "prenom");
   const fonction = optStr(formData, "fonction");
   const password = optStr(formData, "motDePasse");
 
+  if (!prenom) redirectWithError(fallback, "Le prénom est obligatoire.");
   if (!nom) redirectWithError(fallback, "Le nom est obligatoire.");
   if (!email) redirectWithError(fallback, "L’e-mail est obligatoire.");
   if (!uniteId) redirectWithError(fallback, "L’unité est obligatoire.");
@@ -98,14 +99,15 @@ export async function updateUtilisateur(formData: FormData) {
 
   const fallback = `/administration/utilisateurs/${id}`;
   const nom = str(formData, "nom");
+  const prenom = str(formData, "prenom");
   const email = str(formData, "email").toLowerCase();
   const uniteId = str(formData, "uniteId");
   const role = parseRole(str(formData, "role"));
-  const prenom = optStr(formData, "prenom");
   const fonction = optStr(formData, "fonction");
   const password = optStr(formData, "motDePasse");
   const actif = str(formData, "actif") !== "0";
 
+  if (!prenom) redirectWithError(fallback, "Le prénom est obligatoire.");
   if (!nom) redirectWithError(fallback, "Le nom est obligatoire.");
   if (!email) redirectWithError(fallback, "L’e-mail est obligatoire.");
   if (!uniteId) redirectWithError(fallback, "L’unité est obligatoire.");

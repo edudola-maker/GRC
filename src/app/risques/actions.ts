@@ -135,39 +135,39 @@ export async function updateRisque(formData: FormData) {
 
   const nom = str(formData, "nom");
   if (!nom) {
-    redirectWithError(`/risques/${id}/modifier`, "Le nom du risque est obligatoire.");
+    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Le nom du risque est obligatoire.");
   }
 
   const categorie = str(formData, "categorie") || existing.categorie;
   if (!CATEGORIES.has(categorie)) {
-    redirectWithError(`/risques/${id}/modifier`, "Catégorie invalide.");
+    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Catégorie invalide.");
   }
 
   const statut = str(formData, "statut") || existing.statut;
   if (!STATUTS.has(statut)) {
-    redirectWithError(`/risques/${id}/modifier`, "Statut invalide.");
+    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Statut invalide.");
   }
 
   const responsableId = str(formData, "responsableId") || existing.responsableId;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/risques/${id}/modifier`, "Responsable introuvable.");
+    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
   }
 
   const probabilite = parseEchelle(formData, "probabilite", existing.probabilite);
   const impact = parseEchelle(formData, "impact", existing.impact);
   if (probabilite == null || impact == null) {
     redirectWithError(
-      `/risques/${id}/modifier`,
+      `/risques/${id}?edit=INFOS_GENERALES`,
       "Probabilité et impact doivent être entre 1 et 5.",
     );
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
   const nomErr = await assertNomUnique("RISQUE", nom, uniteId, id);
-  if (nomErr) redirectWithError(`/risques/${id}/modifier`, nomErr);
+  if (nomErr) redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, nomErr);
   const strategie = optStr(formData, "strategie");
   if (strategie && !STRATEGIES.has(strategie)) {
-    redirectWithError(`/risques/${id}/modifier`, "Stratégie invalide.");
+    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Stratégie invalide.");
   }
 
   const prRaw = optInt(formData, "probabiliteResiduelle");
@@ -179,7 +179,7 @@ export async function updateRisque(formData: FormData) {
     probabiliteResiduelle = prRaw ?? probabilite;
     impactResiduel = irRaw ?? impact;
     if (!ECHELLE.has(probabiliteResiduelle) || !ECHELLE.has(impactResiduel)) {
-      redirectWithError(`/risques/${id}/modifier`, "Échelle résiduelle invalide (1–5).");
+      redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Échelle résiduelle invalide (1–5).");
     }
     criticiteResiduelle = clamp(probabiliteResiduelle * impactResiduel, 1, 25);
   }
@@ -208,7 +208,7 @@ export async function updateRisque(formData: FormData) {
     },
   });
 
-  revalidateApp([`/risques/${id}`, `/risques/${id}/modifier`]);
+  revalidateApp([`/risques/${id}`, `/risques/${id}?edit=INFOS_GENERALES`]);
   redirectWithOk(`/risques/${id}`, "modifie");
 }
 
@@ -250,7 +250,7 @@ export async function setRisqueControles(formData: FormData) {
   const risqueId = str(formData, "risqueId");
   const retour =
     str(formData, "retour") ||
-    (risqueId ? `/risques/${risqueId}/modifier` : "/risques");
+    (risqueId ? `/risques/${risqueId}?edit=INFOS_GENERALES` : "/risques");
   if (!risqueId) redirectWithError("/risques", "Identifiant risque manquant.");
 
   const existing = await prisma.risque.findUnique({ where: { id: risqueId } });
@@ -292,6 +292,6 @@ export async function setRisqueControles(formData: FormData) {
     }),
   ]);
 
-  revalidateApp([`/risques/${risqueId}`, `/risques/${risqueId}/modifier`]);
+  revalidateApp([`/risques/${risqueId}`, `/risques/${risqueId}?edit=INFOS_GENERALES`]);
   redirectWithOk(retour, "lien");
 }

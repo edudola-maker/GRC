@@ -30,10 +30,22 @@
 ## Décisions métier en attente (ne pas improvisar)
 
 1. **Scinder `Utilisateur.nom` en prénom/nom obligatoires** vs garder `nom` libre + `prenom` optionnel (choix actuel : prenom optionnel).
-2. **Renommage routes `/audits` → `/missions`** — impact bookmarks / seed / docs.
+2. **Renommage routes `/missions` → `/missions`** — impact bookmarks / seed / docs.
 3. **Migration complète des fiches Conseils/Risques/Documents/Contrôles** vers EditableSection (abandon des pages `/modifier`) — lot UX dédié.
 4. **Fusion ou conservation de `/equipe`** (aujourd’hui redirect).
 
 ## Préparation IA (rappel)
 
 L’agent futur devra respecter le même scope `uniteId` + rôle que l’utilisateur ; proposer des brouillons (`SectionRedaction`) sans contourner les validations.
+
+
+## Décisions validées (post-revue)
+
+| Décision | Statut |
+|----------|--------|
+| `prenom` + `nom` obligatoires | **Implémenté** (migration `20260809180000_…`) |
+| `/audits` → `/missions` + redirect temporaire | **Implémenté** |
+| Abandon progressif `/modifier` → EditableSection | **Implémenté** sur Conseils, Risques, Documents, Contrôles SCI, Tâches (pages `/modifier` = redirect) |
+| Suppression module `/equipe` → `/unite?focus=equipe` | **Implémenté** |
+| Distinction Objectif / ObjectifAnnuel / ObjectifModule | Documentée dans `docs/OBJECTIFS.md` — **trois besoins distincts, gel des deux derniers** |
+

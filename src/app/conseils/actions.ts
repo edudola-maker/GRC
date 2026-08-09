@@ -115,22 +115,22 @@ export async function updateConseil(formData: FormData) {
   const objet = str(formData, "objet");
   if (!objet) {
     redirectWithError(
-      `/conseils/${id}/modifier`,
+      `/conseils/${id}?edit=INFOS_GENERALES`,
       "L'objet du conseil est obligatoire.",
     );
   }
 
   const statut = str(formData, "statut") || "RECU";
   if (!STATUTS.has(statut)) {
-    redirectWithError(`/conseils/${id}/modifier`, "Statut invalide.");
+    redirectWithError(`/conseils/${id}?edit=INFOS_GENERALES`, "Statut invalide.");
   }
 
   const nomErr = await assertNomUnique("CONSEIL", objet, uniteId, id);
-  if (nomErr) redirectWithError(`/conseils/${id}/modifier`, nomErr);
+  if (nomErr) redirectWithError(`/conseils/${id}?edit=INFOS_GENERALES`, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/conseils/${id}/modifier`, "Responsable introuvable.");
+    redirectWithError(`/conseils/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
   }
 
   const dateReception =
@@ -184,7 +184,7 @@ export async function updateConseil(formData: FormData) {
     });
   }
 
-  revalidateApp([`/conseils/${id}`, `/conseils/${id}/modifier`]);
+  revalidateApp([`/conseils/${id}`, `/conseils/${id}?edit=INFOS_GENERALES`]);
   redirectWithOk(`/conseils/${id}`, "modifie");
 }
 

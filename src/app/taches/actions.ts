@@ -28,14 +28,14 @@ function revalidateTacheViews(
 ) {
   const extra: string[] = [];
   if (id) {
-    extra.push(`/taches/${id}`, `/taches/${id}/modifier`);
+    extra.push(`/taches/${id}`, `/taches/${id}?edit=INFOS_GENERALES`);
   }
   if (links?.projetId) extra.push(`/projets/${links.projetId}`);
   if (links?.conseilId) extra.push(`/conseils/${links.conseilId}`);
   if (links?.controleSCIId) {
     extra.push(`/controles-sci/${links.controleSCIId}`);
   }
-  if (links?.missionId) extra.push(`/audits/${links.missionId}`);
+  if (links?.missionId) extra.push(`/missions/${links.missionId}`);
   if (links?.documentId) extra.push(`/documents/${links.documentId}`);
   revalidateApp(extra);
 }
@@ -213,7 +213,7 @@ export async function updateTache(formData: FormData) {
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(
-      `/taches/${id}/modifier`,
+      `/taches/${id}?edit=INFOS_GENERALES`,
       "Le titre de la tâche est obligatoire.",
     );
   }
@@ -223,21 +223,21 @@ export async function updateTache(formData: FormData) {
   const categorie = str(formData, "categorie") || "AUTRE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite) || !CATEGORIES.has(categorie)) {
     redirectWithError(
-      `/taches/${id}/modifier`,
+      `/taches/${id}?edit=INFOS_GENERALES`,
       "Statut, priorité ou catégorie invalide.",
     );
   }
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/taches/${id}/modifier`, "Responsable introuvable.");
+    redirectWithError(`/taches/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
   }
 
   const projetId = optStr(formData, "projetId");
   if (projetId && projetId !== existing.projetId) {
     if (!(await assertProjetOptional(projetId))) {
       redirectWithError(
-        `/taches/${id}/modifier`,
+        `/taches/${id}?edit=INFOS_GENERALES`,
         "Projet introuvable ou archivé.",
       );
     }
@@ -246,7 +246,7 @@ export async function updateTache(formData: FormData) {
   const links = readLinks(formData);
   const linkError = await assertOptionalLinks(links);
   if (linkError) {
-    redirectWithError(`/taches/${id}/modifier`, linkError);
+    redirectWithError(`/taches/${id}?edit=INFOS_GENERALES`, linkError);
   }
 
   const dateEcheance = optDate(formData, "dateEcheance");

@@ -99,13 +99,13 @@ export async function updateControleSCI(formData: FormData) {
   const processusConcerne = str(formData, "processusConcerne");
   if (!nom) {
     redirectWithError(
-      `/controles-sci/${id}/modifier`,
+      `/controles-sci/${id}?edit=INFOS_GENERALES`,
       "Le nom du contrôle est obligatoire.",
     );
   }
   if (!processusConcerne) {
     redirectWithError(
-      `/controles-sci/${id}/modifier`,
+      `/controles-sci/${id}?edit=INFOS_GENERALES`,
       "Le processus concerné est obligatoire.",
     );
   }
@@ -114,7 +114,7 @@ export async function updateControleSCI(formData: FormData) {
   const frequence = str(formData, "frequence") || existing.frequence;
   if (!STATUTS.has(statut) || !FREQUENCES.has(frequence)) {
     redirectWithError(
-      `/controles-sci/${id}/modifier`,
+      `/controles-sci/${id}?edit=INFOS_GENERALES`,
       "Statut ou fréquence invalide.",
     );
   }
@@ -122,14 +122,14 @@ export async function updateControleSCI(formData: FormData) {
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
     redirectWithError(
-      `/controles-sci/${id}/modifier`,
+      `/controles-sci/${id}?edit=INFOS_GENERALES`,
       "Responsable introuvable.",
     );
   }
 
   const typeControle = str(formData, "typeControle") || existing.typeControle;
   if (!TYPES.has(typeControle)) {
-    redirectWithError(`/controles-sci/${id}/modifier`, "Type de contrôle invalide.");
+    redirectWithError(`/controles-sci/${id}?edit=INFOS_GENERALES`, "Type de contrôle invalide.");
   }
 
   const fenetreDeclenchementJours =
@@ -160,7 +160,7 @@ export async function updateControleSCI(formData: FormData) {
     },
   });
 
-  revalidateApp([`/controles-sci/${id}`, `/controles-sci/${id}/modifier`]);
+  revalidateApp([`/controles-sci/${id}`, `/controles-sci/${id}?edit=INFOS_GENERALES`]);
   redirectWithOk(`/controles-sci/${id}`, "modifie");
 }
 
@@ -169,7 +169,7 @@ export async function lierRisqueControle(formData: FormData) {
   const risqueId = str(formData, "risqueId");
   const retour =
     str(formData, "retour") ||
-    (controleSCIId ? `/controles-sci/${controleSCIId}/modifier` : "/controles-sci");
+    (controleSCIId ? `/controles-sci/${controleSCIId}?edit=INFOS_GENERALES` : "/controles-sci");
   if (!controleSCIId || !risqueId) {
     redirectWithError(retour, "Contrôle et risque requis.");
   }
@@ -193,7 +193,7 @@ export async function lierRisqueControle(formData: FormData) {
 
   revalidateApp([
     `/controles-sci/${controleSCIId}`,
-    `/controles-sci/${controleSCIId}/modifier`,
+    `/controles-sci/${controleSCIId}?edit=INFOS_GENERALES`,
     `/risques/${risqueId}`,
   ]);
   redirectWithOk(retour, "lien");
@@ -204,7 +204,7 @@ export async function delierRisqueControle(formData: FormData) {
   const risqueId = str(formData, "risqueId");
   const retour =
     str(formData, "retour") ||
-    (controleSCIId ? `/controles-sci/${controleSCIId}/modifier` : "/controles-sci");
+    (controleSCIId ? `/controles-sci/${controleSCIId}?edit=INFOS_GENERALES` : "/controles-sci");
   if (!controleSCIId || !risqueId) {
     redirectWithError(retour, "Contrôle et risque requis.");
   }
@@ -215,7 +215,7 @@ export async function delierRisqueControle(formData: FormData) {
 
   revalidateApp([
     `/controles-sci/${controleSCIId}`,
-    `/controles-sci/${controleSCIId}/modifier`,
+    `/controles-sci/${controleSCIId}?edit=INFOS_GENERALES`,
     `/risques/${risqueId}`,
   ]);
   redirectWithOk(retour, "lien_supprime");

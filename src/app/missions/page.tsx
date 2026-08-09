@@ -4,9 +4,9 @@ import { ModuleHelp } from "@/components/ModuleHelp";
 import { AttentionZone } from "@/components/module/AttentionZone";
 import { KpiStat, KpiZone } from "@/components/module/KpiZone";
 import {
-  AuditInventory,
-  type AuditInventoryItem,
-} from "@/components/audits/AuditInventory";
+  MissionInventory,
+  type MissionInventoryItem,
+} from "@/components/missions/MissionInventory";
 import { MODULE_HELP } from "@/lib/catalog";
 import {
   STATUT_MISSION_LABELS,
@@ -73,7 +73,7 @@ export default async function AuditsPage({
       }),
     ]);
 
-  const items: AuditInventoryItem[] = missions.map((a) => {
+  const items: MissionInventoryItem[] = missions.map((a) => {
     const clos = (MISSION_STATUTS_CLOS as readonly string[]).includes(a.statut);
     const estActif = !clos && !a.archive;
     const estRetard = Boolean(estActif && a.dateFin && a.dateFin < today);
@@ -113,7 +113,7 @@ export default async function AuditsPage({
       <PageHeader
         title="Missions d'assurance"
         description="Audits et revues de processus — planification, travaux, recommandations et suivi."
-        actions={<BtnLink href="/audits/nouveau">Nouvelle mission</BtnLink>}
+        actions={<BtnLink href="/missions/nouveau">Nouvelle mission</BtnLink>}
       />
       <ModuleHelp {...MODULE_HELP.audits} />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
@@ -129,14 +129,14 @@ export default async function AuditsPage({
       <AttentionZone
         items={enRetardItems.map((a) => ({
           id: a.id,
-          href: `/audits/${a.id}`,
+          href: `/missions/${a.id}`,
           code: a.code,
           title: a.titre,
           meta: `${a.responsableNom}${a.dateFin ? ` · fin ${formatDateDot(a.dateFin)}` : ""}`,
         }))}
       />
 
-      <AuditInventory items={items} responsables={responsables} />
+      <MissionInventory items={items} responsables={responsables} />
     </>
   );
 }

@@ -133,7 +133,7 @@ export async function updateDocument(formData: FormData) {
   const nom = str(formData, "nom");
   if (!nom) {
     redirectWithError(
-      `/documents/${id}/modifier`,
+      `/documents/${id}?edit=INFOS_GENERALES`,
       "Le nom du document est obligatoire.",
     );
   }
@@ -141,13 +141,13 @@ export async function updateDocument(formData: FormData) {
   const typeDocument = str(formData, "typeDocument") || "AUTRE";
   const statut = str(formData, "statut") || "BROUILLON";
   if (!TYPES.has(typeDocument) || !STATUTS.has(statut)) {
-    redirectWithError(`/documents/${id}/modifier`, "Type ou statut invalide.");
+    redirectWithError(`/documents/${id}?edit=INFOS_GENERALES`, "Type ou statut invalide.");
   }
 
   const frequenceRevue = optStr(formData, "frequenceRevue");
   if (frequenceRevue && !FREQUENCES.has(frequenceRevue)) {
     redirectWithError(
-      `/documents/${id}/modifier`,
+      `/documents/${id}?edit=INFOS_GENERALES`,
       "Fréquence de revue invalide.",
     );
   }
@@ -155,7 +155,7 @@ export async function updateDocument(formData: FormData) {
   const responsableId = optStr(formData, "responsableId");
   if (responsableId && !(await assertResponsable(responsableId))) {
     redirectWithError(
-      `/documents/${id}/modifier`,
+      `/documents/${id}?edit=INFOS_GENERALES`,
       "Responsable introuvable.",
     );
   }
@@ -193,7 +193,7 @@ export async function updateDocument(formData: FormData) {
     },
   });
 
-  revalidateApp([`/documents/${id}`, `/documents/${id}/modifier`]);
+  revalidateApp([`/documents/${id}`, `/documents/${id}?edit=INFOS_GENERALES`]);
   redirectWithOk(`/documents/${id}`, "modifie");
 }
 
