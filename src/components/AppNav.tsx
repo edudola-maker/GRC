@@ -8,6 +8,7 @@ type NavItem = {
   label: string;
   icon: string;
   responsableOnly?: boolean;
+  adminOnly?: boolean;
 };
 
 type NavGroup = {
@@ -54,17 +55,44 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: "admin",
     label: "Administration",
-    items: [],
+    items: [
+      {
+        href: "/administration",
+        label: "Vue d’ensemble",
+        icon: "⚙",
+        adminOnly: true,
+      },
+      {
+        href: "/administration/utilisateurs",
+        label: "Utilisateurs",
+        icon: "☰",
+        adminOnly: true,
+      },
+      {
+        href: "/administration/unites",
+        label: "Unités",
+        icon: "⬡",
+        adminOnly: true,
+      },
+      {
+        href: "/administration/roles",
+        label: "Rôles",
+        icon: "◇",
+        adminOnly: true,
+      },
+    ],
   },
 ];
 
 export function AppNav({
   isResponsable = false,
+  isAdministrateur = false,
   userName,
   uniteName,
   demoSwitcher,
 }: {
   isResponsable?: boolean;
+  isAdministrateur?: boolean;
   userName?: string;
   uniteName?: string;
   demoSwitcher?: React.ReactNode;
@@ -83,17 +111,42 @@ export function AppNav({
 
       <nav className="app-nav__links" aria-label="Navigation principale">
         {NAV_GROUPS.map((group) => {
-          const items = group.items.filter(
-            (i) => !i.responsableOnly || isResponsable,
-          );
+          const items = group.items.filter((i) => {
+            if (i.adminOnly) return isAdministrateur;
+            if (i.responsableOnly) return isResponsable;
+            return true;
+          });
+
           if (group.id === "admin") {
             return (
               <div key={group.id} className="app-nav__group">
                 <p className="app-nav__group-label">{group.label}</p>
-                <span className="app-nav__soon">À venir</span>
+                {items.length === 0 ? (
+                  <span className="app-nav__soon">Réservé</span>
+                ) : (
+                  items.map((item) => {
+                    const active =
+                      item.href === "/administration"
+                        ? pathname === "/administration"
+                        : pathname.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`app-nav__link${active ? " is-active" : ""}`}
+                      >
+                        <span className="app-nav__icon" aria-hidden>
+                          {item.icon}
+                        </span>
+                        {item.label}
+                      </Link>
+                    );
+                  })
+                )}
               </div>
             );
           }
+
           if (items.length === 0) return null;
           return (
             <div key={group.id} className="app-nav__group">
@@ -128,7 +181,7 @@ export function AppNav({
           </p>
         ) : null}
         {demoSwitcher}
-        <p className="app-nav__footnote">Sprint 2 — Vague C</p>
+        <p className="app-nav__footnote">Sprint consolidation</p>
       </div>
     </aside>
   );

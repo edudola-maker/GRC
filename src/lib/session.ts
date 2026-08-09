@@ -48,6 +48,19 @@ export async function listUtilisateursActifsForCurrentUnite() {
   return listUtilisateursActifs(user.uniteId);
 }
 
+export function isAdministrateur(user: { role: string }) {
+  return user.role === "ADMINISTRATEUR";
+}
+
+/** Responsable d’unité ou administrateur — navigation / dashboards élargis. */
 export function isResponsable(user: { role: string }) {
-  return user.role === "RESPONSABLE";
+  return user.role === "RESPONSABLE" || user.role === "ADMINISTRATEUR";
+}
+
+export function formatUtilisateurNom(u: {
+  nom: string;
+  prenom?: string | null;
+}) {
+  const prenom = u.prenom?.trim();
+  return prenom ? `${prenom} ${u.nom}` : u.nom;
 }

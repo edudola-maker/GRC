@@ -27,7 +27,11 @@ export function DemoUserSwitcher({
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.nom}
-              {u.role === "RESPONSABLE" ? " (resp.)" : ""}
+              {u.role === "ADMINISTRATEUR"
+                ? " (admin)"
+                : u.role === "RESPONSABLE"
+                  ? " (resp.)"
+                  : ""}
             </option>
           ))}
         </select>

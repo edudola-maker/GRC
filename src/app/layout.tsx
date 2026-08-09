@@ -4,7 +4,9 @@ import { Fraunces, Source_Sans_3 } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
 import { DemoUserSwitcher } from "@/components/DemoUserSwitcher";
 import {
+  formatUtilisateurNom,
   getCurrentUser,
+  isAdministrateur,
   isResponsable,
   listUtilisateursActifs,
 } from "@/lib/session";
@@ -37,6 +39,7 @@ export default async function RootLayout({
   let userName = "";
   let uniteName = "";
   let responsable = false;
+  let administrateur = false;
   let switcher: React.ReactNode = null;
 
   try {
@@ -45,8 +48,9 @@ export default async function RootLayout({
       // Démo : tous les utilisateurs (toutes unités) pour basculer le contexte
       listUtilisateursActifs(),
     ]);
-    userName = user.nom;
+    userName = formatUtilisateurNom(user);
     responsable = isResponsable(user);
+    administrateur = isAdministrateur(user);
     const unite = await prisma.unite.findUnique({
       where: { id: user.uniteId },
       select: { nom: true, code: true },
@@ -55,7 +59,11 @@ export default async function RootLayout({
     switcher = (
       <Suspense fallback={null}>
         <DemoUserSwitcher
-          users={users.map((u) => ({ id: u.id, nom: u.nom, role: u.role }))}
+          users={users.map((u) => ({
+            id: u.id,
+            nom: formatUtilisateurNom(u),
+            role: u.role,
+          }))}
           currentId={user.id}
         />
       </Suspense>
@@ -70,6 +78,7 @@ export default async function RootLayout({
         <div className="app-shell">
           <AppNav
             isResponsable={responsable}
+            isAdministrateur={administrateur}
             userName={userName}
             uniteName={uniteName}
             demoSwitcher={switcher}

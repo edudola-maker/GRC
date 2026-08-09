@@ -213,6 +213,7 @@ enum CategorieTache {
 enum RoleUtilisateur {
   COLLABORATEUR
   RESPONSABLE
+  ADMINISTRATEUR
 }
 
 enum ModuleMetier {
@@ -274,6 +275,9 @@ model Utilisateur {
   id         String           @id @default(cuid())
   uniteId    String
   nom        String
+  prenom     String?
+  /// Fonction / titre (ex. Responsable GRC).
+  fonction   String?
   /// Représentation visuelle compacte (ex. JD) — jamais l’identifiant technique.
   initiales  String?
   email      String           @unique

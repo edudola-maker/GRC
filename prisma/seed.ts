@@ -24,12 +24,14 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
-  console.log("🌱 Seed Sprint 2 Vague C…");
+  console.log("🌱 Seed — consolidation Administration…");
 
-  // Nettoyage défensif si la DB a été enrichie par une branche ultérieure (Unité / Objectif).
+  // Nettoyage défensif (ordre FK : liens / sections avant Objectif).
   await prisma.$executeRawUnsafe(
     `UPDATE "Unite" SET "responsableId" = NULL, "adjointId" = NULL`,
   ).catch(() => undefined);
+  await prisma.lienObjet.deleteMany().catch(() => undefined);
+  await prisma.sectionRedaction.deleteMany().catch(() => undefined);
   await prisma.$executeRawUnsafe(`DELETE FROM "Objectif"`).catch(() => undefined);
 
   await prisma.journalEvenement.deleteMany();
@@ -221,6 +223,18 @@ async function main() {
       email: "claire.bernard@exemple.fr",
       motDePasse: "demo-hash-claire",
       role: "COLLABORATEUR",
+    },
+  });
+  await prisma.utilisateur.create({
+    data: {
+      uniteId,
+      nom: "Dominique Admin",
+      prenom: null,
+      fonction: "Administrateur plateforme",
+      initiales: deriveInitiales("Dominique Admin"),
+      email: "admin@exemple.fr",
+      motDePasse: "demo-hash-admin",
+      role: "ADMINISTRATEUR",
     },
   });
 

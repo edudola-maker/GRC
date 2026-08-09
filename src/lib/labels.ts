@@ -187,6 +187,13 @@ export const CATEGORIE_TACHE_LABELS: Record<string, string> = {
   AUTRE: "Autre",
 };
 
+/** Rôles applicatifs (≠ rôles de mission). */
+export const ROLE_UTILISATEUR_LABELS: Record<string, string> = {
+  COLLABORATEUR: "Collaborateur",
+  RESPONSABLE: "Responsable d’unité",
+  ADMINISTRATEUR: "Administrateur",
+};
+
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;

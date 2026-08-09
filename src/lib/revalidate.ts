@@ -18,6 +18,10 @@ export function revalidateApp(extra: string[] = []) {
     "/objectifs",
     "/modeles-taches",
     "/processus",
+    "/administration",
+    "/administration/utilisateurs",
+    "/administration/unites",
+    "/administration/roles",
     ...extra,
   ];
   for (const p of paths) revalidatePath(p);
