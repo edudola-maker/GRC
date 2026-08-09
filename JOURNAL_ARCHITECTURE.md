@@ -241,5 +241,14 @@ Les correctifs UI issus de la revue Vague A sont consolidés dans l’entrée Va
 - Administration : suppression « Vue d’ensemble » → redirect Utilisateurs.
 - Inventaire transversal `/taches` (≠ Dashboard).
 - Compteurs inventaire « N résultats sur M » ; icône aide SVG.
-- Roadmap : Protection des données, fun hebdo ; architecture versioning dans `docs/VERSIONING.md` (pas d’implémentation généralisée encore).
+- Roadmap : Protection des données, fun hebdo ; architecture versioning dans `docs/VERSIONING.md`.
+
+## 2026-08-09 — Pilote versioning Risques
+
+Décisions validées (pas de snapshot Phase 1 ; champs structurants enregistrés ; conservation sans purge, paramétrable plus tard).
+
+- Modèle `HistoriqueModification` + `Risque.contenuVersion`.
+- Helpers `enregistrerModifications` / `listerHistorique` ; journal `TYPE_EVENEMENT`.
+- Fiche Risque : boxes **Historique** et **Journal d’activité** (séparées).
+- Branchement `create` / `update` / `archive` / liaisons contrôles.
 

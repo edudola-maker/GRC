@@ -1,7 +1,6 @@
-# Architecture proposée — Journal d’activité & Versioning
+# Architecture — Journal d’activité & Versioning
 
-> Proposition pour validation avant implémentation généralisée.  
-> **Aucune migration lourde dans ce sprint** — socles déjà présents à réutiliser.
+> Décisions validées (2026-08-09). Pilote en cours sur **Risques**.
 
 ## Deux notions distinctes
 
@@ -12,76 +11,63 @@
 
 Ne pas fusionner ces deux flux dans une seule UI confuse.
 
-## Existant à réutiliser
+## Décisions validées
 
-1. **`JournalEvenement`** — déjà générique (`typeObjet`, `objetId`, `typeEvenement`, `message`, `auteurId`). Base du journal d’activité.
-2. **`HistoriqueTache`** — modèle champ-par-champ (`champModifie`, `ancienneValeur`, `nouvelleValeur`). Prototype du versioning.
-3. **`MissionValidationPoint.contenuVersion` + visas** — amorce du lien validation ↔ version de contenu.
+1. **Snapshots JSON** — **non en Phase 1**. Historique générique champ-par-champ. Snapshots complets plus tard si besoin réel de reconstruction.
+2. **Journalisation du contenu** — **finalisations + modifications enregistrées des champs structurants**. Pas chaque frappe / brouillon intermédiaire. Toute modif effectivement enregistrée d’un champ structurant est tracée.
+3. **Conservation** — **pas de durée unique en dur**. Prévoir une conservation paramétrable ultérieurement par type d’objet / catégorie d’historique. **Phase 1 : conserver sans purge automatique** (choix temporaire). Durées et règles de purge → chantier **Protection des données**.
 
-## Architecture cible (simple / générique)
+## Existant réutilisé / introduit
 
-### A. Journal d’activité (étendre `JournalEvenement`)
+1. **`JournalEvenement`** — événements (`typeEvenement` via `TYPE_EVENEMENT` dans `src/lib/journal.ts`).
+2. **`HistoriqueModification`** — modèle générique (remplace progressivement `HistoriqueTache`).
+3. **`contenuVersion`** sur l’objet (pilote `Risque`) + futurs visas `versionVisee` (déjà amorcé sur Missions).
 
-- Conserver le modèle actuel.
-- Standardiser un catalogue de `typeEvenement` (constantes TypeScript, puis Admin plus tard).
-- Afficher une box **Journal** repliable sur les fiches (comme Conseils aujourd’hui).
-- Écriture uniquement via helpers (`ajouterJournal`) — jamais dispersée.
+## Architecture
 
-### B. Historique de champs — modèle générique `HistoriqueModification`
+### A. Journal (`ajouterJournal` / `listerJournal`)
 
-Remplacer progressivement les historiques ad hoc par **un** modèle :
+- Écriture uniquement via helpers.
+- Box **Journal d’activité** sur la fiche (distincte de l’Historique).
+
+### B. Historique (`enregistrerModifications` / `listerHistorique`)
+
+Modèle :
 
 ```
 HistoriqueModification
-  id
-  uniteId?
-  typeObjet     (TypeObjetMetier)
-  objetId
-  champ         (chemin stable, ex. "statut", "probabilite")
-  ancienneValeur String?   // sérialisation texte / JSON courte
-  nouvelleValeur String?
-  modifieParId
-  modifieLe
-  motif?        // optionnel
-  versionObjet  Int        // incrémenté à chaque lot de modifs « finalisées »
+  uniteId?, typeObjet, objetId, champ,
+  ancienneValeur, nouvelleValeur,
+  modifieParId, modifieLe, motif?, versionObjet
 ```
 
-- Helper unique `enregistrerModifications({ typeObjet, objetId, before, after, userId, champs })`.
-- Appelé depuis les `update*` server actions après succès, **pas** depuis chaque composant UI.
-- Première vague : Risques, Contrôles SCI, Conseils, Documents, Processus, Missions (infos générales).
-- `HistoriqueTache` peut migrer vers ce modèle ou rester un alias temporaire.
+- Helper : `src/lib/historique.ts`
+- Appelé depuis les server actions après enregistrement réussi.
+- UI : `HistoriqueTimeline` (qui / quand / champ / avant → après / vN).
 
-### C. Versions & validation
+### C. Versions & validation (articulation)
 
-- Chaque objet sensible porte `contenuVersion Int @default(1)`.
-- Finaliser une box / section incrémentée `contenuVersion` (déjà amorcé sur Missions).
-- Visas / validations stockent `versionVisee`.
-- Si `versionVisee < contenuVersion` → statut `OBSOLETE` / à revalider (roadmap déjà notée).
+- Objet sensible : `contenuVersion` (bump si au moins un champ structurant change).
+- Futurs visas : `versionVisee` ; si `versionVisee < contenuVersion` → à revalider (`OBSOLETE`).
+- Pilote Risques : `contenuVersion` + historique prêts ; workflow de validation non branché encore.
 
-### D. Consultation UI (phases)
+### D. Phases UI
 
-1. **Phase 1** — timeline « Historique » : liste des changements (qui / quand / champ / avant → après).
-2. **Phase 2** — filtre par champ ; export éventuel soumis aux mêmes droits.
-3. **Phase 3** — « Voir à la version N » (reconstruction ou snapshot JSON optionnel) — seulement si Phase 1 prouve le besoin.
+1. **Phase 1 (en cours)** — timeline Historique + Journal sur Risques.
+2. Phase 2 — filtre par champ ; export sous droits.
+3. Phase 3 — reconstruction / snapshot optionnel si besoin prouvé.
 
-**Recommandation :** ne pas stocker de snapshot complet dès Phase 1 (coût / complexité). Les diffs champ-par-champ suffisent pour « qui a modifié quoi ».
+## Plan
+
+| Étape | Statut |
+|-------|--------|
+| `HistoriqueModification` + helper + pilote Risques | **En cours / livré** |
+| Controles SCI + Conseils | Suivant |
+| Documents / Processus / Missions | Ensuite |
+| Invalidation visas via `contenuVersion` | Après validations métier |
+| Migrer `HistoriqueTache` → générique | Plus tard |
 
 ## Compatibilité LPD / droits
 
 - Lecture historique = mêmes permissions que la fiche.
-- Pas de données personnelles réelles en seed.
-- Journalisation des accès sensibles = roadmap LPD (onglet Protection des données).
-
-## Plan d’implémentation suggéré (après validation)
-
-1. Introduire `HistoriqueModification` + helper + UI timeline sur **Risques** (pilote).
-2. Brancher Controles SCI + Conseils.
-3. Étendre Documents / Processus / Missions (sections).
-4. Brancher invalidation des visas via `contenuVersion`.
-5. Migrer `HistoriqueTache` → modèle générique.
-
-## Décisions à valider
-
-1. Snapshot JSON complet dès Phase 1 ? (**Proposition : non**)
-2. Historique des brouillons (`SectionRedaction`) vs uniquement Finaliser ? (**Proposition : Finaliser + champs opérationnels clés**)
-3. Conservation / purge des historiques (durée) — lien onglet Protection des données.
+- Pas de purge auto en Phase 1 ; paramétrage conservation → Protection des données.

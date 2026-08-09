@@ -6,11 +6,15 @@ import {
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { RisqueForm } from "@/components/EntityForms";
+import { HistoriqueTimeline } from "@/components/historique/HistoriqueTimeline";
+import { JournalTimeline } from "@/components/historique/JournalTimeline";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader } from "@/components/ui";
 import { archiveRisque, deleteRisque, updateRisque } from "../actions";
+import { listerHistorique } from "@/lib/historique";
+import { listerJournal } from "@/lib/journal";
 import {
   CATEGORIE_RISQUE_LABELS,
   STATUT_CONTROLE_LABELS,
@@ -21,6 +25,10 @@ import {
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
+import {
+  CHAMP_RISQUE_LABELS,
+  formatRisqueHistValue,
+} from "@/lib/risque-historique";
 import { parseTags } from "@/lib/tags";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
@@ -41,23 +49,25 @@ export default async function RisqueDetailPage({
       : null;
   const user = await getCurrentUser();
 
-  const [risque, users] = await Promise.all([
-  prisma.risque.findUnique({
-    where: { id },
-    include: {
-      responsable: true,
-      creePar: true,
-      controles: {
-        include: {
-          controle: {
-            include: { responsable: true },
+  const [risque, users, historique, journal] = await Promise.all([
+    prisma.risque.findUnique({
+      where: { id },
+      include: {
+        responsable: true,
+        creePar: true,
+        controles: {
+          include: {
+            controle: {
+              include: { responsable: true },
+            },
           },
+          orderBy: { creeLe: "asc" },
         },
-        orderBy: { creeLe: "asc" },
       },
-    },
-  }),
-  listUtilisateursActifsForCurrentUnite(),
+    }),
+    listUtilisateursActifsForCurrentUnite(),
+    listerHistorique("RISQUE", id),
+    listerJournal("RISQUE", id),
   ]);
 
   if (!risque) notFound();
@@ -253,6 +263,35 @@ export default async function RisqueDetailPage({
         <p style={{ margin: 0 }}>
           {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
         </p>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Historique"
+        defaultOpen={false}
+        badge={`v${risque.contenuVersion}`}
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Modifications de contenu enregistrées (qui / quand / avant → après).
+          Version contenu actuelle : {risque.contenuVersion}
+          {" — "}base pour de futures validations (version visée).
+        </p>
+        <HistoriqueTimeline
+          entries={historique}
+          champLabels={CHAMP_RISQUE_LABELS}
+          formatValue={formatRisqueHistValue}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Journal d’activité"
+        defaultOpen={false}
+        badge={`${journal.length}`}
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Événements fonctionnels (création, statut, archivage, liaisons) —
+          distinct de l’historique des champs.
+        </p>
+        <JournalTimeline entries={journal} />
       </CollapsibleSection>
     </>
   );

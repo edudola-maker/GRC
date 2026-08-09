@@ -264,6 +264,7 @@ model Unite {
   objectifsModule  ObjectifModule[]
   sequences        SequenceCode[]
   journal          JournalEvenement[]
+  historiquesModification HistoriqueModification[]
   parametres       ParametreFonctionnel[]
   liensObjets      LienObjet[]
   sectionsRedaction SectionRedaction[]
@@ -320,6 +321,7 @@ model Utilisateur {
   processusCrees          Processus[]        @relation("ProcessusCreePar")
   processusModifies       Processus[]        @relation("ProcessusModifiePar")
   historiquesTache        HistoriqueTache[]
+  historiquesModification HistoriqueModification[]
   objectifs               ObjectifAnnuel[]
   projetMembres           ProjetMembre[]
   missionMembres          MissionMembre[]
@@ -612,6 +614,8 @@ model Risque {
   /// Justification de l’évaluation / du traitement retenu (≠ journal).
   justificationEvaluation String?
   archive       Boolean          @default(false)
+  /// Version de contenu (pilote versioning) — futurs visas stockent versionVisee.
+  contenuVersion Int             @default(1)
   creeParId     String
   modifieParId  String
   creeLe        DateTime        @default(now())
@@ -1210,4 +1214,30 @@ model JournalEvenement {
 
   @@index([typeObjet, objetId, creeLe])
   @@index([uniteId, creeLe])
+}
+
+/// Historique de contenu générique (diffs champ-par-champ).
+/// Phase 1 : pas de snapshot JSON, pas de purge automatique.
+/// Conservation paramétrable ultérieurement (Protection des données).
+model HistoriqueModification {
+  id             String         @id @default(cuid())
+  uniteId        String?
+  typeObjet      TypeObjetMetier
+  objetId        String
+  /// Chemin stable du champ (ex. "statut", "probabilite").
+  champ          String
+  ancienneValeur String?
+  nouvelleValeur String?
+  modifieParId   String
+  modifieLe      DateTime       @default(now())
+  motif          String?
+  /// Version de contenu de l’objet après ce lot de modifications.
+  versionObjet   Int            @default(1)
+
+  unite      Unite?       @relation(fields: [uniteId], references: [id], onDelete: SetNull)
+  modifiePar Utilisateur  @relation(fields: [modifieParId], references: [id])
+
+  @@index([typeObjet, objetId, modifieLe])
+  @@index([uniteId, modifieLe])
+  @@index([typeObjet, objetId, versionObjet])
 }

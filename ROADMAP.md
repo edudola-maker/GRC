@@ -234,11 +234,14 @@ Permissions : deny-by-default pour Administration (`src/lib/permissions.ts`). Sc
 
 Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_CONSOLIDATION.md).
 
-### 5octies. Versioning / historique (prochain chantier structurant)
+### 5octies. Versioning / historique (chantier structurant)
 
 Distinguer **Journal d’activité** (événements) et **Historique de contenu** (diffs de champs).  
-Architecture proposée avant généralisation : [`docs/VERSIONING.md`](./docs/VERSIONING.md).  
-Compatible avec l’invalidation des visas (`contenuVersion`).
+Architecture et décisions : [`docs/VERSIONING.md`](./docs/VERSIONING.md).
+
+**Pilote Risques (livré) :** modèle `HistoriqueModification`, helper `enregistrerModifications`, `Risque.contenuVersion`, UI Historique + Journal.  
+Pas de snapshot JSON ni de purge auto en Phase 1 ; conservation paramétrable plus tard (Protection des données).  
+Étapes suivantes : autres modules, puis invalidation des visas (`versionVisee` < `contenuVersion`).
 
 ### 5nonies. Touche humaine / fun (roadmap légère)
 
