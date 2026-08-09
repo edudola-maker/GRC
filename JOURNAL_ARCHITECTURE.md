@@ -233,3 +233,13 @@ Les correctifs UI issus de la revue Vague A sont consolidés dans l’entrée Va
 - `/unite` : suppression Vue d’ensemble ; Équipe enrichie ; section Missions ; identité via Admin.
 - Détail : `docs/UX_TRIMMING.md`.
 
+## 2026-08-09 — Delta revue (Tâches, Admin, versioning)
+
+**Branche :** `cursor/revue-delta-taches-versioning-72a6`
+
+- `/unite` Équipe : tous les utilisateurs rattachés (actifs + inactifs), fonctions, statut.
+- Administration : suppression « Vue d’ensemble » → redirect Utilisateurs.
+- Inventaire transversal `/taches` (≠ Dashboard).
+- Compteurs inventaire « N résultats sur M » ; icône aide SVG.
+- Roadmap : Protection des données, fun hebdo ; architecture versioning dans `docs/VERSIONING.md` (pas d’implémentation généralisée encore).
+

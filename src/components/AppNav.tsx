@@ -30,6 +30,7 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "◎",
         responsableOnly: true,
       },
+      { href: "/taches", label: "Tâches", icon: "☑" },
     ],
   },
   {
@@ -56,12 +57,6 @@ const NAV_GROUPS: NavGroup[] = [
     id: "admin",
     label: "Administration",
     items: [
-      {
-        href: "/administration",
-        label: "Vue d’ensemble",
-        icon: "⚙",
-        adminOnly: true,
-      },
       {
         href: "/administration/utilisateurs",
         label: "Utilisateurs",
@@ -125,10 +120,7 @@ export function AppNav({
                   <span className="app-nav__soon">Réservé</span>
                 ) : (
                   items.map((item) => {
-                    const active =
-                      item.href === "/administration"
-                        ? pathname === "/administration"
-                        : pathname.startsWith(item.href);
+                    const active = pathname.startsWith(item.href);
                     return (
                       <Link
                         key={item.href}

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InfoIcon } from "@/components/icons/InfoIcon";
 
 export type ModuleHelpSection = {
   heading: string;
@@ -6,7 +7,7 @@ export type ModuleHelpSection = {
 };
 
 /**
- * Aide contextuelle — icône ⓘ discrète (popover), plus de grande box.
+ * Aide contextuelle — icône SVG ⓘ discrète (popover).
  */
 export function ModuleHelp({
   title,
@@ -20,8 +21,8 @@ export function ModuleHelp({
   return (
     <details className="module-help module-help--icon">
       <summary aria-label={`Aide : ${title}`} title={`Aide — ${title}`}>
-        <span className="module-help__icon" aria-hidden>
-          ⓘ
+        <span className="module-help__icon">
+          <InfoIcon size={16} />
         </span>
       </summary>
       <div className="module-help__popover" role="note">
@@ -62,8 +63,8 @@ export function ModuleHelpRich({
   return (
     <details className="module-help module-help--icon">
       <summary aria-label={`Aide : ${title}`} title={`Aide — ${title}`}>
-        <span className="module-help__icon" aria-hidden>
-          ⓘ
+        <span className="module-help__icon">
+          <InfoIcon size={16} />
         </span>
       </summary>
       <div className="module-help__popover" role="note">

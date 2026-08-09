@@ -51,7 +51,6 @@ export default async function UnitePage({
 }) {
   const sp = await searchParams;
   const edit = parseEdit(sp.edit);
-  const focusEquipe = sp.focus === "equipe";
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
@@ -72,8 +71,8 @@ export default async function UnitePage({
         orderBy: [{ annee: "desc" }, { intitule: "asc" }],
       }),
       prisma.utilisateur.findMany({
-        where: { uniteId, actif: true },
-        orderBy: [{ nom: "asc" }, { prenom: "asc" }],
+        where: { uniteId },
+        orderBy: [{ actif: "desc" }, { nom: "asc" }, { prenom: "asc" }],
         select: {
           id: true,
           nom: true,
@@ -82,6 +81,7 @@ export default async function UnitePage({
           initiales: true,
           fonction: true,
           email: true,
+          actif: true,
         },
       }),
       prisma.processus.findMany({
@@ -188,15 +188,15 @@ export default async function UnitePage({
       <div id="equipe">
         <CollapsibleSection
           title="Équipe"
-          defaultOpen={focusEquipe}
-          badge={`${membres.length}`}
+          defaultOpen
+          badge={`${membres.filter((m) => m.actif).length}/${membres.length}`}
         >
           <p className="muted" style={{ marginTop: 0 }}>
-            Collaborateurs issus du référentiel Utilisateurs — gestion des
-            comptes dans Administration.
+            Tous les utilisateurs rattachés à cette unité (référentiel
+            Administration) — aucune ressaisie ici.
           </p>
           {membres.length === 0 ? (
-            <p className="empty">Aucun collaborateur actif.</p>
+            <p className="empty">Aucun collaborateur rattaché à l’unité.</p>
           ) : (
             <ul className="unite-equipe__list">
               {membres.map((m) => {
@@ -208,7 +208,10 @@ export default async function UnitePage({
                   roleLabel = "Adjoint";
                 }
                 return (
-                  <li key={m.id} className="unite-equipe__row">
+                  <li
+                    key={m.id}
+                    className={`unite-equipe__row${m.actif ? "" : " is-inactive"}`}
+                  >
                     <span className="unite-equipe__id">
                       <span className="initiales-badge" aria-hidden>
                         {m.initiales?.trim() || "—"}
@@ -220,7 +223,11 @@ export default async function UnitePage({
                         ) : null}
                       </span>
                     </span>
-                    <span className="muted">{roleLabel}</span>
+                    <span className="unite-equipe__meta muted">
+                      {roleLabel}
+                      {" · "}
+                      {m.actif ? "Actif" : "Inactif"}
+                    </span>
                   </li>
                 );
               })}

@@ -385,4 +385,21 @@ export const MODULE_HELP = {
       },
     ],
   },
+  taches: {
+    title: "Comprendre l’inventaire des Tâches",
+    sections: [
+      {
+        heading: "À quoi ça sert ?",
+        body: "Vue transversale de toutes les tâches, quels que soient leur objet d’origine (projet, conseil, contrôle, mission, document…) ou leur unité.",
+      },
+      {
+        heading: "Dashboard vs Tâches",
+        body: "Le Dashboard collaborateur reste la vue personnelle du quotidien. L’onglet Tâches est l’inventaire complet pour rechercher, filtrer et mesurer.",
+      },
+      {
+        heading: "Filtres",
+        body: "Filtrez par statut, responsable, unité, objet source ; combinez avec la recherche. Le compteur indique combien d’éléments correspondent.",
+      },
+    ],
+  },
 } as const;

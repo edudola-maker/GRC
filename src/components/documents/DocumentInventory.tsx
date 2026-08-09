@@ -139,7 +139,7 @@ export function DocumentInventory({
       advancedOpen={advancedOpen}
       onAdvancedToggle={() => setAdvancedOpen((v) => !v)}
       resultCount={filtered.length}
-      totalCount={items.filter((d) => !d.archive).length}
+      totalCount={items.length}
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}

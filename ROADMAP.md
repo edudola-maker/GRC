@@ -58,7 +58,10 @@ Elle peut être créée :
 - automatiquement depuis un **audit** ;
 - automatiquement depuis une **revue documentaire**.
 
-Conséquence UI : le **Backlog** est la vue de travail quotidienne. L’onglet « Tâches » actuel est un pont MVP ; sa pertinence à long terme sera revue (fusion / simplification possible vers Backlog + fiches métier).
+Conséquence UI :
+
+- **Dashboard collaborateur** = vue personnelle / opérationnelle du quotidien ;
+- **Tâches** = inventaire transversal complet (filtres, recherche, terminées) — distinct du Backlog historique.
 
 ---
 
@@ -66,16 +69,17 @@ Conséquence UI : le **Backlog** est la vue de travail quotidienne. L’onglet �
 
 | Onglet | Statut | Rôle |
 |--------|--------|------|
-| Pilotage | MVP | Synthèse unité + à traiter + échéances |
-| Backlog | MVP (à enrichir) | Vue de travail quotidienne |
-| Tâches | MVP | Liste / CRUD actions (à réévaluer vs Backlog) |
+| Dashboard collaborateur | MVP | Vue personnelle / à traiter / échéances |
+| Mon unité | MVP | Fiche métier agrégée |
+| Tâches | MVP | Inventaire transversal de toutes les tâches |
 | Projets | MVP | Cycle de vie projets |
-| Contrôles SCI | Placeholder | Registre + preuves + échéances |
-| Conseils | Futur | Objet métier (migration depuis catégorie tâche) |
-| Risques | Futur | Registre + matrice 5×5 + génération de contrôles |
-| Documents | Futur | Inventaire + revues planifiées |
+| Contrôles SCI | MVP | Registre + preuves + échéances |
+| Conseils | MVP | Objet métier |
+| Risques | MVP | Registre + matrice 5×5 |
+| Documents | MVP | Inventaire + revues planifiées |
 | Équipe | Absorbé | Section de `/unite` (redirect `/equipe`) |
 | Missions d’assurance | MVP | Routes `/missions` (redirect `/audits`) |
+| Protection des données | Roadmap | Vue de pilotage LPD transversale |
 | Boîte de réception | Long terme | Entrée commune sans double saisie |
 
 ---
@@ -153,9 +157,21 @@ Socle livré : types & templates seedés, équipe + rôles, initiales, sections 
 
 **Roadmap — routes :** migrer `/missions` vers le nom définitif du module.
 
-### 5ter-bis. LPD / Privacy by design (roadmap avancée)
+### 5ter-bis. LPD / Privacy by design + onglet Protection des données (roadmap)
 
-Socle flags livré. Plus tard : règles de conservation, accès besoin de connaître, Active Directory, traçabilité renforcée, recherche/exports filtrés par droits, pilotage LPD. Pas de données personnelles réelles en démo/test. Éviter un dépôt parallèle de documents sensibles (Confluence reste la référence).
+Socle flags livré (`contientDonneesPersonnelles`, `niveauConfidentialite`). Pas de données personnelles réelles en démo/test. Confluence reste la référence documentaire.
+
+**Roadmap — onglet distinct « Protection des données »** (vue de pilotage, pas un module juridique) :
+
+- objets contenant des données personnelles ;
+- niveaux de confidentialité ;
+- règles / stratégies de conservation ;
+- objets sans classification ;
+- périmètres / accès sensibles ;
+- points d’attention ;
+- indicateurs de conformité synthétiques.
+
+Complète l’approche LPD by design ; exports futurs soumis aux mêmes permissions.
 
 ### 5ter-ter. Modèles de tâches
 
@@ -217,6 +233,16 @@ Permissions : deny-by-default pour Administration (`src/lib/permissions.ts`). Sc
 **Roadmap :** AD / Entra ID, SSO, groupes, multi-unités avancées, permissions fines, restrictions LPD, Éditeur key user (inventaire dans `docs/EDITEUR_PREPARATION.md`).
 
 Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_CONSOLIDATION.md).
+
+### 5octies. Versioning / historique (prochain chantier structurant)
+
+Distinguer **Journal d’activité** (événements) et **Historique de contenu** (diffs de champs).  
+Architecture proposée avant généralisation : [`docs/VERSIONING.md`](./docs/VERSIONING.md).  
+Compatible avec l’invalidation des visas (`contenuVersion`).
+
+### 5nonies. Touche humaine / fun (roadmap légère)
+
+Question hebdomadaire optionnelle (ex. « Chiens ou chats ? ») — purement conviviale, non prioritaire, sans alourdir la plateforme.
 
 ### 6. Indicateurs par module
 

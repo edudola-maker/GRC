@@ -42,10 +42,13 @@ export function InventoryBrowser({
   canResetFilters?: boolean;
   children: ReactNode;
 }) {
-  const countLabel =
-    resultCount === totalCount
-      ? `${totalCount}`
-      : `${resultCount}/${totalCount}`;
+  const filtered = resultCount !== totalCount;
+  const countLabel = filtered
+    ? `${resultCount} / ${totalCount}`
+    : `${totalCount}`;
+  const countText = filtered
+    ? `${resultCount} résultat${resultCount > 1 ? "s" : ""} sur ${totalCount}`
+    : `${totalCount} élément${totalCount > 1 ? "s" : ""}`;
 
   return (
     <div id="inventaire" className="inventory inventory-shell">
@@ -93,6 +96,13 @@ export function InventoryBrowser({
               canReset={canResetFilters}
             />
           ) : null}
+
+          <p
+            className={`inventory__count${filtered ? " is-filtered" : ""}`}
+            aria-live="polite"
+          >
+            {countText}
+          </p>
         </div>
 
         <div className="inventory__body">{children}</div>

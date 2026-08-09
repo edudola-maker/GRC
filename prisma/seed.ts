@@ -200,6 +200,7 @@ async function main() {
       uniteId,
       prenom: "Alice",
       nom: "Martin",
+      fonction: "Responsable GRC",
       initiales: deriveInitiales("Alice Martin"),
       email: "alice.martin@exemple.fr",
       motDePasse: "demo-hash-alice",
@@ -211,6 +212,7 @@ async function main() {
       uniteId,
       prenom: "Bernard",
       nom: "Dupont",
+      fonction: "Collaborateur GRC",
       initiales: deriveInitiales("Bernard Dupont"),
       email: "bernard.dupont@exemple.fr",
       motDePasse: "demo-hash-bernard",
@@ -222,6 +224,7 @@ async function main() {
       uniteId,
       prenom: "Claire",
       nom: "Bernard",
+      fonction: "Analyste risques",
       initiales: deriveInitiales("Claire Bernard"),
       email: "claire.bernard@exemple.fr",
       motDePasse: "demo-hash-claire",
@@ -238,6 +241,20 @@ async function main() {
       email: "admin@exemple.fr",
       motDePasse: "demo-hash-admin",
       role: "ADMINISTRATEUR",
+    },
+  });
+  // Compte inactif — visible dans /unite § Équipe pour illustrer le statut.
+  await prisma.utilisateur.create({
+    data: {
+      uniteId,
+      prenom: "Éric",
+      nom: "Moreau",
+      fonction: "Stagiaire (ancien)",
+      initiales: deriveInitiales("Éric Moreau"),
+      email: "eric.moreau@exemple.fr",
+      motDePasse: "demo-hash-eric",
+      role: "COLLABORATEUR",
+      actif: false,
     },
   });
 

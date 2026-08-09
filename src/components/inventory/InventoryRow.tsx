@@ -8,6 +8,8 @@ export type InventoryCell = {
   emphasis?: "code" | "title" | "status" | "muted";
   /** Badge coloré pour le statut (fond de ligne reste neutre) */
   badgeTone?: StatusTone;
+  /** Lien optionnel (ex. objet source) — hors du lien principal de la ligne */
+  href?: string | null;
 };
 
 /**
@@ -50,11 +52,10 @@ export function InventoryRow({
   primary: InventoryCell[];
   secondary?: InventoryCell[];
 }) {
-  return (
-    <Link
-      href={href}
-      className={`inventory-row${archived ? " is-archived" : ""}`}
-    >
+  const sourceLinks = (secondary ?? []).filter((c) => c.href);
+
+  const lines = (
+    <>
       <div className="inventory-row__line inventory-row__line--primary">
         {primary.map((cell, i) => (
           <InventoryCellView key={i} cell={cell} />
@@ -63,10 +64,46 @@ export function InventoryRow({
       {secondary && secondary.length > 0 ? (
         <div className="inventory-row__line inventory-row__line--secondary">
           {secondary.map((cell, i) => (
-            <InventoryCellView key={i} cell={cell} secondary />
+            <InventoryCellView
+              key={i}
+              cell={{ ...cell, href: undefined }}
+              secondary
+            />
           ))}
         </div>
       ) : null}
+    </>
+  );
+
+  if (sourceLinks.length > 0) {
+    return (
+      <div
+        className={`inventory-row inventory-row--split${archived ? " is-archived" : ""}`}
+      >
+        <Link href={href} className="inventory-row__main">
+          {lines}
+        </Link>
+        <div className="inventory-row__links">
+          {sourceLinks.map((cell, i) => (
+            <Link
+              key={i}
+              href={cell.href!}
+              className="inventory-row__source-link"
+            >
+              Ouvrir l’objet
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`inventory-row${archived ? " is-archived" : ""}`}
+    >
+      {lines}
     </Link>
   );
 }

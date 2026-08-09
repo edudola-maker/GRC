@@ -137,7 +137,7 @@ export function ProcessusInventory({
       advancedOpen={advancedOpen}
       onAdvancedToggle={() => setAdvancedOpen((v) => !v)}
       resultCount={filtered.length}
-      totalCount={items.filter((p) => !p.archive).length}
+      totalCount={items.length}
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
