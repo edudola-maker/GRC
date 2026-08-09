@@ -70,7 +70,6 @@ export async function updateUnite(formData: FormData) {
     });
   } else if (
     sectionKey === "OBJECTIFS" ||
-    sectionKey === "ACTIVITE" ||
     sectionKey === "EQUIPE" ||
     sectionKey === "PROCESSUS" ||
     sectionKey === "ELEMENTS_ASSOCIES" ||

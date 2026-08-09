@@ -194,7 +194,7 @@ Suivi opérationnel : **Projet → Tâches** uniquement. La notion de Jalon a é
 Distinguer :
 
 - **Administration technique** des unités et des droits (roadmap) ;
-- **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx), pilotage synthétique, **Objectifs** (OBJ-xxxx), activité agrégée, équipe, processus, éléments associés.
+- **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx), pilotage synthétique (compteurs), **Objectifs** (OBJ-xxxx), équipe, processus, éléments associés — pas de listes d’activité (réservées aux modules / Dashboards).
 
 **Objectifs d’unité** ≠ `ObjectifAnnuel` (individuel) ≠ `ObjectifModule` (KPI module). Liens libres via `LienObjet`. Pas d’OKR / scoring auto dans cette version.
 

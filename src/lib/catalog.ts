@@ -360,7 +360,7 @@ export const MODULE_HELP = {
     sections: [
       {
         heading: "À quoi ça sert ?",
-        body: "Point d’entrée et agrégateur de l’unité : qui sommes-nous, quels objectifs, que faisons-nous, où en sommes-nous. Pas de double saisie des modules métier.",
+        body: "Point d’entrée synthétique : identité, objectifs, équipe et organisation. Les listes d’activité restent dans les modules et les Dashboards — pas de double Dashboard ici.",
       },
       {
         heading: "Objectifs",

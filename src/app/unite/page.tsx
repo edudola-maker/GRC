@@ -9,7 +9,6 @@ import {
 } from "@/components/module/EditableSection";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader, BtnLink } from "@/components/ui";
-import { UniteActivitePanel } from "@/components/unite/UniteActivitePanel";
 import { UniteForm } from "@/components/unite/UniteForm";
 import { UnitePilotagePanel } from "@/components/unite/UnitePilotagePanel";
 import { updateUnite } from "./actions";
@@ -26,7 +25,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
-import { getUniteActivite, getUnitePilotage } from "@/lib/unite-overview";
+import { getUnitePilotage } from "@/lib/unite-overview";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +54,7 @@ export default async function UnitePage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [unite, users, redactions, pilotage, activite, objectifs, membres] =
+  const [unite, users, redactions, pilotage, objectifs, membres, processus] =
     await Promise.all([
       prisma.unite.findUnique({
         where: { id: uniteId },
@@ -67,7 +66,6 @@ export default async function UnitePage({
       listUtilisateursActifsForCurrentUnite(),
       listSectionRedactions("UNITE", uniteId),
       getUnitePilotage(uniteId),
-      getUniteActivite(uniteId),
       prisma.objectif.findMany({
         where: { uniteId },
         include: { responsable: true },
@@ -77,6 +75,11 @@ export default async function UnitePage({
         where: { uniteId, actif: true },
         orderBy: { nom: "asc" },
         select: { id: true, nom: true, role: true, initiales: true, email: true },
+      }),
+      prisma.processus.findMany({
+        where: { uniteId, archive: false },
+        orderBy: { nom: "asc" },
+        select: { id: true, code: true, nom: true, statut: true },
       }),
     ]);
 
@@ -202,10 +205,6 @@ export default async function UnitePage({
         </div>
       </EditableSection>
 
-      <CollapsibleSection title="Activité" defaultOpen>
-        <UniteActivitePanel activite={activite} />
-      </CollapsibleSection>
-
       <CollapsibleSection
         title="Équipe"
         defaultOpen={false}
@@ -243,7 +242,7 @@ export default async function UnitePage({
       <CollapsibleSection
         title="Processus"
         defaultOpen={false}
-        badge={`${activite.processus.length}`}
+        badge={`${processus.length}`}
       >
         <p className="muted" style={{ marginTop: 0 }}>
           Processus de l’unité — détail et étapes sur chaque fiche Processus.
@@ -256,19 +255,19 @@ export default async function UnitePage({
             Voir tous
           </BtnLink>
         </div>
-        {activite.processus.length === 0 ? (
+        {processus.length === 0 ? (
           <p className="empty">Aucun processus.</p>
         ) : (
           <ul className="unite-activite__list">
-            {activite.processus.map((p) => (
+            {processus.map((p) => (
               <li key={p.id}>
-                <Link href={p.href}>
+                <Link href={`/processus/${p.id}`}>
                   <strong>
-                    {p.code} — {p.titre}
+                    {p.code} — {p.nom}
                   </strong>
                 </Link>
                 <span className="muted">
-                  {STATUT_PROCESSUS_LABELS[p.meta] ?? p.meta}
+                  {STATUT_PROCESSUS_LABELS[p.statut] ?? p.statut}
                 </span>
               </li>
             ))}
