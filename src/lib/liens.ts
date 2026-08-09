@@ -36,6 +36,12 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
       return `/processus/${id}`;
     case "PROCESSUS_ETAPE":
       return `/processus`; // affiné après résolution
+    case "UNITE":
+      return `/unite`;
+    case "OBJECTIF":
+      return `/objectifs/${id}`;
+    case "MODELE_TACHE":
+      return `/modeles-taches/${id}`;
     default:
       return "/";
   }
@@ -163,6 +169,53 @@ async function resolveObjet(
         titre: o.libelle,
         href: `/processus/${o.processusId}#etape-${o.id}`,
       };
+    }
+    case "UNITE": {
+      // Uniquement l’unité du périmètre courant (pas de multi-unités croisées).
+      if (id !== uniteId) return null;
+      const o = await prisma.unite.findFirst({
+        where: { id: uniteId },
+        select: { id: true, code: true, nom: true },
+      });
+      return o
+        ? {
+            type,
+            id: o.id,
+            code: o.code,
+            titre: o.nom,
+            href: hrefFor(type, o.id),
+          }
+        : null;
+    }
+    case "OBJECTIF": {
+      const o = await prisma.objectif.findFirst({
+        where: { id, uniteId },
+        select: { id: true, code: true, intitule: true },
+      });
+      return o
+        ? {
+            type,
+            id: o.id,
+            code: o.code,
+            titre: o.intitule,
+            href: hrefFor(type, o.id),
+          }
+        : null;
+    }
+    case "MODELE_TACHE": {
+      const o = await prisma.modeleTache.findFirst({
+        where: { id, uniteId },
+        select: { id: true, code: true, nom: true },
+      });
+      return o
+        ? {
+            type,
+            id: o.id,
+            code: o.code,
+            titre: o.nom,
+            href: hrefFor(type, o.id),
+          }
+        : null;
     }
     default:
       return null;
@@ -312,6 +365,36 @@ export async function listCandidatsLien(
             label: `${r.processus.code} / ${num} ${r.libelle}`,
           };
         });
+    }
+    case "UNITE": {
+      const o = await prisma.unite.findFirst({
+        where: { id: uniteId },
+        select: { id: true, code: true, nom: true },
+      });
+      if (!o || o.id === excludeId) return [];
+      return [{ id: o.id, label: `${o.code} — ${o.nom}` }];
+    }
+    case "OBJECTIF": {
+      const rows = await prisma.objectif.findMany({
+        where: { uniteId, statut: { not: "ABANDONNE" } },
+        select: { id: true, code: true, intitule: true },
+        orderBy: { intitule: "asc" },
+        take: 200,
+      });
+      return rows
+        .filter((r) => r.id !== excludeId)
+        .map((r) => ({ id: r.id, label: `${r.code} — ${r.intitule}` }));
+    }
+    case "MODELE_TACHE": {
+      const rows = await prisma.modeleTache.findMany({
+        where: { uniteId, actif: true },
+        select: { id: true, code: true, nom: true },
+        orderBy: { nom: "asc" },
+        take: 200,
+      });
+      return rows
+        .filter((r) => r.id !== excludeId)
+        .map((r) => ({ id: r.id, label: `${r.code} — ${r.nom}` }));
     }
     default:
       return [];

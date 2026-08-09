@@ -132,6 +132,13 @@ export const STATUT_PROCESSUS_OPTIONS = [
   { value: "SUSPENDU", label: "Suspendu" },
 ] as const;
 
+export const STATUT_OBJECTIF_OPTIONS = [
+  { value: "EN_COURS", label: "En cours" },
+  { value: "ATTEINT", label: "Atteint" },
+  { value: "REPORTE", label: "Reporté" },
+  { value: "ABANDONNE", label: "Abandonné" },
+] as const;
+
 export const FREQUENCE_CONTROLE_OPTIONS = [
   { value: "MENSUELLE", label: "Mensuelle" },
   { value: "TRIMESTRIELLE", label: "Trimestrielle" },
@@ -345,6 +352,36 @@ export const MODULE_HELP = {
       {
         heading: "Que saisir ?",
         body: "Nom, description, délai standard, responsable et catégorie par défaut, étapes ordonnées, processus associés.",
+      },
+    ],
+  },
+  unite: {
+    title: "Comprendre la fiche Unité",
+    sections: [
+      {
+        heading: "À quoi ça sert ?",
+        body: "Point d’entrée synthétique : identité, objectifs, équipe et organisation. Les listes d’activité restent dans les modules et les Dashboards — pas de double Dashboard ici.",
+      },
+      {
+        heading: "Objectifs",
+        body: "Les Objectifs (OBJ-xxxx) sont stratégiques pour l’unité. Distincts des objectifs individuels et des KPI modules. Liez-les librement aux projets, missions, processus, etc.",
+      },
+      {
+        heading: "Création",
+        body: "Les boutons Nouveau projet / mission / tâche… ouvrent les formulaires des modules existants — l’unité est déjà celle de votre session.",
+      },
+    ],
+  },
+  objectifs: {
+    title: "Comprendre les objectifs d’unité",
+    sections: [
+      {
+        heading: "À quoi ça sert ?",
+        body: "Un Objectif donne le pourquoi. Les projets, missions, contrôles et tâches liés représentent ce qui est réalisé pour l’atteindre.",
+      },
+      {
+        heading: "Simplicité",
+        body: "Pas d’OKR ni de scoring automatique dans cette version. Progression calculée = roadmap.",
       },
     ],
   },

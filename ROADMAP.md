@@ -189,14 +189,16 @@ Modèle `SectionRedaction` : état de **rédaction** (`BROUILLON` | `FINALISE` |
 
 Suivi opérationnel : **Projet → Tâches** uniquement. La notion de Jalon a été retirée (redondante). Une seule section **Éléments associés** (tâches, documents, risques, processus, missions, conseils…) avec filtre par type.
 
-### 5sexies. Fiche Unité (roadmap — après stabilisation Processus)
+### 5sexies. Fiche Unité
 
 Distinguer :
 
-- **Administration technique** des unités et des droits ;
-- **Fiche métier Unité** : carte d’identité opérationnelle (mission, responsable/adjoint, processus, vue agrégée risques/contrôles/projets/missions/documents).
+- **Administration technique** des unités et des droits (roadmap) ;
+- **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx), pilotage synthétique (compteurs), **Objectifs** (OBJ-xxxx), équipe, processus, éléments associés — pas de listes d’activité (réservées aux modules / Dashboards).
 
-Cette vue **agrège** les informations déjà présentes — pas de double saisie.
+**Objectifs d’unité** ≠ `ObjectifAnnuel` (individuel) ≠ `ObjectifModule` (KPI module). Liens libres via `LienObjet`. Pas d’OKR / scoring auto dans cette version.
+
+Cette vue **agrège** les informations déjà présentes — pas de double saisie. CTAs vers les moteurs existants. Dashboard responsable pourra lire les Objectifs plus tard (agrégateur lecture seule).
 
 ### 6. Indicateurs par module
 

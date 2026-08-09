@@ -10,6 +10,8 @@ const PREFIXES = {
   DOCUMENT: "DOC",
   PROCESSUS: "PRC",
   MODELE_TACHE: "MDL",
+  OBJECTIF: "OBJ",
+  UNITE: "UNT",
 } as const;
 
 export type PrefixeCode = keyof typeof PREFIXES;
@@ -132,6 +134,27 @@ export async function assertNomUnique(
       },
     });
     if (existing) return "Un modèle de tâche actif porte déjà ce nom.";
+  }
+  if (type === "OBJECTIF") {
+    const existing = await prisma.objectif.findFirst({
+      where: {
+        uniteId,
+        intitule: n,
+        statut: { not: "ABANDONNE" },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un objectif actif porte déjà cet intitulé.";
+  }
+  if (type === "UNITE") {
+    const existing = await prisma.unite.findFirst({
+      where: {
+        nom: n,
+        actif: true,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Une unité active porte déjà ce nom.";
   }
   return null;
 }

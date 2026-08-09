@@ -106,6 +106,17 @@ enum TypeObjetMetier {
   PROCESSUS_ETAPE
   /// Modèle de tâche (catalogue).
   MODELE_TACHE
+  /// Unité (fiche métier — associations complémentaires via LienObjet).
+  UNITE
+  /// Objectif stratégique d’unité (≠ ObjectifAnnuel, ≠ ObjectifModule).
+  OBJECTIF
+}
+
+enum StatutObjectif {
+  EN_COURS
+  ATTEINT
+  REPORTE
+  ABANDONNE
 }
 
 /// État de rédaction d’une box/section — distinct du statut métier de l’objet.
@@ -218,17 +229,25 @@ enum TypeReferentiel {
   TAXINOMIE
 }
 
-// ─── Unité (multi-unités, droits plus tard) ─────────────────
+// ─── Unité (périmètre + fiche métier de pilotage) ───────────
+/// Socle multi-unités ; fiche /unite = agrégateur + objectifs.
+/// Admin technique des unités / droits = roadmap séparée.
 
 model Unite {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  nom       String
-  actif     Boolean  @default(true)
-  creeLe    DateTime @default(now())
-  modifieLe DateTime @updatedAt
+  id            String   @id @default(cuid())
+  code          String   @unique
+  nom           String
+  /// Mission / description synthétique de l’unité.
+  description   String?
+  responsableId String?
+  adjointId     String?
+  actif         Boolean  @default(true)
+  creeLe        DateTime @default(now())
+  modifieLe     DateTime @updatedAt
 
-  utilisateurs     Utilisateur[]
+  responsable      Utilisateur?          @relation("UniteResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  adjoint          Utilisateur?          @relation("UniteAdjoint", fields: [adjointId], references: [id], onDelete: SetNull)
+  utilisateurs     Utilisateur[]         @relation("UtilisateurUnite")
   projets          Projet[]
   conseils         Conseil[]
   taches           Tache[]
@@ -239,6 +258,7 @@ model Unite {
   processus        Processus[]
   modelesTache     ModeleTache[]
   recommandations  Recommandation[]
+  objectifs        Objectif[]
   objectifsAnnuels ObjectifAnnuel[]
   objectifsModule  ObjectifModule[]
   sequences        SequenceCode[]
@@ -263,7 +283,9 @@ model Utilisateur {
   creeLe     DateTime         @default(now())
   modifieLe  DateTime         @updatedAt
 
-  unite                   Unite              @relation(fields: [uniteId], references: [id])
+  unite                   Unite              @relation("UtilisateurUnite", fields: [uniteId], references: [id])
+  unitesResponsable       Unite[]            @relation("UniteResponsable")
+  unitesAdjoint           Unite[]            @relation("UniteAdjoint")
   projetsResponsable      Projet[]           @relation("ProjetResponsable")
   tachesResponsable       Tache[]            @relation("TacheResponsable")
   controlesResponsable    ControleSCI[]      @relation("ControleResponsable")
@@ -273,6 +295,9 @@ model Utilisateur {
   missionsResponsable     Mission[]          @relation("MissionResponsable")
   processusResponsable    Processus[]        @relation("ProcessusResponsable")
   recommandationsResp     Recommandation[]   @relation("RecoResponsable")
+  objectifsResponsable    Objectif[]         @relation("ObjectifResponsable")
+  objectifsCrees          Objectif[]         @relation("ObjectifCreePar")
+  objectifsModifies       Objectif[]         @relation("ObjectifModifiePar")
 
   projetsCrees            Projet[]           @relation("ProjetCreePar")
   projetsModifies         Projet[]           @relation("ProjetModifiePar")
@@ -893,6 +918,36 @@ model MissionValidationVisa {
 
 // ─── Objectifs annuels (collaborateur) ───────────────────────
 
+/// Objectif stratégique / métier d’une unité (OBJ-xxxx).
+/// Distinct de ObjectifAnnuel (individu) et ObjectifModule (KPI module).
+/// Associations libres via LienObjet (type OBJECTIF).
+model Objectif {
+  id            String         @id @default(cuid())
+  uniteId       String
+  code          String
+  intitule      String
+  description   String?
+  annee         Int
+  responsableId String
+  statut        StatutObjectif @default(EN_COURS)
+  priorite      Priorite       @default(MOYENNE)
+  dateEcheance  DateTime?
+  creeParId     String
+  modifieParId  String
+  creeLe        DateTime       @default(now())
+  modifieLe     DateTime       @updatedAt
+
+  unite       Unite       @relation(fields: [uniteId], references: [id])
+  responsable Utilisateur @relation("ObjectifResponsable", fields: [responsableId], references: [id])
+  creePar     Utilisateur @relation("ObjectifCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur @relation("ObjectifModifiePar", fields: [modifieParId], references: [id])
+
+  @@unique([uniteId, code])
+  @@index([uniteId, annee, statut])
+  @@index([uniteId, intitule])
+}
+
+/// Objectif individuel collaborateur (année) — vue Équipe / Dashboard.
 model ObjectifAnnuel {
   id            String    @id @default(cuid())
   uniteId       String

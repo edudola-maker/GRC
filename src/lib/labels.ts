@@ -131,6 +131,15 @@ export const TYPE_OBJET_LABELS: Record<string, string> = {
   PROCESSUS: "Processus",
   PROCESSUS_ETAPE: "Étape de processus",
   MODELE_TACHE: "Modèle de tâche",
+  UNITE: "Unité",
+  OBJECTIF: "Objectif",
+};
+
+export const STATUT_OBJECTIF_LABELS: Record<string, string> = {
+  EN_COURS: "En cours",
+  ATTEINT: "Atteint",
+  REPORTE: "Reporté",
+  ABANDONNE: "Abandonné",
 };
 
 export const ETAT_SECTION_REDACTION_LABELS: Record<string, string> = {

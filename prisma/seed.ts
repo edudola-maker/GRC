@@ -52,6 +52,7 @@ async function main() {
   await prisma.projetMembre.deleteMany();
   await prisma.conseil.deleteMany();
   await prisma.document.deleteMany();
+  await prisma.objectif.deleteMany();
   await prisma.objectifAnnuel.deleteMany();
   await prisma.objectifModule.deleteMany();
   await prisma.parametreFonctionnel.deleteMany();
@@ -59,16 +60,32 @@ async function main() {
   await prisma.projet.deleteMany();
   await prisma.processus.deleteMany();
   await prisma.sequenceCode.deleteMany();
+  // Lever les FK Unite → Utilisateur avant suppression des utilisateurs.
+  await prisma.unite.updateMany({
+    data: { responsableId: null, adjointId: null },
+  });
   await prisma.utilisateur.deleteMany();
   await prisma.unite.deleteMany();
 
   const unite = await prisma.unite.create({
-    data: { id: "unite_grc_demo", code: "U-GRC", nom: "Unité GRC" },
+    data: {
+      id: "unite_grc_demo",
+      code: "UNT-0001",
+      nom: "Unité GRC",
+      description:
+        "Unité de gouvernance, risques et conformité — pilote les processus SCI, les missions d’assurance et le suivi des risques.",
+      actif: true,
+    },
   });
   const uniteId = unite.id;
 
   const uniteFinance = await prisma.unite.create({
-    data: { code: "U-FIN", nom: "Unité Finance (témoin)" },
+    data: {
+      code: "UNT-0002",
+      nom: "Unité Finance (témoin)",
+      description: "Unité témoin pour le basculement multi-unités (démo).",
+      actif: true,
+    },
   });
 
   await prisma.referentielValeur.createMany({
@@ -201,6 +218,14 @@ async function main() {
     },
   });
 
+  await prisma.unite.update({
+    where: { id: uniteId },
+    data: {
+      responsableId: alice.id,
+      adjointId: bernard.id,
+    },
+  });
+
   await prisma.sequenceCode.createMany({
     data: [
       { uniteId, prefixe: "PRO", dernier: 3 },
@@ -210,6 +235,8 @@ async function main() {
       { uniteId, prefixe: "DOC", dernier: 2 },
       { uniteId, prefixe: "MIS", dernier: 2 },
       { uniteId, prefixe: "REC", dernier: 1 },
+      { uniteId, prefixe: "OBJ", dernier: 3 },
+      { uniteId, prefixe: "UNT", dernier: 2 },
     ],
   });
 
@@ -663,6 +690,94 @@ async function main() {
       libelle: "Contrôle du processus",
       creeParId: bernard.id,
     },
+  });
+
+  const anneeCourante = new Date().getFullYear();
+  const objSci = await prisma.objectif.create({
+    data: {
+      uniteId,
+      code: "OBJ-0001",
+      intitule: "Renforcer la surveillance du SCI",
+      description:
+        "Consolider le dispositif de contrôles et la couverture des risques prioritaires.",
+      annee: anneeCourante,
+      responsableId: alice.id,
+      statut: "EN_COURS",
+      priorite: "HAUTE",
+      dateEcheance: daysFromNow(120),
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  const objAcces = await prisma.objectif.create({
+    data: {
+      uniteId,
+      code: "OBJ-0002",
+      intitule: "Maîtriser le cycle de vie des accès",
+      description: "Fiabiliser l’entrée, la revue et la sortie des droits applicatifs.",
+      annee: anneeCourante,
+      responsableId: bernard.id,
+      statut: "EN_COURS",
+      priorite: "MOYENNE",
+      dateEcheance: daysFromNow(90),
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+  await prisma.objectif.create({
+    data: {
+      uniteId,
+      code: "OBJ-0003",
+      intitule: "Améliorer la qualité des missions d’assurance",
+      description: "Standardiser le lancement et le suivi des missions.",
+      annee: anneeCourante,
+      responsableId: alice.id,
+      statut: "EN_COURS",
+      priorite: "MOYENNE",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+
+  await prisma.lienObjet.createMany({
+    data: [
+      {
+        uniteId,
+        typeA: "OBJECTIF",
+        idA: objSci.id,
+        typeB: "PROJET",
+        idB: projetMod.id,
+        libelle: "Contribue à l’objectif",
+        creeParId: alice.id,
+      },
+      {
+        uniteId,
+        typeA: "OBJECTIF",
+        idA: objSci.id,
+        typeB: "CONTROLE_SCI",
+        idB: controle.id,
+        libelle: "Contrôle clé",
+        creeParId: alice.id,
+      },
+      {
+        uniteId,
+        typeA: "OBJECTIF",
+        idA: objSci.id,
+        typeB: "RISQUE",
+        idB: risque.id,
+        libelle: "Risque couvert",
+        creeParId: alice.id,
+      },
+      {
+        uniteId,
+        typeA: "OBJECTIF",
+        idA: objAcces.id,
+        typeB: "PROCESSUS",
+        idB: processusAcces.id,
+        libelle: "Processus porteur",
+        creeParId: bernard.id,
+      },
+    ],
   });
 
   await prisma.controleSCI.create({
