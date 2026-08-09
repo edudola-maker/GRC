@@ -29,7 +29,7 @@ Slogan produit : *Simple à utiliser, flexible à configurer.*
 | **Mission d'assurance** | Audit ou Revue de processus (évolution progressive du module Audits) |
 | **Document** | Inventaire documentaire + revues |
 | **Risque** | Registre des risques + matrice de criticité |
-| **Unité** *(roadmap)* | Carte d’identité opérationnelle agrégée (≠ admin technique) |
+| **Unité** | Carte d’identité opérationnelle agrégée (`/unite`, ≠ Administration) |
 
 ### La tâche n’est pas un métier
 
@@ -195,12 +195,28 @@ Suivi opérationnel : **Projet → Tâches** uniquement. La notion de Jalon a é
 
 Distinguer :
 
-- **Administration technique** des unités et des droits (roadmap) ;
+- **Administration** (`/administration/*`) — paramétrage utilisateurs / unités / rôles (v1 livré) ;
 - **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx), pilotage synthétique (compteurs), **Objectifs** (OBJ-xxxx), équipe, processus, éléments associés — pas de listes d’activité (réservées aux modules / Dashboards).
 
 **Objectifs d’unité** ≠ `ObjectifAnnuel` (individuel) ≠ `ObjectifModule` (KPI module). Liens libres via `LienObjet`. Pas d’OKR / scoring auto dans cette version.
 
 Cette vue **agrège** les informations déjà présentes — pas de double saisie. CTAs vers les moteurs existants. Dashboard responsable pourra lire les Objectifs plus tard (agrégateur lecture seule).
+
+### 5septies. Administration & permissions (v1)
+
+Espace distinct du travail quotidien, visible uniquement pour le rôle **Administrateur**.
+
+| Sous-module | Statut | Contenu |
+|-------------|--------|---------|
+| Utilisateurs | **Implémenté** | prénom, nom, initiales, fonction, unité, rôle, actif |
+| Unités | **Implémenté** | code, nom, description, responsable, adjoint, actif (≠ `/unite`) |
+| Rôles | **Implémenté** (lecture) | Collaborateur · Responsable d’unité · Administrateur |
+
+Permissions : deny-by-default pour Administration (`src/lib/permissions.ts`). Scope Unité conservé. Adjoint = propriété d’Unité, pas un rôle global. Rôles Mission (mandat, auditeur…) restent séparés.
+
+**Roadmap :** AD / Entra ID, SSO, groupes, multi-unités avancées, permissions fines, restrictions LPD, Éditeur key user (inventaire dans `docs/EDITEUR_PREPARATION.md`).
+
+Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_CONSOLIDATION.md).
 
 ### 6. Indicateurs par module
 

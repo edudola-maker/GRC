@@ -121,6 +121,36 @@ Objectif : même logique de navigation d’un module à l’autre, sans personna
 
 ---
 
+## Sprint Organisation / Administration / consolidation (2026-08-09)
+
+**Branche / PR :** `cursor/sprint-admin-consolidation-72a6`
+
+### Décisions principales
+
+| Décision | Choix retenu |
+|----------|----------------|
+| Admin ≠ métier | `/administration/unites` paramètre ; `/unite` pilote l’unité courante |
+| Objectifs stratégiques | Nouveau modèle `Objectif` (OBJ-xxxx), distinct de `ObjectifAnnuel` / `ObjectifModule` |
+| Modèles de tâches | Chaîne Processus? → ModeleTache → Tache + checklist snapshot ; box Suivi des occurrences |
+| Processus | Étapes ordonnées éditables ; pas de BPMN |
+| Projets | Jalons retirés ; Tâches + Éléments associés suffisent |
+| UX | `EditableSection` : lecture seule → Modifier par box ; cocher checklist = exception opérationnelle |
+| Rôles app | Collaborateur / Responsable d’unité / Administrateur (+ `prenom` / `fonction` optionnels) |
+| Permissions | Centralisées (`permissions.ts`), Admin deny-by-default via `notFound()` |
+| Éditeur / AD / IA / LPD module | Non développés ; inventaire et garde-fous documentés |
+
+### Impacts futurs
+
+- Tout contrôle d’accès sensible doit passer par `permissions.ts` (ou successeur), pas par des `if` dispersés.
+- L’Éditeur key user reprendra les listes / templates inventoriés dans `docs/EDITEUR_PREPARATION.md`.
+- Un futur Agent IA devra réutiliser le même scope `uniteId` + rôle que l’utilisateur.
+
+### Décisions métier en attente
+
+Voir `docs/SPRINT_CONSOLIDATION.md` (scission prénom/nom, rename `/audits`→`/missions`, abandon pages `/modifier`, sort de `/equipe`).
+
+---
+
 ## Sprint 2 — Vague B (modules métier + correctifs dashboards)
 
 **Branche / PR :** `cursor/sprint2-vague-b-metier-72a6` · [#8](https://github.com/edudola-maker/GRC/pull/8)  
