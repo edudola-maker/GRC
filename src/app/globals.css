@@ -1942,6 +1942,41 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+.modele-suivi__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.modele-suivi__row {
+  border-bottom: 1px solid var(--line);
+}
+
+.modele-suivi__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.modele-suivi__link:hover .modele-suivi__titre {
+  text-decoration: underline;
+}
+
+.modele-suivi__titre {
+  font-weight: 650;
+}
+
+.modele-suivi__meta {
+  font-size: 0.9rem;
+  color: var(--muted, #667);
+}
+
 /* Zones page (KPI, inventaire…) : même composant, fond de zone préservé */
 .collapsible-section--zone.page-zone--attention {
   background: #f5f7f6;

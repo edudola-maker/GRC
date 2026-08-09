@@ -80,7 +80,7 @@ Architecture de page **commune** à Conseils, Projets, Audits, Risques, Contrôl
 
 **Processus :** volontairement simple — **quoi** (app) vs **comment** (Confluence). Étapes ordonnées `ProcessusEtape` (CRUD + réordonnancement, pas de BPMN). Associations `LienObjet` (objet ou étape `PROCESSUS_ETAPE`). Nav Gouvernance : Processus → Modèles de tâches → Risques → Contrôles → Documents.
 
-**Modèles de tâches :** chaîne `Processus (optionnel) → ModeleTache → Tache → TacheChecklistItem`. Checklist d’occurrence = **copie** à la création (pas de sync rétroactive). Relation N–N dédiée `ModeleTacheProcessus` (≠ `LienObjet`). Séparation stricte avec `MissionChecklistItem`. Sur une tâche : cocher en consultation ; structure checklist uniquement en `?edit=CHECKLIST`.
+**Modèles de tâches :** chaîne `Processus (optionnel) → ModeleTache → Tache → TacheChecklistItem`. Checklist d’occurrence = **copie** à la création (pas de sync rétroactive). Relation N–N dédiée `ModeleTacheProcessus` (≠ `LienObjet`). Séparation stricte avec `MissionChecklistItem`. Sur une tâche : cocher en consultation ; structure checklist uniquement en `?edit=CHECKLIST`. Fiche modèle = définition + **Suivi des tâches** (occurrences `modeleTacheId`, lecture seule).
 
 **Projets :** plus de **Jalons** (redondants avec Tâches) — suivi via `Projet → Tâches`. Une seule section **Éléments associés** (tâches owned + liens libres, filtre par type).
 
