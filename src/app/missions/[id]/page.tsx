@@ -92,7 +92,11 @@ function SectionModifyAction({
 }) {
   if (!visible) return null;
   return (
-    <Link href={href} className="btn btn--ghost collapsible-section__modify">
+    <Link
+      href={href}
+      scroll={false}
+      className="btn btn--ghost collapsible-section__modify"
+    >
       {label}
     </Link>
   );
@@ -276,7 +280,7 @@ export default async function MissionDetailPage({
         badge={formatSectionEtatLabel(redactions.get("VUE_ENSEMBLE")) ?? undefined}
         headerActions={
           <SectionModifyAction
-            href={`${baseHref}?edit=VUE_ENSEMBLE`}
+            href={`${baseHref}?edit=VUE_ENSEMBLE#VUE_ENSEMBLE`}
             label="Modifier"
             visible={canEdit && !edit}
           />
@@ -398,7 +402,7 @@ export default async function MissionDetailPage({
         className={editingPlanif ? "collapsible-section--editing" : undefined}
         headerActions={
           <SectionModifyAction
-            href={`${baseHref}?edit=PLANIFICATION`}
+            href={`${baseHref}?edit=PLANIFICATION#PLANIFICATION`}
             label="Modifier"
             visible={canEdit && !edit}
           />
@@ -591,7 +595,7 @@ export default async function MissionDetailPage({
         className={edit === "SUBSTANTIF" ? "collapsible-section--editing" : undefined}
         headerActions={
           <SectionModifyAction
-            href={`${baseHref}?edit=SUBSTANTIF`}
+            href={`${baseHref}?edit=SUBSTANTIF#SUBSTANTIF`}
             label="Modifier"
             visible={canEdit && !edit}
           />
@@ -617,7 +621,7 @@ export default async function MissionDetailPage({
         className={editingReco ? "collapsible-section--editing" : undefined}
         headerActions={
           <SectionModifyAction
-            href={`${baseHref}?edit=RECOMMANDATIONS`}
+            href={`${baseHref}?edit=RECOMMANDATIONS#RECOMMANDATIONS`}
             label="Modifier"
             visible={canEdit && !edit}
           />
@@ -761,7 +765,7 @@ export default async function MissionDetailPage({
         className={edit === "RAPPORT" ? "collapsible-section--editing" : undefined}
         headerActions={
           <SectionModifyAction
-            href={`${baseHref}?edit=RAPPORT`}
+            href={`${baseHref}?edit=RAPPORT#RAPPORT`}
             label="Modifier"
             visible={canEdit && !edit}
           />
@@ -786,7 +790,7 @@ export default async function MissionDetailPage({
         className={edit === "SUIVI" ? "collapsible-section--editing" : undefined}
         headerActions={
           <SectionModifyAction
-            href={`${baseHref}?edit=SUIVI`}
+            href={`${baseHref}?edit=SUIVI#SUIVI`}
             label="Modifier"
             visible={canEdit && !edit}
           />
@@ -824,7 +828,7 @@ export default async function MissionDetailPage({
         edit={edit}
         canEdit={canEdit}
         redaction={redactions.get("ELEMENTS_ASSOCIES")}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <ElementsAssocies
             uniteId={uniteId}
@@ -846,7 +850,7 @@ export default async function MissionDetailPage({
         />
       </EditableSection>
 
-      <CollapsibleSection title="Tags" defaultOpen={false}>
+      <CollapsibleSection title="Tags" defaultOpen>
         <p style={{ margin: 0 }}>
           {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
         </p>

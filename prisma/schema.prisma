@@ -459,7 +459,11 @@ model Tache {
   /// Référence informative au modèle d’origine (pas de sync rétroactive).
   modeleTacheId  String?
   dateCreation   DateTime       @default(now())
+  /// Début planifié (projets — plage début/fin).
+  dateDebut      DateTime?
   dateEcheance   DateTime?
+  /// Charge estimée en jours ouvrés (ex. 0.5, 1, 2, 5) — pilotage futur.
+  chargeJours    Float?
   statut         StatutTache    @default(A_FAIRE)
   priorite       Priorite       @default(MOYENNE)
   categorie      CategorieTache @default(AUTRE)
@@ -780,6 +784,8 @@ model Mission {
   niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
   /// Soft-delete / historique — pas de suppression physique des missions suivies.
   archive            Boolean       @default(false)
+  /// Version de contenu (code, champs structurants) — historique générique.
+  contenuVersion     Int           @default(1)
   creeParId          String
   modifieParId       String
   creeLe             DateTime      @default(now())

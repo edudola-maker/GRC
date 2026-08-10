@@ -6,7 +6,16 @@ import {
   STATUT_MISSION_OPTIONS,
   STATUT_RECO_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  assertCodeUnique,
+  assertNomUnique,
+  nextCode,
+  normalizeCode,
+} from "@/lib/codes";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { optDate, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -199,28 +208,84 @@ export async function updateMission(formData: FormData) {
   const nomErr = await assertNomUnique("MISSION", titre, existing.uniteId, id);
   if (nomErr) redirectWithError(editFallback, nomErr);
 
+  const codeRaw = optStr(formData, "code") ?? existing.code;
+  const code = normalizeCode(codeRaw);
+  const codeErr = await assertCodeUnique(
+    "MISSION",
+    code,
+    existing.uniteId,
+    id,
+  );
+  if (codeErr) redirectWithError(editFallback, codeErr);
+
   const lpd = parseLpd(formData);
+  const tags = serializeTags(optStr(formData, "tags"));
+  const descriptifLibre = optStr(formData, "descriptifLibre");
+  const nature = optStr(formData, "nature");
+  const commentaires = optStr(formData, "commentaires");
+  const analyseTravaux = optStr(formData, "analyseTravaux");
+  const dateDebut = optDate(formData, "dateDebut");
+  const dateFin = optDate(formData, "dateFin");
+
+  const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
+    { champ: "titre", avant: existing.titre, apres: titre },
+    { champ: "statut", avant: existing.statut, apres: statut },
+    { champ: "typeId", avant: existing.typeId, apres: typeId },
+    { champ: "responsableId", avant: existing.responsableId, apres: responsableId },
+    { champ: "nature", avant: existing.nature, apres: nature },
+    { champ: "tags", avant: existing.tags, apres: tags },
+    {
+      champ: "contientDonneesPersonnelles",
+      avant: existing.contientDonneesPersonnelles,
+      apres: lpd.contientDonneesPersonnelles,
+    },
+    {
+      champ: "niveauConfidentialite",
+      avant: existing.niveauConfidentialite,
+      apres: lpd.niveauConfidentialite,
+    },
+  ]);
+
+  const bump = changes.length > 0;
+  const nextVersion = bump
+    ? existing.contenuVersion + 1
+    : existing.contenuVersion;
+
   await prisma.mission.update({
     where: { id },
     data: {
+      code,
       titre,
       typeId,
       templateId,
       descriptifPresetId,
-      descriptifLibre: optStr(formData, "descriptifLibre"),
-      nature: optStr(formData, "nature"),
-      tags: serializeTags(optStr(formData, "tags")),
+      descriptifLibre,
+      nature,
+      tags,
       responsableId,
-      dateDebut: optDate(formData, "dateDebut"),
-      dateFin: optDate(formData, "dateFin"),
+      dateDebut,
+      dateFin,
       statut: statut as "PLANIFIE",
-      commentaires: optStr(formData, "commentaires"),
-      analyseTravaux: optStr(formData, "analyseTravaux"),
+      commentaires,
+      analyseTravaux,
       contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
       niveauConfidentialite: lpd.niveauConfidentialite,
       modifieParId: current.id,
+      ...(bump ? { contenuVersion: nextVersion } : {}),
     },
   });
+
+  if (bump) {
+    await enregistrerModifications({
+      typeObjet: "MISSION",
+      objetId: id,
+      uniteId: existing.uniteId,
+      modifieParId: current.id,
+      changes,
+      versionObjet: nextVersion,
+    });
+  }
 
   await markSectionRedaction({
     uniteId: existing.uniteId,
@@ -234,7 +299,7 @@ export async function updateMission(formData: FormData) {
 
   revalidateApp([`/missions/${id}`]);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/missions/${id}`,
+    intent === "brouillon" ? `${editFallback}#${sectionKey}` : `/missions/${id}`,
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }

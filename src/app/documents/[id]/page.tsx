@@ -226,7 +226,7 @@ export default async function DocumentDetailPage({
         baseHref={`/documents/${document.id}`}
         edit={edit}
         canEdit={!document.archive}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <ElementsAssocies
             uniteId={user.uniteId}
@@ -306,7 +306,7 @@ export default async function DocumentDetailPage({
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Tags" defaultOpen={false}>
+      <CollapsibleSection title="Tags" defaultOpen>
         <p style={{ margin: 0 }}>
           {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
         </p>

@@ -30,8 +30,13 @@ export default async function RisquesPage({
   const risques = await prisma.risque.findMany({
     where: { uniteId: user.uniteId },
     include: {
+      unite: { select: { nom: true, code: true } },
       responsable: true,
-      _count: { select: { controles: true } },
+      controles: {
+        include: {
+          controle: { select: { id: true, code: true, nom: true } },
+        },
+      },
     },
     orderBy: [{ criticite: "desc" }, { nom: "asc" }],
   });
@@ -59,6 +64,7 @@ export default async function RisquesPage({
       id: r.id,
       code: r.code,
       nom: r.nom,
+      uniteNom: `${r.unite.code} — ${r.unite.nom}`,
       categorieLabel: CATEGORIE_RISQUE_LABELS[r.categorie] ?? r.categorie,
       statut: r.statut,
       statutLabel: STATUT_RISQUE_LABELS[r.statut] ?? r.statut,
@@ -70,7 +76,14 @@ export default async function RisquesPage({
       probabilite: r.probabilite,
       impact: r.impact,
       criticite: r.criticite,
-      nbControles: r._count.controles,
+      probabiliteResiduelle: r.probabiliteResiduelle,
+      impactResiduel: r.impactResiduel,
+      criticiteResiduelle: r.criticiteResiduelle,
+      controles: r.controles.map((c) => ({
+        id: c.controle.id,
+        code: c.controle.code,
+        nom: c.controle.nom,
+      })),
       archive: r.archive,
       urgence,
       estCritique: r.criticite >= 20,

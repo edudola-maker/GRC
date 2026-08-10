@@ -257,3 +257,15 @@ Décisions validées (pas de snapshot Phase 1 ; champs structurants enregistrés
 Complément roadmap : protection des données documentée, traçable, démontrable — discrète UX.  
 Détail : [`docs/LPD.md`](./docs/LPD.md) — héritage template/processus, onglet pilotage, rapport, historisation des champs LPD. **Pas de module développé.**
 
+## 2026-08-10 — Revue Missions / Risques / Projets (delta)
+
+**Branche :** `cursor/revue-missions-risques-projets-72a6`
+
+**A — UX :** code Mission modifiable + historique ; Tags/EA ouverts ; retour contextuel tâches ; EditableSection + ancre scroll ; Conseil vertical ; fiche Risque trimée (contrôles dans Informations, Créé par au Journal).
+
+**B — Inventaires :** ligne dense Risques (P/I/inhérent/résiduel colorés, CTL cliquables).
+
+**C — Projets :** `dateDebut`, `chargeJours`, box Tâches unique, priorité masquée en contexte Projet ; archi dépendances dans `docs/PROJET_TACHES_DEPENDANCES.md`.
+
+**D — Missions :** onglets famille Audits/Revues ; archi cockpit/étapes/PV dans `docs/MISSIONS_ARCHITECTURE.md` ; réévaluation risques dans `docs/RISQUE_REEVALUATION.md`.
+

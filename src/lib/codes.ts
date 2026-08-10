@@ -16,6 +16,54 @@ const PREFIXES = {
 
 export type PrefixeCode = keyof typeof PREFIXES;
 
+const CODE_PATTERN = /^[A-Z]{2,5}-\d{1,6}$/;
+
+/** Normalise un code saisi (trim, majuscules). */
+export function normalizeCode(raw: string): string {
+  return raw.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+/** Valide le format PREFIXE-nnnn (ex. MIS-0001). */
+export function assertCodeFormat(
+  type: PrefixeCode,
+  code: string,
+): string | null {
+  const c = normalizeCode(code);
+  if (!c) return "Le code est obligatoire.";
+  if (!CODE_PATTERN.test(c)) {
+    return `Format de code invalide (attendu : ${PREFIXES[type]}-0001).`;
+  }
+  const prefix = PREFIXES[type];
+  if (!c.startsWith(`${prefix}-`)) {
+    return `Le code doit commencer par ${prefix}-.`;
+  }
+  return null;
+}
+
+/** Unicité du code dans l’unité (hors excludeId). */
+export async function assertCodeUnique(
+  type: PrefixeCode,
+  code: string,
+  uniteId: string,
+  excludeId?: string,
+): Promise<string | null> {
+  const c = normalizeCode(code);
+  const formatErr = assertCodeFormat(type, c);
+  if (formatErr) return formatErr;
+
+  if (type === "MISSION") {
+    const existing = await prisma.mission.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Une mission porte déjà ce code.";
+  }
+  return null;
+}
+
 /** Génère le prochain code stable par unité (ex. PRO-0001). */
 export async function nextCode(
   type: PrefixeCode,

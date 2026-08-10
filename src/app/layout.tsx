@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
 import { DemoUserSwitcher } from "@/components/DemoUserSwitcher";
+import { ScrollToHash } from "@/components/module/ScrollToHash";
 import {
   formatUtilisateurNom,
   getCurrentUser,
@@ -83,7 +84,12 @@ export default async function RootLayout({
             uniteName={uniteName}
             demoSwitcher={switcher}
           />
-          <main className="app-main">{children}</main>
+          <main className="app-main">
+            <Suspense fallback={null}>
+              <ScrollToHash />
+            </Suspense>
+            {children}
+          </main>
         </div>
       </body>
     </html>

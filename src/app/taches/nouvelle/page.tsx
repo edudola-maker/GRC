@@ -2,6 +2,7 @@ import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PageHeader } from "@/components/ui";
+import { safeRetourPath } from "@/lib/navigation-retour";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { createTache } from "../actions";
@@ -21,9 +22,20 @@ export default async function NouvelleTachePage({
     recommandationId?: string;
     categorie?: string;
     erreur?: string;
+    retour?: string;
   }>;
 }) {
   const sp = await searchParams;
+  const retour = safeRetourPath(
+    sp.retour,
+    sp.projetId
+      ? `/projets/${sp.projetId}`
+      : sp.conseilId
+        ? `/conseils/${sp.conseilId}`
+        : sp.missionId || sp.auditId
+          ? `/missions/${sp.missionId ?? sp.auditId}`
+          : "/taches",
+  );
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
   const missionId = sp.missionId ?? sp.auditId;
@@ -77,9 +89,18 @@ export default async function NouvelleTachePage({
 
   const isConseil = categorie === "CONSEIL";
 
+  const backLabel =
+    retour.startsWith("/projets/")
+      ? "← Retour au projet"
+      : retour.startsWith("/conseils/")
+        ? "← Retour au conseil"
+        : retour.startsWith("/missions/")
+          ? "← Retour à la mission"
+          : "← Retour aux tâches";
+
   return (
     <>
-      <BackLink href="/" label="← Retour au tableau de bord" />
+      <BackLink href={retour} label={backLabel} />
       <PageHeader
         title={isConseil ? "Nouvelle demande Conseil" : "Créer une action"}
         description={
@@ -107,9 +128,11 @@ export default async function NouvelleTachePage({
             recommandationId: sp.recommandationId ?? null,
             categorie,
           }}
-          cancelHref="/"
+          cancelHref={retour}
           submitLabel="Créer l'action"
           defaultCategorie={categorie}
+          projetContext={Boolean(sp.projetId)}
+          retour={retour !== "/taches" ? retour : undefined}
         />
       </CollapsibleSection>
     </>

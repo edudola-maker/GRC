@@ -244,6 +244,27 @@ Permissions : deny-by-default pour Administration (`src/lib/permissions.ts`). Sc
 
 Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_CONSOLIDATION.md).
 
+### 5septies-bis. Missions — dossier d’audit (roadmap structurante)
+
+Voir [`docs/MISSIONS_ARCHITECTURE.md`](./docs/MISSIONS_ARCHITECTURE.md).
+
+- Familles UX **Audits** / **Revues de processus** (un moteur, vues filtrées — amorcé `?famille=`).
+- Cockpit + **cinq pages d’étapes** (Planification → Substantif → Recommandations → Rapport → Suivi).
+- Progression explicable (états de rédaction + recos), pas un % arbitraire.
+- **Draft de rapport** généré depuis les étapes (roadmap — pas maintenant).
+- **PV / notes d’entretien** (`MissionNote`) + IA « mettre au propre » sans écraser les notes brutes (roadmap).
+
+### 5septies-ter. Projets — planification séquentielle (roadmap)
+
+Voir [`docs/PROJET_TACHES_DEPENDANCES.md`](./docs/PROJET_TACHES_DEPENDANCES.md).
+
+Socle livré / en cours : plages dates, charge jours, commentaire, box Tâches unique, priorité masquée en contexte Projet.  
+Dépendances / activation progressive : modèle `TacheDependance` proposé, pas encore implémenté.
+
+### 5septies-quater. Risques — réévaluation (roadmap proche)
+
+Voir [`docs/RISQUE_REEVALUATION.md`](./docs/RISQUE_REEVALUATION.md). Acte métier distinct de l’historique de champs.
+
 ### 5octies. Versioning / historique (chantier structurant)
 
 Distinguer **Journal d’activité** (événements) et **Historique de contenu** (diffs de champs).  

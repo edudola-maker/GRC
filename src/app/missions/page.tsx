@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
@@ -12,6 +13,10 @@ import {
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
+import {
+  matchesMissionFamille,
+  parseMissionFamille,
+} from "@/lib/mission-famille";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 
@@ -22,14 +27,20 @@ const MISSION_STATUTS_CLOS = ["TERMINE", "ANNULE"] as const;
 export default async function AuditsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    erreur?: string;
+    filtre?: string;
+    famille?: string;
+  }>;
 }) {
   const sp = await searchParams;
+  const famille = parseMissionFamille(sp.famille);
   const today = startOfToday();
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [missions, planifies, enCours, termines, recoOuvertes, recoCloturees] =
+  const [missionsRaw, planifies, enCours, termines, recoOuvertes, recoCloturees] =
     await Promise.all([
       prisma.mission.findMany({
         where: { uniteId },
@@ -71,6 +82,10 @@ export default async function AuditsPage({
       }),
     ]);
 
+  const missions = missionsRaw.filter((m) =>
+    matchesMissionFamille(m.type.code, famille),
+  );
+
   const items: MissionInventoryItem[] = missions.map((a) => {
     const clos = (MISSION_STATUTS_CLOS as readonly string[]).includes(a.statut);
     const estActif = !clos && !a.archive;
@@ -107,16 +122,43 @@ export default async function AuditsPage({
   );
 
   const initialQuick = sp.filtre === "retard" ? "retard" : undefined;
+  const familleQs = (f: string) =>
+    f === "toutes" ? "/missions" : `/missions?famille=${f}`;
+
+  const title =
+    famille === "audits"
+      ? "Audits"
+      : famille === "revues"
+        ? "Revues de processus"
+        : "Missions d'assurance";
 
   return (
     <>
       <PageHeader
-        title="Missions d'assurance"
-        description="Audits et revues — planification, travaux, recommandations et suivi."
+        title={title}
+        description="Un seul moteur Mission — vues séparées Audits / Revues de processus."
         help={<ModuleHelp {...MODULE_HELP.audits} />}
         actions={<BtnLink href="/missions/nouveau">Nouvelle mission</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+
+      <nav className="mission-famille-tabs" aria-label="Famille de missions">
+        {(
+          [
+            ["toutes", "Toutes"],
+            ["audits", "Audits"],
+            ["revues", "Revues de processus"],
+          ] as const
+        ).map(([key, label]) => (
+          <Link
+            key={key}
+            href={familleQs(key)}
+            className={`chip chip--button${famille === key ? " is-active" : ""}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
       <KpiZone
         items={[
@@ -129,7 +171,10 @@ export default async function AuditsPage({
             value: enRetard,
             label: "à traiter",
             tone: enRetard > 0 ? "danger" : "default",
-            href: enRetard > 0 ? "?filtre=retard#inventaire" : undefined,
+            href:
+              enRetard > 0
+                ? `${familleQs(famille)}${famille === "toutes" ? "?" : "&"}filtre=retard#inventaire`
+                : undefined,
           },
         ]}
       />

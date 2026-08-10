@@ -308,7 +308,7 @@ export default async function UnitePage({
         edit={edit}
         canEdit={canEdit}
         redaction={redactions.get("ELEMENTS_ASSOCIES")}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <>
             <ElementsAssocies

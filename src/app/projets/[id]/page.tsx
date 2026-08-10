@@ -13,11 +13,14 @@ import {
   unarchiveProjet,
   updateProjet,
 } from "../actions";
+import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import {
   PRIORITE_LABELS,
   STATUT_PROJET_LABELS,
+  STATUT_TACHE_LABELS,
   formatDate,
 } from "@/lib/labels";
+import { withRetour } from "@/lib/navigation-retour";
 import { prisma } from "@/lib/prisma";
 import {
   getCurrentUser,
@@ -79,7 +82,7 @@ export default async function ProjetDetailPage({
         documents: { include: { document: true } },
         taches: {
           include: { responsable: true },
-          orderBy: { dateEcheance: "asc" },
+          orderBy: [{ dateDebut: "asc" }, { dateEcheance: "asc" }, { titre: "asc" }],
         },
       },
     }),
@@ -95,14 +98,6 @@ export default async function ProjetDetailPage({
   const tags = parseTags(projet.tags);
 
   const ownedItems: ElementAssocieItem[] = [
-    ...projet.taches.map((t) => ({
-      key: `tache-${t.id}`,
-      type: "TACHE" as const,
-      code: "—",
-      titre: t.titre,
-      href: `/taches/${t.id}`,
-      owned: true,
-    })),
     ...projet.documents.map((d) => ({
       key: `doc-${d.document.id}`,
       type: "DOCUMENT" as const,
@@ -123,7 +118,7 @@ export default async function ProjetDetailPage({
           <>
             {canEdit ? (
               <BtnLink
-                href={`/taches/nouvelle?projetId=${projet.id}`}
+                href={`/taches/nouvelle?projetId=${projet.id}&retour=${encodeURIComponent(baseHref)}`}
                 variant="ghost"
               >
                 Ajouter une tâche
@@ -311,6 +306,68 @@ export default async function ProjetDetailPage({
         </p>
       </EditableSection>
 
+      <CollapsibleSection
+        title="Tâches"
+        defaultOpen
+        badge={`${projet.taches.length}`}
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Planification du projet : dates, charge, statut et commentaire.
+          Les dépendances / activation progressive sont prévues (voir
+          documentation) — non imposées ici.
+        </p>
+        {canEdit ? (
+          <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
+            <BtnLink
+              href={`/taches/nouvelle?projetId=${projet.id}&retour=${encodeURIComponent(baseHref)}`}
+            >
+              Ajouter une tâche
+            </BtnLink>
+          </div>
+        ) : null}
+        {projet.taches.length === 0 ? (
+          <p className="empty">Aucune tâche planifiée.</p>
+        ) : (
+          <div className="projet-taches-table">
+            <div className="projet-taches-table__head" role="row">
+              <span>Tâche</span>
+              <span>Responsable</span>
+              <span>Dates</span>
+              <span>Charge</span>
+              <span>Statut</span>
+              <span>Commentaire</span>
+            </div>
+            <ul className="projet-taches-table__list">
+              {projet.taches.map((t) => (
+                <li key={t.id}>
+                  <Link
+                    href={withRetour(`/taches/${t.id}`, baseHref)}
+                    className="projet-taches-table__row"
+                  >
+                    <strong>{t.titre}</strong>
+                    <span>{t.responsable.nom}</span>
+                    <span>
+                      {t.dateDebut || t.dateEcheance
+                        ? `${formatDate(t.dateDebut)} → ${formatDate(t.dateEcheance)}`
+                        : "—"}
+                    </span>
+                    <span>
+                      {t.chargeJours != null ? `${t.chargeJours} j.` : "—"}
+                    </span>
+                    <span>{STATUT_TACHE_LABELS[t.statut] ?? t.statut}</span>
+                    <span className="muted">
+                      {t.commentaires?.trim()
+                        ? t.commentaires.trim().slice(0, 80)
+                        : "—"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CollapsibleSection>
+
       <EditableSection
         title="Éléments associés"
         sectionKey="ELEMENTS_ASSOCIES"
@@ -331,13 +388,6 @@ export default async function ProjetDetailPage({
               ownedItems={ownedItems}
               wrapInSection={false}
             />
-            <p className="muted">
-              Les tâches du projet apparaissent ici.{" "}
-              <Link href={`/taches/nouvelle?projetId=${projet.id}`}>
-                Créer une tâche liée
-              </Link>
-              .
-            </p>
             <form action={updateProjet} className="entity-form">
               <input type="hidden" name="id" value={projet.id} />
               <input type="hidden" name="sectionKey" value="ELEMENTS_ASSOCIES" />
@@ -393,7 +443,7 @@ export default async function ProjetDetailPage({
         edit={edit}
         canEdit={canEdit}
         redaction={redactions.get("TAGS")}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <ProjetForm
             action={updateProjet}

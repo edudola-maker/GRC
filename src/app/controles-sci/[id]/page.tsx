@@ -228,7 +228,7 @@ export default async function ControleSCIDetailPage({
         baseHref={`/controles-sci/${controle.id}`}
         edit={edit}
         canEdit={!controle.archive}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <ElementsAssocies
             uniteId={user.uniteId}
@@ -304,7 +304,7 @@ export default async function ControleSCIDetailPage({
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Tags" defaultOpen={false}>
+      <CollapsibleSection title="Tags" defaultOpen>
         <p style={{ margin: 0 }}>
           {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
         </p>

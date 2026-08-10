@@ -54,7 +54,9 @@ type TacheValues = {
   missionId?: string | null;
   documentId?: string | null;
   recommandationId?: string | null;
+  dateDebut?: Date | string | null;
   dateEcheance?: Date | string | null;
+  chargeJours?: number | null;
   statut?: string;
   priorite?: string;
   categorie?: string;
@@ -138,6 +140,7 @@ type DocumentValues = {
 
 type MissionValues = {
   id?: string;
+  code?: string;
   titre?: string;
   typeId?: string;
   templateId?: string | null;
@@ -398,6 +401,9 @@ export function TacheForm({
   missions,
   audits,
   documents,
+  /** Contexte Projet : masque la priorité, expose dates / charge. */
+  projetContext = false,
+  retour,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -412,11 +418,16 @@ export function TacheForm({
   /** @deprecated Utiliser `missions` */
   audits?: Opt[];
   documents?: Opt[];
+  projetContext?: boolean;
+  retour?: string;
 }) {
   const missionOptions = missions ?? audits;
+  const isProjet =
+    projetContext || Boolean(values?.projetId);
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {retour ? <input type="hidden" name="retour" value={retour} /> : null}
       {values?.recommandationId ? (
         <input
           type="hidden"
@@ -527,28 +538,78 @@ export function TacheForm({
           </select>
         </Field>
 
-        <Field label="Priorité" htmlFor="priorite">
-          <select
-            id="priorite"
+        {isProjet ? (
+          <input
+            type="hidden"
             name="priorite"
-            defaultValue={values?.priorite ?? "MOYENNE"}
-          >
-            {PRIORITE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            value={values?.priorite ?? "MOYENNE"}
+          />
+        ) : (
+          <Field label="Priorité" htmlFor="priorite">
+            <select
+              id="priorite"
+              name="priorite"
+              defaultValue={values?.priorite ?? "MOYENNE"}
+            >
+              {PRIORITE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+
+        <Field
+          label={isProjet ? "Date de début" : "Date d'échéance"}
+          htmlFor={isProjet ? "dateDebut" : "dateEcheance"}
+        >
+          {isProjet ? (
+            <input
+              id="dateDebut"
+              name="dateDebut"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateDebut)}
+            />
+          ) : (
+            <input
+              id="dateEcheance"
+              name="dateEcheance"
+              type="date"
+              defaultValue={toDateInputValue(values?.dateEcheance)}
+            />
+          )}
         </Field>
 
-        <Field label="Date d'échéance" htmlFor="dateEcheance">
-          <input
-            id="dateEcheance"
-            name="dateEcheance"
-            type="date"
-            defaultValue={toDateInputValue(values?.dateEcheance)}
-          />
-        </Field>
+        {isProjet ? (
+          <>
+            <Field label="Date de fin" htmlFor="dateEcheance">
+              <input
+                id="dateEcheance"
+                name="dateEcheance"
+                type="date"
+                defaultValue={toDateInputValue(values?.dateEcheance)}
+              />
+            </Field>
+            <Field
+              label="Charge estimée (jours)"
+              htmlFor="chargeJours"
+              hint="Ex. 0,5 · 1 · 2 · 5"
+            >
+              <input
+                id="chargeJours"
+                name="chargeJours"
+                type="number"
+                min={0}
+                step={0.5}
+                defaultValue={
+                  values?.chargeJours != null ? String(values.chargeJours) : ""
+                }
+                placeholder="1"
+              />
+            </Field>
+          </>
+        ) : null}
       </div>
 
       {(conseils || controles || missionOptions || documents) && (
@@ -1431,6 +1492,19 @@ export function MissionForm({
       ) : null}
 
       <FormSection title="Description">
+        {values?.id ? (
+          <Field label="Code *" htmlFor="code">
+            <input
+              id="code"
+              name="code"
+              required
+              defaultValue={values.code ?? ""}
+              placeholder="MIS-0001"
+              pattern="[A-Za-z]{2,5}-[0-9]{1,6}"
+              title="Format MIS-0001"
+            />
+          </Field>
+        ) : null}
         <Field label="Titre *" htmlFor="titre">
           <input
             id="titre"

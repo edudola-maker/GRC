@@ -18,6 +18,7 @@ import {
   urgenceEcheance,
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
+import { safeRetourPath, withRetour } from "@/lib/navigation-retour";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
@@ -65,7 +66,12 @@ export default async function TacheDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string; edit?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    erreur?: string;
+    edit?: string;
+    retour?: string;
+  }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -137,7 +143,8 @@ export default async function TacheDetailPage({
 
   const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(tache.statut);
   const urgence = urgenceEcheance(tache.dateEcheance, clos);
-  const baseHref = `/taches/${tache.id}`;
+  const retour = safeRetourPath(sp.retour, "/taches");
+  const baseHref = withRetour(`/taches/${tache.id}`, retour);
   const canEdit = true;
   const checklistVues = tache.checklistItems.map((i) => ({
     id: i.id,
@@ -147,10 +154,18 @@ export default async function TacheDetailPage({
     faitParNom: i.faitPar?.nom ?? null,
     faitLeLabel: i.faitLe ? formatDate(i.faitLe) : null,
   }));
+  const backLabel =
+    retour.startsWith("/projets/")
+      ? "← Retour au projet"
+      : retour.startsWith("/missions/")
+        ? "← Retour à la mission"
+        : retour.startsWith("/conseils/")
+          ? "← Retour au conseil"
+          : "← Retour aux tâches";
 
   return (
     <>
-      <BackLink href="/taches" label="← Retour aux tâches" />
+      <BackLink href={retour} label={backLabel} />
       <PageHeader
         title={tache.titre}
         description={tache.description ?? "Aucune description."}
@@ -195,6 +210,8 @@ export default async function TacheDetailPage({
               values={tache}
               cancelHref={baseHref}
               submitLabel="Enregistrer"
+              projetContext={Boolean(tache.projetId)}
+              retour={retour !== "/taches" ? retour : undefined}
             />
 
           }
@@ -208,6 +225,31 @@ export default async function TacheDetailPage({
               <dt>Responsable</dt>
               <dd>{tache.responsable.nom}</dd>
             </div>
+            {tache.projetId ? (
+              <>
+                <div>
+                  <dt>Début</dt>
+                  <dd>{formatDate(tache.dateDebut)}</dd>
+                </div>
+                <div>
+                  <dt>Fin</dt>
+                  <dd>{formatDate(tache.dateEcheance)}</dd>
+                </div>
+                <div>
+                  <dt>Charge</dt>
+                  <dd>
+                    {tache.chargeJours != null
+                      ? `${tache.chargeJours} j.`
+                      : "—"}
+                  </dd>
+                </div>
+              </>
+            ) : (
+              <div>
+                <dt>Priorité</dt>
+                <dd>{PRIORITE_LABELS[tache.priorite]}</dd>
+              </div>
+            )}
             <div>
               <dt>Projet</dt>
               <dd>
@@ -286,22 +328,20 @@ export default async function TacheDetailPage({
               <dd>{STATUT_TACHE_LABELS[tache.statut]}</dd>
             </div>
             <div>
-              <dt>Priorité</dt>
-              <dd>{PRIORITE_LABELS[tache.priorite]}</dd>
-            </div>
-            <div>
               <dt>Création</dt>
               <dd>{formatDate(tache.dateCreation)}</dd>
             </div>
-            <div>
-              <dt>Échéance</dt>
-              <dd>
-                {formatDate(tache.dateEcheance)}
-                {urgence === "retard" ? (
-                  <span className="tag tag--danger"> En retard</span>
-                ) : null}
-              </dd>
-            </div>
+            {!tache.projetId ? (
+              <div>
+                <dt>Échéance</dt>
+                <dd>
+                  {formatDate(tache.dateEcheance)}
+                  {urgence === "retard" ? (
+                    <span className="tag tag--danger"> En retard</span>
+                  ) : null}
+                </dd>
+              </div>
+            ) : null}
           </dl>
           {tache.commentaires ? (
             <p className="detail-note">{tache.commentaires}</p>

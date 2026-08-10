@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -10,14 +11,21 @@ import {
 import {
   InventoryEmpty,
   InventoryList,
-  InventoryRow,
 } from "@/components/inventory/InventoryRow";
-import { toneFromStatut } from "@/components/ui/StatusBadge";
+import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
+import { StatusBadge, toneFromStatut } from "@/components/ui/StatusBadge";
+
+export type RisqueControleLink = {
+  id: string;
+  code: string;
+  nom: string;
+};
 
 export type RisqueInventoryItem = {
   id: string;
   code: string;
   nom: string;
+  uniteNom: string;
   categorieLabel: string;
   statut: string;
   statutLabel: string;
@@ -27,7 +35,10 @@ export type RisqueInventoryItem = {
   probabilite: number;
   impact: number;
   criticite: number;
-  nbControles: number;
+  probabiliteResiduelle: number | null;
+  impactResiduel: number | null;
+  criticiteResiduelle: number | null;
+  controles: RisqueControleLink[];
   archive: boolean;
   urgence: "retard" | "bientot" | "a_venir" | "neutre";
   estCritique: boolean;
@@ -83,6 +94,8 @@ export function RisqueInventory({
       r.code,
       r.nom,
       r.categorieLabel,
+      r.uniteNom,
+      ...r.controles.flatMap((c) => [c.code, c.nom]),
     ]);
 
     if (statut) list = list.filter((r) => r.statut === statut);
@@ -128,7 +141,7 @@ export function RisqueInventory({
 
   return (
     <InventoryBrowser
-      searchPlaceholder="Rechercher un risque (code, nom, catégorie…)"
+      searchPlaceholder="Rechercher un risque (code, nom, contrôle…)"
       searchValue={query}
       onSearchChange={setQuery}
       advancedOpen={advancedOpen}
@@ -140,33 +153,15 @@ export function RisqueInventory({
       canResetFilters={canReset}
       quickFilters={
         <>
-          <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
-            Tous
-          </ChipButton>
-          <ChipButton
-            active={quick === "critiques"}
-            onClick={() => setQuick("critiques")}
-          >
-            Critiques
-          </ChipButton>
-          <ChipButton
-            active={quick === "eleves"}
-            onClick={() => setQuick("eleves")}
-          >
-            Élevés
-          </ChipButton>
-          <ChipButton
-            active={quick === "sans_strategie"}
-            onClick={() => setQuick("sans_strategie")}
-          >
-            Sans stratégie
-          </ChipButton>
-          <ChipButton
-            active={quick === "archives"}
-            onClick={() => setQuick("archives")}
-          >
-            Archivés
-          </ChipButton>
+          {(Object.keys(QUICK_LABELS) as QuickFilter[]).map((k) => (
+            <ChipButton
+              key={k}
+              active={quick === k}
+              onClick={() => setQuick(k)}
+            >
+              {QUICK_LABELS[k]}
+            </ChipButton>
+          ))}
           <label className="inventory__select">
             <span className="sr-only">Responsable</span>
             <select
@@ -217,37 +212,71 @@ export function RisqueInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Catégorie", "Statut"]}
-          secondaryColumns={[
-            "Responsable",
-            "Criticité",
-            "Stratégie",
-            "Contrôles",
+          columns={[
+            "Code",
+            "Unité",
+            "Nom",
+            "Catégorie",
+            "P",
+            "I",
+            "Inhérent",
+            "Résiduel",
+            "Contrôles SCI",
+            "Statut",
           ]}
+          dense
         >
           {filtered.map((r) => (
             <li key={r.id}>
-              <InventoryRow
-                href={`/risques/${r.id}`}
-                urgence={r.urgence}
-                archived={r.archive}
-                primary={[
-                  { value: r.code, emphasis: "code" },
-                  { value: r.nom, emphasis: "title" },
-                  { value: r.categorieLabel },
-                  { value: r.statutLabel, badgeTone: toneFromStatut(r.statut) },
-                ]}
-                secondary={[
-                  { value: r.responsableNom },
-                  {
-                    value: `P${r.probabilite}×I${r.impact} = ${r.criticite}`,
-                  },
-                  { value: r.strategieLabel || "Sans stratégie" },
-                  {
-                    value: `${r.nbControles} contrôle${r.nbControles > 1 ? "s" : ""}`,
-                  },
-                ]}
-              />
+              <div
+                className={`inventory-row inventory-row--dense${r.archive ? " is-archived" : ""}`}
+              >
+                <Link
+                  href={`/risques/${r.id}`}
+                  className="inventory-row__dense-main"
+                >
+                  <span className="inventory-cell__value inventory-cell__value--code">
+                    {r.code}
+                  </span>
+                  <span className="inventory-cell__value inventory-cell__value--meta inventory-row__hide-sm">
+                    {r.uniteNom}
+                  </span>
+                  <span className="inventory-cell__value inventory-cell__value--title">
+                    {r.nom}
+                  </span>
+                  <span className="inventory-cell__value inventory-row__hide-sm">
+                    {r.categorieLabel}
+                  </span>
+                  <span className="inventory-cell__value">{r.probabilite}</span>
+                  <span className="inventory-cell__value">{r.impact}</span>
+                  <span className="inventory-cell__value">
+                    <CriticiteBadge value={r.criticite} />
+                  </span>
+                  <span className="inventory-cell__value inventory-row__hide-md">
+                    <CriticiteBadge value={r.criticiteResiduelle} />
+                  </span>
+                </Link>
+                <div className="inventory-row__dense-controles">
+                  {r.controles.length === 0 ? (
+                    <span className="muted">—</span>
+                  ) : (
+                    r.controles.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/controles-sci/${c.id}`}
+                        className="inventory-row__ctl-link"
+                      >
+                        {c.code} — {c.nom}
+                      </Link>
+                    ))
+                  )}
+                </div>
+                <Link href={`/risques/${r.id}`} className="inventory-row__dense-statut">
+                  <StatusBadge tone={toneFromStatut(r.statut)}>
+                    {r.statutLabel}
+                  </StatusBadge>
+                </Link>
+              </div>
             </li>
           ))}
         </InventoryList>

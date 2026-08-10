@@ -149,16 +149,21 @@ export function InventoryList({
   columns,
   secondaryColumns,
   children,
+  /** Une seule ligne de colonnes (densité desktop). */
+  dense = false,
 }: {
   columns: string[];
   secondaryColumns?: string[];
   children: ReactNode;
+  dense?: boolean;
 }) {
   return (
-    <div className="inventory-table">
+    <div
+      className={`inventory-table${dense ? " inventory-table--dense" : ""}`}
+    >
       <div className="inventory-columns-group" role="rowgroup">
         <InventoryColumns columns={columns} variant="primary" />
-        {secondaryColumns && secondaryColumns.length > 0 ? (
+        {!dense && secondaryColumns && secondaryColumns.length > 0 ? (
           <InventoryColumns columns={secondaryColumns} variant="secondary" />
         ) : null}
       </div>
