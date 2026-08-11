@@ -268,6 +268,7 @@ model Unite {
   parametres       ParametreFonctionnel[]
   liensObjets      LienObjet[]
   sectionsRedaction SectionRedaction[]
+  risquesReevaluations RisqueReevaluation[]
 }
 
 // ─── Utilisateur ────────────────────────────────────────────
@@ -340,6 +341,7 @@ model Utilisateur {
   visasMission            MissionValidationVisa[]
   journalEvenements       JournalEvenement[]
   sectionsRedaction       SectionRedaction[] @relation("SectionRedactionModifiePar")
+  risquesReevaluations    RisqueReevaluation[]
 }
 
 // ─── Projet ─────────────────────────────────────────────────
@@ -373,6 +375,7 @@ model Projet {
   creePar     Utilisateur     @relation("ProjetCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur     @relation("ProjetModifiePar", fields: [modifieParId], references: [id])
   taches      Tache[]
+  dependancesTache TacheDependance[]
   membres     ProjetMembre[]
   /// Conservé pour migration — UI unifiée via LienObjet / Éléments associés.
   documents   ProjetDocument[]
@@ -459,7 +462,11 @@ model Tache {
   /// Référence informative au modèle d’origine (pas de sync rétroactive).
   modeleTacheId  String?
   dateCreation   DateTime       @default(now())
+  /// Début planifié (projets — plage début/fin).
+  dateDebut      DateTime?
   dateEcheance   DateTime?
+  /// Charge estimée en jours ouvrés (ex. 0.5, 1, 2, 5) — pilotage futur.
+  chargeJours    Float?
   statut         StatutTache    @default(A_FAIRE)
   priorite       Priorite       @default(MOYENNE)
   categorie      CategorieTache @default(AUTRE)
@@ -491,9 +498,32 @@ model Tache {
   validePar      Utilisateur?    @relation("TacheValideePar", fields: [valideParId], references: [id])
   historique     HistoriqueTache[]
   checklistItems TacheChecklistItem[]
+  /// Prérequis dont cette tâche dépend (successeur).
+  dependancesEnTantQueSuccesseur TacheDependance[] @relation("TacheSuccesseur")
+  /// Tâches qui dépendent de celle-ci (prédécesseur).
+  dependancesEnTantQuePrerequis  TacheDependance[] @relation("TachePrerequis")
 
   @@index([uniteId, statut, dateEcheance])
   @@index([modeleTacheId])
+}
+
+/// Dépendance optionnelle entre tâches d’un même Projet (activation progressive).
+model TacheDependance {
+  id          String @id @default(cuid())
+  projetId    String
+  /// Tâche successeur (bloquée tant que le prérequis n’est pas TERMINE).
+  tacheId     String
+  /// Tâche prérequis.
+  prerequisId String
+  creeLe      DateTime @default(now())
+
+  projet    Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  tache     Tache  @relation("TacheSuccesseur", fields: [tacheId], references: [id], onDelete: Cascade)
+  prerequis Tache  @relation("TachePrerequis", fields: [prerequisId], references: [id], onDelete: Cascade)
+
+  @@unique([tacheId, prerequisId])
+  @@index([projetId])
+  @@index([prerequisId])
 }
 
 /// Étape de checklist d’une tâche (copie d’occurrence — ≠ modèle, ≠ checklist Mission).
@@ -627,9 +657,42 @@ model Risque {
   creePar     Utilisateur      @relation("RisqueCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur      @relation("RisqueModifiePar", fields: [modifieParId], references: [id])
   controles   RisqueControle[]
+  reevaluations RisqueReevaluation[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, criticite])
+}
+
+/// Acte de réévaluation d’un risque (même si les notes ne changent pas).
+/// Distinct de HistoriqueModification (diffs de champs).
+model RisqueReevaluation {
+  id                 String   @id @default(cuid())
+  risqueId           String
+  uniteId            String
+  dateReevaluation   DateTime
+  auteurId           String
+  probabiliteAvant   Int
+  impactAvant        Int
+  criticiteAvant     Int
+  probabiliteApres   Int
+  impactApres        Int
+  criticiteApres     Int
+  probabiliteResiduelleAvant Int?
+  impactResiduelAvant        Int?
+  criticiteResiduelleAvant   Int?
+  probabiliteResiduelleApres Int?
+  impactResiduelApres        Int?
+  criticiteResiduelleApres   Int?
+  /// Réflexion / justification de la revue (niveau maintenu ou non).
+  commentaire        String
+  creeLe             DateTime @default(now())
+
+  risque Risque      @relation(fields: [risqueId], references: [id], onDelete: Cascade)
+  unite  Unite       @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+  auteur Utilisateur @relation(fields: [auteurId], references: [id])
+
+  @@index([risqueId, dateReevaluation])
+  @@index([uniteId, dateReevaluation])
 }
 
 model RisqueControle {
@@ -780,6 +843,8 @@ model Mission {
   niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
   /// Soft-delete / historique — pas de suppression physique des missions suivies.
   archive            Boolean       @default(false)
+  /// Version de contenu (code, champs structurants) — historique générique.
+  contenuVersion     Int           @default(1)
   creeParId          String
   modifieParId       String
   creeLe             DateTime      @default(now())

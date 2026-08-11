@@ -17,6 +17,7 @@ import {
 } from "@/lib/section-redaction";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
+import { setTachePrerequis } from "@/lib/tache-dependances";
 
 const STATUTS = new Set<string>(STATUT_PROJET_OPTIONS.map((o) => o.value));
 const PRIORITES = new Set<string>(PRIORITE_OPTIONS.map((o) => o.value));
@@ -251,4 +252,31 @@ export async function deleteProjet(formData: FormData) {
 
   revalidateProjetViews();
   redirect("/projets?ok=supprime");
+}
+
+/** Définit les prérequis d’une tâche Projet (activation progressive). */
+export async function setTachePrerequisAction(formData: FormData) {
+  await getCurrentUser();
+  const projetId = str(formData, "projetId");
+  const tacheId = str(formData, "tacheId");
+  if (!projetId || !tacheId) {
+    redirectWithError("/projets", "Identifiants manquants.");
+  }
+
+  const prerequisIds = formData
+    .getAll("prerequisIds")
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  const result = await setTachePrerequis({
+    projetId,
+    tacheId,
+    prerequisIds,
+  });
+  if (!result.ok) {
+    redirectWithError(`/projets/${projetId}`, result.erreur);
+  }
+
+  revalidateProjetViews(projetId);
+  revalidateApp(["/taches", "/"]);
+  redirectWithOk(`/projets/${projetId}`, "dependance");
 }

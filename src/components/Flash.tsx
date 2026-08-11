@@ -42,6 +42,8 @@ export function FlashBanner({
     checklist: "Checklist mise à jour.",
     desactive: "Élément désactivé.",
     active: "Élément réactivé.",
+    dependance: "Prérequis de tâche mis à jour.",
+    reevaluation: "Réévaluation documentée.",
   };
 
   return (

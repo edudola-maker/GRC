@@ -137,191 +137,133 @@ export default async function ConseilDetailPage({
         </div>
       ) : null}
 
-      <div className="detail-grid">
-        <EditableSection
-          title="Informations"
-          sectionKey="INFOS_GENERALES"
-          baseHref={baseHref}
-          edit={edit}
-          canEdit={canEdit}
-          defaultOpen
-          editChildren={
-            <ConseilForm
-              action={updateConseil}
-              users={users}
-              values={conseil}
-              cancelHref={baseHref}
-              submitLabel="Enregistrer"
-            />
-          }
-        >
-          <dl className="kv">
+      <EditableSection
+        title="Informations"
+        sectionKey="INFOS_GENERALES"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen
+        editChildren={
+          <ConseilForm
+            action={updateConseil}
+            users={users}
+            values={conseil}
+            cancelHref={baseHref}
+            submitLabel="Enregistrer"
+          />
+        }
+      >
+        <dl className="kv">
+          <div>
+            <dt>Code</dt>
+            <dd>{conseil.code}</dd>
+          </div>
+          <div>
+            <dt>Responsable</dt>
+            <dd>{conseil.responsable.nom}</dd>
+          </div>
+          <div>
+            <dt>Statut</dt>
+            <dd>{STATUT_CONSEIL_LABELS[conseil.statut]}</dd>
+          </div>
+          <div>
+            <dt>Demandeur</dt>
+            <dd>{conseil.demandeur ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Entité</dt>
+            <dd>{conseil.entiteDemandeuse ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Réception</dt>
+            <dd>{formatDate(conseil.dateReception)}</dd>
+          </div>
+          <div>
+            <dt>Échéance</dt>
+            <dd>{formatDate(conseil.dateEcheance)}</dd>
+          </div>
+          <div>
+            <dt>Réponse</dt>
+            <dd>{formatDate(conseil.dateReponse)}</dd>
+          </div>
+          <div>
+            <dt>Clôture</dt>
+            <dd>{formatDate(conseil.dateCloture)}</dd>
+          </div>
+          {delai != null ? (
             <div>
-              <dt>Code</dt>
-              <dd>{conseil.code}</dd>
+              <dt>Délai réel</dt>
+              <dd>
+                {delai} j. ouvrés{" "}
+                {delai <= CONSEIL_DELAI_CIBLE_JOURS
+                  ? "(respecté)"
+                  : "(dépassé)"}
+              </dd>
             </div>
-            <div>
-              <dt>Responsable</dt>
-              <dd>{conseil.responsable.nom}</dd>
-            </div>
-            <div>
-              <dt>Statut</dt>
-              <dd>{STATUT_CONSEIL_LABELS[conseil.statut]}</dd>
-            </div>
-            <div>
-              <dt>Demandeur</dt>
-              <dd>{conseil.demandeur ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Entité</dt>
-              <dd>{conseil.entiteDemandeuse ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Réception</dt>
-              <dd>{formatDate(conseil.dateReception)}</dd>
-            </div>
-            <div>
-              <dt>Échéance</dt>
-              <dd>{formatDate(conseil.dateEcheance)}</dd>
-            </div>
-            <div>
-              <dt>Réponse</dt>
-              <dd>{formatDate(conseil.dateReponse)}</dd>
-            </div>
-            <div>
-              <dt>Clôture</dt>
-              <dd>{formatDate(conseil.dateCloture)}</dd>
-            </div>
-            {delai != null ? (
-              <div>
-                <dt>Délai réel</dt>
-                <dd>
-                  {delai} j. ouvrés{" "}
-                  {delai <= CONSEIL_DELAI_CIBLE_JOURS
-                    ? "(respecté)"
-                    : "(dépassé)"}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-          {conseil.commentaires ? (
-            <p className="detail-note">{conseil.commentaires}</p>
           ) : null}
-          <p className="detail-trace">
-            Créé par {conseil.creePar.nom} · Modifié par {conseil.modifiePar.nom}{" "}
-            · {formatDate(conseil.modifieLe)}
-          </p>
-        </EditableSection>
+        </dl>
+        {conseil.commentaires ? (
+          <p className="detail-note">{conseil.commentaires}</p>
+        ) : null}
+        {conseil.raisonnement ? (
+          <p className="detail-note">{conseil.raisonnement}</p>
+        ) : null}
+      </EditableSection>
 
-        <div className="stack-panels">
-          <CollapsibleSection
-            title="Tâches liées"
-            badge={conseil.taches.length}
-            defaultOpen
+      <CollapsibleSection
+        title="Tâches liées"
+        badge={conseil.taches.length}
+        defaultOpen
+      >
+        {!conseil.archive ? (
+          <form
+            action={createTacheDepuisConseil}
+            className="form-actions"
+            style={{ marginBottom: "0.85rem" }}
           >
-            {!conseil.archive ? (
-              <form
-                action={createTacheDepuisConseil}
-                className="form-actions"
-                style={{ marginBottom: "0.85rem" }}
-              >
-                <input type="hidden" name="conseilId" value={conseil.id} />
-                <SubmitButton>Créer une tâche liée</SubmitButton>
-                <BtnLink
-                  href={`/taches/nouvelle?conseilId=${conseil.id}&categorie=CONSEIL`}
-                  variant="ghost"
-                >
-                  Formulaire complet
-                </BtnLink>
-              </form>
-            ) : null}
-            {conseil.taches.length === 0 ? (
-              <p className="empty">Aucune tâche liée.</p>
-            ) : (
-              <ul className="entity-list">
-                {conseil.taches.map((t) => {
-                  const clos = (
-                    TACHE_STATUTS_CLOS as readonly string[]
-                  ).includes(t.statut);
-                  const urgence = urgenceEcheance(t.dateEcheance, clos);
-                  return (
-                    <li key={t.id}>
-                      <Link
-                        href={`/taches/${t.id}`}
-                        className={`entity-row entity-row--${urgence}`}
-                      >
-                        <div className="entity-row__main">
-                          <strong>{t.titre}</strong>
-                          <span className="entity-row__meta">
-                            {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
-                            {t.responsable.nom} · {STATUT_TACHE_LABELS[t.statut]}
-                          </span>
-                        </div>
-                        <span className="entity-row__date">
-                          {formatDate(t.dateEcheance)}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CollapsibleSection>
-
-          <CollapsibleSection title="Journal" defaultOpen>
-            <p className="muted" style={{ marginBottom: "0.65rem" }}>
-              Notes et événements (réouvertures, échanges).
-            </p>
-            {!conseil.archive ? (
-              <form action={addNoteJournal} className="entity-form">
-                <input type="hidden" name="conseilId" value={conseil.id} />
-                <label className="field" htmlFor="message">
-                  <span className="field__label">Ajouter une note</span>
-                  <textarea
-                    id="message"
-                    name="message"
-                    rows={2}
-                    required
-                    placeholder="Ex. Relance effectuée auprès du demandeur…"
-                  />
-                </label>
-                <div className="form-actions">
-                  <SubmitButton>Ajouter au journal</SubmitButton>
-                </div>
-              </form>
-            ) : null}
-            {journal.length === 0 ? (
-              <p className="empty">Aucune entrée pour l&apos;instant.</p>
-            ) : (
-              <ul className="history-list" style={{ marginTop: "0.85rem" }}>
-                {journal.map((e) => (
-                  <li key={e.id}>
-                    <strong>
-                      {e.typeEvenement === "NOTE"
-                        ? "Note"
-                        : e.typeEvenement === "REOUVERTURE"
-                          ? "Réouverture"
-                          : e.typeEvenement}
-                    </strong>
-                    <span>{e.message}</span>
-                    <em>
-                      {e.auteur?.nom ?? "Système"} · {formatDate(e.creeLe)}
-                    </em>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CollapsibleSection>
-        </div>
-      </div>
-
-      {conseil.raisonnement ? (
-        <CollapsibleSection title="Réflexion / analyse" defaultOpen={false}>
-          <p className="detail-note" style={{ margin: 0 }}>
-            {conseil.raisonnement}
-          </p>
-        </CollapsibleSection>
-      ) : null}
+            <input type="hidden" name="conseilId" value={conseil.id} />
+            <SubmitButton>Créer une tâche liée</SubmitButton>
+            <BtnLink
+              href={`/taches/nouvelle?conseilId=${conseil.id}&categorie=CONSEIL&retour=/conseils/${conseil.id}`}
+              variant="ghost"
+            >
+              Formulaire complet
+            </BtnLink>
+          </form>
+        ) : null}
+        {conseil.taches.length === 0 ? (
+          <p className="empty">Aucune tâche liée.</p>
+        ) : (
+          <ul className="entity-list">
+            {conseil.taches.map((t) => {
+              const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(
+                t.statut,
+              );
+              const urgence = urgenceEcheance(t.dateEcheance, clos);
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={`/taches/${t.id}?retour=${encodeURIComponent(`/conseils/${conseil.id}`)}`}
+                    className={`entity-row entity-row--${urgence}`}
+                  >
+                    <div className="entity-row__main">
+                      <strong>{t.titre}</strong>
+                      <span className="entity-row__meta">
+                        {CATEGORIE_TACHE_LABELS[t.categorie]} ·{" "}
+                        {t.responsable.nom} · {STATUT_TACHE_LABELS[t.statut]}
+                      </span>
+                    </div>
+                    <span className="entity-row__date">
+                      {formatDate(t.dateEcheance)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CollapsibleSection>
 
       <EditableSection
         title="Éléments associés"
@@ -329,7 +271,7 @@ export default async function ConseilDetailPage({
         baseHref={`/conseils/${conseil.id}`}
         edit={edit}
         canEdit={!conseil.archive}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <ElementsAssocies
             uniteId={user.uniteId}
@@ -351,7 +293,7 @@ export default async function ConseilDetailPage({
         />
       </EditableSection>
 
-      <CollapsibleSection title="Tags" defaultOpen={false}>
+      <CollapsibleSection title="Tags" defaultOpen>
         <p style={{ margin: 0 }}>
           {tags.length ? (
             <span className="tag-list">
@@ -364,6 +306,55 @@ export default async function ConseilDetailPage({
           ) : (
             "Aucun tag."
           )}
+        </p>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Journal d’activité" defaultOpen>
+        <p className="muted" style={{ marginBottom: "0.65rem" }}>
+          Notes et événements (réouvertures, échanges).
+        </p>
+        {!conseil.archive ? (
+          <form action={addNoteJournal} className="entity-form">
+            <input type="hidden" name="conseilId" value={conseil.id} />
+            <label className="field" htmlFor="message">
+              <span className="field__label">Ajouter une note</span>
+              <textarea
+                id="message"
+                name="message"
+                rows={2}
+                required
+                placeholder="Ex. Relance effectuée auprès du demandeur…"
+              />
+            </label>
+            <div className="form-actions">
+              <SubmitButton>Ajouter au journal</SubmitButton>
+            </div>
+          </form>
+        ) : null}
+        {journal.length === 0 ? (
+          <p className="empty">Aucune entrée pour l&apos;instant.</p>
+        ) : (
+          <ul className="history-list" style={{ marginTop: "0.85rem" }}>
+            {journal.map((e) => (
+              <li key={e.id}>
+                <strong>
+                  {e.typeEvenement === "NOTE"
+                    ? "Note"
+                    : e.typeEvenement === "REOUVERTURE"
+                      ? "Réouverture"
+                      : e.typeEvenement}
+                </strong>
+                <span>{e.message}</span>
+                <em>
+                  {e.auteur?.nom ?? "Système"} · {formatDate(e.creeLe)}
+                </em>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="detail-trace" style={{ marginTop: "0.85rem" }}>
+          Créé par {conseil.creePar.nom} · Modifié par {conseil.modifiePar.nom}{" "}
+          · {formatDate(conseil.modifieLe)}
         </p>
       </CollapsibleSection>
     </>

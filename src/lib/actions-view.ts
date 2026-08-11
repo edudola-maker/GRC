@@ -3,6 +3,7 @@ import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { addDays, startOfToday } from "@/lib/labels";
 import { endOfWeek } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
+import { filterActiveOperationnelles } from "@/lib/tache-dependances";
 
 export const tacheActionInclude = {
   responsable: true,
@@ -65,7 +66,9 @@ export async function getMesActions(utilisateurId: string) {
     }),
   ]);
 
-  const ouvertes = ouvertesBrutes.filter((t) => dansFenetreDeclenchement(t, today));
+  const ouvertes = (
+    await filterActiveOperationnelles(ouvertesBrutes)
+  ).filter((t) => dansFenetreDeclenchement(t, today));
 
   const retard: TacheAction[] = [];
   const aujourdhui: TacheAction[] = [];
@@ -146,7 +149,10 @@ export async function getActionsUnite(
     take: 120,
   });
 
-  const actions = actionsBrutes.filter((t) => dansFenetreDeclenchement(t, today));
+  const actionsActives = await filterActiveOperationnelles(actionsBrutes);
+  const actions = actionsActives.filter((t) =>
+    dansFenetreDeclenchement(t, today),
+  );
 
   const chargeParCollaborateur = await prisma.tache.groupBy({
     by: ["responsableId"],

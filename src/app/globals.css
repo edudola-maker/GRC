@@ -3032,3 +3032,329 @@ a {
     display: none;
   }
 }
+
+/* Criticité — mêmes tons que la matrice 5×5 */
+.criticite-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.criticite-pill--faible { background: #e8f0e8; color: #1f4d2a; }
+.criticite-pill--modere { background: #f5f0d8; color: #5c4a12; }
+.criticite-pill--eleve { background: #f5e0d0; color: #7a3d12; }
+.criticite-pill--critique { background: #f0d0d0; color: #7a1f1f; }
+.criticite-pill--none { background: #eee; color: #666; font-weight: 500; }
+
+.inline-link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.inline-link-list a { font-weight: 600; }
+
+/* Inventaire dense — une ligne desktop */
+.inventory-table--dense .inventory-columns {
+  display: grid;
+  grid-template-columns: 5.5rem 7rem minmax(8rem, 1.4fr) 7rem 2rem 2rem 3.5rem 3.5rem minmax(8rem, 1.6fr) 6rem;
+  gap: 0.35rem 0.55rem;
+  font-size: 0.72rem;
+}
+.inventory-row--dense {
+  display: grid;
+  grid-template-columns: 5.5rem 7rem minmax(8rem, 1.4fr) 7rem 2rem 2rem 3.5rem 3.5rem minmax(8rem, 1.6fr) 6rem;
+  gap: 0.35rem 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.65rem;
+}
+.inventory-row__dense-main {
+  display: contents;
+  text-decoration: none;
+  color: inherit;
+}
+.inventory-row__dense-controles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+.inventory-row__ctl-link {
+  color: var(--accent, #1f6b4a);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inventory-row__ctl-link:hover { text-decoration: underline; }
+.inventory-row__dense-statut { text-decoration: none; }
+
+@media (max-width: 1100px) {
+  .inventory-row__hide-md { display: none !important; }
+  .inventory-table--dense .inventory-columns,
+  .inventory-row--dense {
+    grid-template-columns: 5rem minmax(7rem, 1.2fr) 2rem 2rem 3.5rem minmax(7rem, 1.4fr) 5.5rem;
+  }
+  .inventory-table--dense .inventory-columns__cell:nth-child(2),
+  .inventory-table--dense .inventory-columns__cell:nth-child(4),
+  .inventory-table--dense .inventory-columns__cell:nth-child(8) { display: none; }
+}
+@media (max-width: 780px) {
+  .inventory-row__hide-sm { display: none !important; }
+  .inventory-table--dense .inventory-columns,
+  .inventory-row--dense {
+    grid-template-columns: 4.5rem minmax(6rem, 1fr) 3.2rem minmax(6rem, 1fr);
+  }
+  .inventory-table--dense .inventory-columns__cell:nth-child(n+3):nth-child(-n+8) { display: none; }
+  .inventory-table--dense .inventory-columns__cell:nth-child(10) { display: none; }
+  .inventory-row__dense-statut { display: none; }
+}
+
+/* Projet — box tâches unique */
+.projet-taches-table__head,
+.projet-taches-table__row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.4fr) 7rem 8rem 3.5rem 6rem minmax(6rem, 1fr);
+  gap: 0.4rem 0.65rem;
+  align-items: start;
+}
+.projet-taches-table__head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-muted);
+  padding: 0 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.projet-taches-table__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.projet-taches-table__row {
+  padding: 0.55rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.9rem;
+}
+.projet-taches-table__row:hover { background: #f7faf8; }
+@media (max-width: 900px) {
+  .projet-taches-table__head { display: none; }
+  .projet-taches-table__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mission-famille-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+.mission-famille-tabs a {
+  text-decoration: none;
+}
+
+/* Cockpit Mission — navigation des 5 étapes */
+.mission-etapes-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 1.25rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.mission-etapes-nav__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  max-width: 14rem;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+.mission-etapes-nav__item:hover {
+  background: #f4f7f5;
+}
+.mission-etapes-nav__item--active {
+  border-color: var(--line);
+  background: #eef4f0;
+}
+.mission-etapes-nav__ordre {
+  font-weight: 700;
+  color: var(--ink-muted);
+  min-width: 1.1rem;
+}
+.mission-etapes-nav__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.mission-etapes-nav__title {
+  font-weight: 650;
+}
+.mission-etapes-nav__etat {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.mission-etapes-nav__etat--non_commence { color: #6b7280; }
+.mission-etapes-nav__etat--en_cours { color: #8a6d1d; }
+.mission-etapes-nav__etat--a_valider { color: #1d5a8a; }
+.mission-etapes-nav__etat--termine { color: #1f6b45; }
+.mission-etapes-nav__metric {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.mission-etapes-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.65rem;
+}
+.mission-etapes-card {
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.75rem 0.85rem;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 5.5rem;
+}
+.mission-etapes-card:hover {
+  background: #f7faf8;
+}
+.mission-etapes-card--current {
+  border-color: #7a9a84;
+  background: #f2f7f4;
+}
+.mission-etapes-card__ordre {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+}
+.mission-etapes-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.mission-suivi-metric {
+  margin: 0 0 0.85rem;
+}
+.mission-suivi-table__head,
+.mission-suivi-table__row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(8rem, 1.6fr) 7rem 6rem 6.5rem;
+  gap: 0.4rem 0.65rem;
+  align-items: start;
+}
+.mission-suivi-table__head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-muted);
+  padding: 0 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.mission-suivi-table__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mission-suivi-table__row {
+  padding: 0.55rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+@media (max-width: 800px) {
+  .mission-suivi-table__head { display: none; }
+  .mission-suivi-table__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.projet-taches-table__head,
+.projet-taches-table__row--static {
+  grid-template-columns: minmax(8rem, 1.5fr) 6.5rem 7.5rem 3.2rem 5.5rem minmax(7rem, 1fr) minmax(5rem, 0.9fr);
+}
+.projet-taches-table__row--static {
+  display: grid;
+  gap: 0.4rem 0.65rem;
+  align-items: start;
+  padding: 0.55rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.projet-taches-table__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-decoration: none;
+  color: inherit;
+}
+.projet-tache-prerequis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.projet-tache-prerequis select {
+  max-width: 100%;
+  font-size: 0.8rem;
+}
+.tag--warn {
+  display: inline-block;
+  background: #f5f0d8;
+  color: #5c4a12;
+  font-size: 0.72rem;
+  font-weight: 650;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.reevaluation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.reevaluation-item {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.reevaluation-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.reevaluation-item__head {
+  margin-bottom: 0.35rem;
+}
+.reevaluation-item__scores {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}

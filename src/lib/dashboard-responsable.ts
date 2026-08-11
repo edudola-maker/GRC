@@ -7,12 +7,16 @@ import {
 import { businessDaysBetween } from "@/lib/dates";
 import { startOfToday } from "@/lib/labels";
 import { getConseilDelaiCibleJours } from "@/lib/referentiels";
+import { getBlockedTacheIdsForUnite } from "@/lib/tache-dependances";
 
 /** KPI synthétiques pour le Dashboard Responsable (volontairement courts). */
 export async function getDashboardResponsable(uniteId: string) {
   const today = startOfToday();
   const annee = today.getFullYear();
   const delaiCible = await getConseilDelaiCibleJours(uniteId);
+  const blockedIds = await getBlockedTacheIdsForUnite(uniteId);
+  const tacheActiveFilter =
+    blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {};
 
   const [
     auditsEnCours,
@@ -137,6 +141,7 @@ export async function getDashboardResponsable(uniteId: string) {
       where: {
         uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        ...tacheActiveFilter,
       },
     }),
     prisma.tache.count({
@@ -144,6 +149,7 @@ export async function getDashboardResponsable(uniteId: string) {
         uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { lt: today },
+        ...tacheActiveFilter,
       },
     }),
     prisma.objectifAnnuel.findMany({

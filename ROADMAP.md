@@ -244,6 +244,28 @@ Permissions : deny-by-default pour Administration (`src/lib/permissions.ts`). Sc
 
 Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_CONSOLIDATION.md).
 
+### 5septies-bis. Missions — dossier d’audit (roadmap structurante)
+
+Voir [`docs/MISSIONS_ARCHITECTURE.md`](./docs/MISSIONS_ARCHITECTURE.md).
+
+- Familles UX **Audits** / **Revues de processus** (un moteur, vues filtrées — amorcé `?famille=`).
+- **Cockpit + cinq pages d’étapes** : **implémentés** (états métier Non commencé → … → Validé/Terminé ; métriques complémentaires ; % uniquement sur Suivi).
+- Contenu méthodologique des étapes volontairement souple (à préciser progressivement).
+- **Draft de rapport** généré depuis les étapes (roadmap — pas maintenant).
+- **PV / notes d’entretien** (`MissionNote`) + IA « mettre au propre » sans écraser les notes brutes (roadmap).
+
+### 5septies-ter. Projets — planification séquentielle (roadmap)
+
+Voir [`docs/PROJET_TACHES_DEPENDANCES.md`](./docs/PROJET_TACHES_DEPENDANCES.md).
+
+Socle livré : plages dates, charge jours, commentaire, box Tâches unique, priorité masquée en contexte Projet.  
+Dépendances / activation progressive : modèle `TacheDependance` **implémenté** (badge « En attente du prérequis » sur fiche Projet ; exclusion Dashboard / inventaire par défaut ; `?planifiees=1`).
+
+### 5septies-quater. Risques — réévaluation
+
+Voir [`docs/RISQUE_REEVALUATION.md`](./docs/RISQUE_REEVALUATION.md).  
+Acte métier `RisqueReevaluation` **implémenté** (distinct de l’historique de champs ; traçable même sans changement de notes).
+
 ### 5octies. Versioning / historique (chantier structurant)
 
 Distinguer **Journal d’activité** (événements) et **Historique de contenu** (diffs de champs).  

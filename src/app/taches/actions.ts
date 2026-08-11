@@ -7,7 +7,8 @@ import {
   PRIORITE_OPTIONS,
   STATUT_TACHE_OPTIONS,
 } from "@/lib/catalog";
-import { optDate, optStr, str } from "@/lib/form";
+import { optDate, optFloat, optStr, str } from "@/lib/form";
+import { safeRetourPath } from "@/lib/navigation-retour";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
@@ -177,7 +178,10 @@ export async function createTache(formData: FormData) {
   const linkError = await assertOptionalLinks(links);
   if (linkError) redirectWithError(fallback, linkError);
 
+  const dateDebut = optDate(formData, "dateDebut");
   const dateEcheance = optDate(formData, "dateEcheance");
+  const chargeJours = optFloat(formData, "chargeJours");
+  const retour = safeRetourPath(optStr(formData, "retour"), "");
 
   const tache = await prisma.tache.create({
     data: {
@@ -187,7 +191,9 @@ export async function createTache(formData: FormData) {
       responsableId,
       projetId,
       ...links,
+      dateDebut,
       dateEcheance,
+      chargeJours,
       statut: statut as "A_FAIRE",
       priorite: priorite as "MOYENNE",
       categorie: categorie as "AUTRE",
@@ -199,7 +205,10 @@ export async function createTache(formData: FormData) {
   });
 
   revalidateTacheViews(tache.id, { projetId, ...links });
-  redirectWithOk(`/taches/${tache.id}`, "cree");
+  const detail = retour
+    ? `/taches/${tache.id}?retour=${encodeURIComponent(retour)}`
+    : `/taches/${tache.id}`;
+  redirectWithOk(detail, "cree");
 }
 
 export async function updateTache(formData: FormData) {
@@ -249,7 +258,10 @@ export async function updateTache(formData: FormData) {
     redirectWithError(`/taches/${id}?edit=INFOS_GENERALES`, linkError);
   }
 
+  const dateDebut = optDate(formData, "dateDebut");
   const dateEcheance = optDate(formData, "dateEcheance");
+  const chargeJours = optFloat(formData, "chargeJours");
+  const retour = safeRetourPath(optStr(formData, "retour"), "");
 
   await prisma.tache.update({
     where: { id },
@@ -259,7 +271,9 @@ export async function updateTache(formData: FormData) {
       responsableId,
       projetId,
       ...links,
+      dateDebut,
       dateEcheance,
+      chargeJours,
       statut: statut as "A_FAIRE",
       priorite: priorite as "MOYENNE",
       categorie: categorie as "AUTRE",
@@ -296,9 +310,24 @@ export async function updateTache(formData: FormData) {
       apres: apresProjet?.nom ?? projetId,
     },
     {
+      champ: "dateDebut",
+      avant: existing.dateDebut?.toISOString() ?? null,
+      apres: dateDebut?.toISOString() ?? null,
+    },
+    {
       champ: "dateEcheance",
       avant: existing.dateEcheance?.toISOString() ?? null,
       apres: dateEcheance?.toISOString() ?? null,
+    },
+    {
+      champ: "chargeJours",
+      avant: existing.chargeJours != null ? String(existing.chargeJours) : null,
+      apres: chargeJours != null ? String(chargeJours) : null,
+    },
+    {
+      champ: "commentaires",
+      avant: existing.commentaires,
+      apres: optStr(formData, "commentaires"),
     },
   ]);
 
@@ -309,7 +338,10 @@ export async function updateTache(formData: FormData) {
     missionId: links.missionId ?? existing.missionId,
     documentId: links.documentId ?? existing.documentId,
   });
-  redirectWithOk(`/taches/${id}`, "modifie");
+  const detail = retour
+    ? `/taches/${id}?retour=${encodeURIComponent(retour)}`
+    : `/taches/${id}`;
+  redirectWithOk(detail, "modifie");
 }
 
 export async function updateTacheRapide(formData: FormData) {

@@ -17,6 +17,13 @@ export function optInt(formData: FormData, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+export function optFloat(formData: FormData, key: string): number | null {
+  const v = str(formData, key);
+  if (!v) return null;
+  const n = Number.parseFloat(v.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
 /** Convertit une date HTML (yyyy-mm-dd) en Date locale midi, ou null */
 export function optDate(formData: FormData, key: string): Date | null {
   const v = str(formData, key);

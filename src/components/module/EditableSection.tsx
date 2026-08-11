@@ -58,11 +58,16 @@ export function EditableSection({
     </>
   );
 
+  // Ancre = sectionKey : évite le saut en haut de page au clic Modifier.
+  const sectionId = sectionKey;
+  const editHref = `${baseHref}?edit=${sectionKey}#${sectionId}`;
+
   const headerActions =
     canEdit && !edit ? (
       <Link
-        href={`${baseHref}?edit=${sectionKey}`}
+        href={editHref}
         className="btn btn--ghost collapsible-section__modify"
+        scroll={false}
       >
         {modifyLabel}
       </Link>
@@ -70,6 +75,7 @@ export function EditableSection({
 
   return (
     <CollapsibleSection
+      id={sectionId}
       title={title}
       defaultOpen={open}
       badge={headerBadge}

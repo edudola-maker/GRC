@@ -12,6 +12,7 @@ import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader } from "@/components/ui";
+import { RisqueReevaluationForm } from "@/components/risques/RisqueReevaluationForm";
 import { archiveRisque, deleteRisque, updateRisque } from "../actions";
 import { listerHistorique } from "@/lib/historique";
 import { listerJournal } from "@/lib/journal";
@@ -22,7 +23,6 @@ import {
   STRATEGIE_RISQUE_LABELS,
   criticiteNiveau,
   formatDate,
-  urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import {
@@ -30,7 +30,11 @@ import {
   formatRisqueHistValue,
 } from "@/lib/risque-historique";
 import { parseTags } from "@/lib/tags";
-import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import {
+  formatUtilisateurNom,
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -44,15 +48,18 @@ export default async function RisqueDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const edit =
-    sp.edit === "INFOS_GENERALES" || sp.edit === "ELEMENTS_ASSOCIES"
+    sp.edit === "INFOS_GENERALES" ||
+    sp.edit === "ELEMENTS_ASSOCIES" ||
+    sp.edit === "REEVALUATION"
       ? sp.edit
       : null;
   const user = await getCurrentUser();
 
-  const [risque, users, historique, journal] = await Promise.all([
+  const [risque, users, historique, journal, reevaluations] = await Promise.all([
     prisma.risque.findUnique({
       where: { id },
       include: {
+        unite: { select: { id: true, nom: true, code: true } },
         responsable: true,
         creePar: true,
         controles: {
@@ -68,6 +75,11 @@ export default async function RisqueDetailPage({
     listUtilisateursActifsForCurrentUnite(),
     listerHistorique("RISQUE", id),
     listerJournal("RISQUE", id),
+    prisma.risqueReevaluation.findMany({
+      where: { risqueId: id },
+      include: { auteur: true },
+      orderBy: [{ dateReevaluation: "desc" }, { creeLe: "desc" }],
+    }),
   ]);
 
   if (!risque) notFound();
@@ -82,7 +94,6 @@ export default async function RisqueDetailPage({
       <BackLink href="/risques" label="← Retour aux risques" />
       <PageHeader
         title={`${risque.code} — ${risque.nom}`}
-        description={risque.description ?? "Aucune description."}
         actions={
           <>
             <ConfirmActionButton
@@ -129,10 +140,23 @@ export default async function RisqueDetailPage({
           />
         }
       >
+        {risque.description ? (
+          <p className="detail-note" style={{ marginTop: 0 }}>
+            {risque.description}
+          </p>
+        ) : (
+          <p className="muted" style={{ marginTop: 0 }}>
+            Aucune description.
+          </p>
+        )}
         <dl className="kv">
           <div>
             <dt>Code</dt>
             <dd>{risque.code}</dd>
+          </div>
+          <div>
+            <dt>Unité</dt>
+            <dd>{risque.unite?.nom ?? "—"}</dd>
           </div>
           <div>
             <dt>Catégorie</dt>
@@ -143,20 +167,28 @@ export default async function RisqueDetailPage({
             <dd>{risque.processus ?? "—"}</dd>
           </div>
           <div>
-            <dt>Inhérent (P × I)</dt>
+            <dt>Évaluation inhérente</dt>
             <dd>
-              {risque.probabilite} × {risque.impact} = {risque.criticite} (
-              {niveau})
+              <span className={`criticite-pill criticite-pill--${niveau}`}>
+                P{risque.probabilite} · I{risque.impact} · {risque.criticite}
+              </span>
             </dd>
           </div>
           <div>
-            <dt>Résiduel (P × I)</dt>
+            <dt>Évaluation résiduelle</dt>
             <dd>
               {risque.probabiliteResiduelle != null &&
               risque.impactResiduel != null &&
-              risque.criticiteResiduelle != null
-                ? `${risque.probabiliteResiduelle} × ${risque.impactResiduel} = ${risque.criticiteResiduelle} (${criticiteNiveau(risque.criticiteResiduelle)})`
-                : "Non renseigné"}
+              risque.criticiteResiduelle != null ? (
+                <span
+                  className={`criticite-pill criticite-pill--${criticiteNiveau(risque.criticiteResiduelle)}`}
+                >
+                  P{risque.probabiliteResiduelle} · I{risque.impactResiduel} ·{" "}
+                  {risque.criticiteResiduelle}
+                </span>
+              ) : (
+                "Non renseigné"
+              )}
             </dd>
           </div>
           <div>
@@ -176,8 +208,26 @@ export default async function RisqueDetailPage({
             <dd>{STATUT_RISQUE_LABELS[risque.statut]}</dd>
           </div>
           <div>
-            <dt>Créé par</dt>
-            <dd>{risque.creePar.nom}</dd>
+            <dt>Contrôles SCI liés</dt>
+            <dd>
+              {risque.controles.length === 0 ? (
+                "Aucun"
+              ) : (
+                <ul className="inline-link-list">
+                  {risque.controles.map(({ controle: c }) => (
+                    <li key={c.id}>
+                      <Link href={`/controles-sci/${c.id}`}>
+                        {c.code} — {c.nom}
+                      </Link>
+                      <span className="muted">
+                        {" "}
+                        · {STATUT_CONTROLE_LABELS[c.statut]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </dd>
           </div>
         </dl>
         {risque.justificationEvaluation ? (
@@ -188,56 +238,13 @@ export default async function RisqueDetailPage({
         ) : null}
       </EditableSection>
 
-      <CollapsibleSection
-        title="Contrôles SCI liés"
-        defaultOpen={false}
-        badge={`${risque.controles.length}`}
-      >
-        <p className="muted" style={{ marginTop: 0 }}>
-          Liaison métier historique — pour les associations libres, utilisez
-          Éléments associés (mode Modifier).
-        </p>
-
-        {risque.controles.length === 0 ? (
-          <p className="empty">Aucun contrôle lié pour l&apos;instant.</p>
-        ) : (
-          <ul className="entity-list">
-            {risque.controles.map(({ controle: c }) => {
-              const urgence = urgenceEcheance(
-                c.dateProchaineEcheance,
-                c.archive || c.statut === "SUSPENDU",
-              );
-              return (
-                <li key={c.id}>
-                  <Link
-                    href={`/controles-sci/${c.id}`}
-                    className={`entity-row entity-row--${urgence}`}
-                  >
-                    <div className="entity-row__main">
-                      <strong>{c.nom}</strong>
-                      <span className="entity-row__meta">
-                        {c.responsable.nom} ·{" "}
-                        {STATUT_CONTROLE_LABELS[c.statut]}
-                      </span>
-                    </div>
-                    <span className="entity-row__date">
-                      {formatDate(c.dateProchaineEcheance)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CollapsibleSection>
-
       <EditableSection
         title="Éléments associés"
         sectionKey="ELEMENTS_ASSOCIES"
         baseHref={`/risques/${risque.id}`}
         edit={edit}
         canEdit={!risque.archive}
-        defaultOpen={false}
+        defaultOpen
         editChildren={
           <ElementsAssocies
             uniteId={user.uniteId}
@@ -259,11 +266,83 @@ export default async function RisqueDetailPage({
         />
       </EditableSection>
 
-      <CollapsibleSection title="Tags" defaultOpen={false}>
+      <CollapsibleSection title="Tags" defaultOpen>
         <p style={{ margin: 0 }}>
           {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
         </p>
       </CollapsibleSection>
+
+      <EditableSection
+        title="Réévaluations"
+        sectionKey="REEVALUATION"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen={false}
+        badge={`${reevaluations.length}`}
+        editChildren={
+          <RisqueReevaluationForm values={risque} cancelHref={baseHref} />
+        }
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Actes de revue du risque — tracés même sans changement de notes.
+          Distinct de l’Historique (modifications de champs) et du Journal.
+        </p>
+        {reevaluations.length === 0 ? (
+          <p className="empty">Aucune réévaluation documentée.</p>
+        ) : (
+          <ul className="reevaluation-list">
+            {reevaluations.map((r) => {
+              const changed =
+                r.probabiliteAvant !== r.probabiliteApres ||
+                r.impactAvant !== r.impactApres ||
+                r.probabiliteResiduelleAvant !== r.probabiliteResiduelleApres ||
+                r.impactResiduelAvant !== r.impactResiduelApres;
+              const fmt = (p: number, i: number, c: number) =>
+                `P${p} · I${i} · ${c}`;
+              const fmtRes = (
+                p: number | null,
+                i: number | null,
+                c: number | null,
+              ) =>
+                p != null && i != null && c != null
+                  ? fmt(p, i, c)
+                  : "non renseigné";
+              return (
+                <li key={r.id} className="reevaluation-item">
+                  <div className="reevaluation-item__head">
+                    <strong>{formatDate(r.dateReevaluation)}</strong>
+                    <span className="muted">
+                      {" "}
+                      · {formatUtilisateurNom(r.auteur)}
+                      {changed ? "" : " · notes inchangées"}
+                    </span>
+                  </div>
+                  <p className="reevaluation-item__scores">
+                    Inhérent : {fmt(r.probabiliteAvant, r.impactAvant, r.criticiteAvant)}
+                    {" → "}
+                    {fmt(r.probabiliteApres, r.impactApres, r.criticiteApres)}
+                    <br />
+                    Résiduel :{" "}
+                    {fmtRes(
+                      r.probabiliteResiduelleAvant,
+                      r.impactResiduelAvant,
+                      r.criticiteResiduelleAvant,
+                    )}
+                    {" → "}
+                    {fmtRes(
+                      r.probabiliteResiduelleApres,
+                      r.impactResiduelApres,
+                      r.criticiteResiduelleApres,
+                    )}
+                  </p>
+                  <p className="detail-note">{r.commentaire}</p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </EditableSection>
 
       <CollapsibleSection
         title="Historique"
@@ -288,8 +367,11 @@ export default async function RisqueDetailPage({
         badge={`${journal.length}`}
       >
         <p className="muted" style={{ marginTop: 0 }}>
-          Événements fonctionnels (création, statut, archivage, liaisons) —
-          distinct de l’historique des champs.
+          Événements fonctionnels (création, statut, archivage, liaisons,
+          réévaluation) — distinct de l’historique des champs.
+        </p>
+        <p className="detail-trace" style={{ marginTop: 0 }}>
+          Créé par {risque.creePar.nom} · {formatDate(risque.creeLe)}
         </p>
         <JournalTimeline entries={journal} />
       </CollapsibleSection>
