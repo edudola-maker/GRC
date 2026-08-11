@@ -123,7 +123,6 @@ export default async function UnitePage({
     <>
       <PageHeader
         title={`${unite.code} — ${unite.nom}`}
-        description="Fiche métier de l’unité — présentation et agrégation, pas de double saisie."
         help={<ModuleHelp {...MODULE_HELP.unite} />}
         actions={
           <>

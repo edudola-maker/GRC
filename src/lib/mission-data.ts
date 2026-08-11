@@ -41,6 +41,12 @@ const missionInclude = {
     include: { document: true },
     orderBy: { creeLe: "desc" },
   },
+  objectifsMission: { orderBy: { ordre: "asc" } },
+  risquesMission: {
+    include: { risque: { select: { id: true, code: true, nom: true } } },
+    orderBy: { ordre: "asc" },
+  },
+  documentationDemandee: { orderBy: { ordre: "asc" } },
 } satisfies Prisma.MissionInclude;
 
 export type MissionDetail = Prisma.MissionGetPayload<{

@@ -4,6 +4,7 @@ import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { MissionPageChrome } from "@/components/missions/MissionPageChrome";
 import { MissionPlanificationPanel } from "@/components/missions/MissionPlanificationPanel";
 import { requireMissionDetail } from "@/lib/mission-data";
+import { listerNotes } from "@/lib/notes";
 import { formatSectionEtatLabel } from "@/lib/section-redaction";
 import { prisma } from "@/lib/prisma";
 import {
@@ -26,7 +27,7 @@ export default async function MissionPlanificationPage({
   await getCurrentUser();
   const { mission, redactions, etapes, equipe } = await requireMissionDetail(id);
 
-  const [users, roles, documentsDispo] = await Promise.all([
+  const [users, roles, documentsDispo, notes, risquesGrc] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     prisma.missionRole.findMany({
       where: { actif: true },
@@ -36,6 +37,13 @@ export default async function MissionPlanificationPage({
       where: { archive: false, uniteId: mission.uniteId },
       orderBy: { nom: "asc" },
       select: { id: true, nom: true },
+    }),
+    listerNotes("MISSION", id, { etapeMission: "PLANIFICATION" }),
+    prisma.risque.findMany({
+      where: { uniteId: mission.uniteId, archive: false },
+      orderBy: { code: "asc" },
+      select: { id: true, code: true, nom: true },
+      take: 200,
     }),
   ]);
 
@@ -82,7 +90,7 @@ export default async function MissionPlanificationPage({
         {editing && canEdit ? (
           <div className="form-actions section-save-actions">
             <BtnLink href={baseHref} variant="ghost">
-              Annuler
+              Terminer / Annuler
             </BtnLink>
           </div>
         ) : null}
@@ -99,6 +107,11 @@ export default async function MissionPlanificationPage({
           taches={mission.taches}
           documents={mission.documents}
           docsALier={docsALier}
+          objectifs={mission.objectifsMission}
+          risquesMission={mission.risquesMission}
+          documentation={mission.documentationDemandee}
+          notes={notes}
+          risquesGrc={risquesGrc}
         />
       </CollapsibleSection>
     </MissionPageChrome>

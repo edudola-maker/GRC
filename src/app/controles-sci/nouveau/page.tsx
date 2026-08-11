@@ -19,7 +19,6 @@ export default async function NouveauControleSCIPage({
       <BackLink href="/controles-sci" label="← Retour aux contrôles" />
       <PageHeader
         title="Nouveau contrôle SCI"
-        description="Définissez le contrôle périodique et sa prochaine échéance."
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">

@@ -56,7 +56,6 @@ export default async function ModelesTachesPage({
     <>
       <PageHeader
         title="Modèles de tâches"
-        description="Catalogue de checklists standard — copiées à la création, sans sync rétroactive."
         help={<ModuleHelp {...MODULE_HELP.modelesTaches} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

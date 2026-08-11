@@ -136,7 +136,6 @@ export default async function AuditsPage({
     <>
       <PageHeader
         title={title}
-        description="Un seul moteur Mission — vues séparées Audits / Revues de processus."
         help={<ModuleHelp {...MODULE_HELP.audits} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

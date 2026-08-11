@@ -1,3 +1,4 @@
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -19,6 +20,7 @@ import {
   deleteConseil,
   reopenConseil,
   unarchiveConseil,
+  duplicateConseil,
 } from "../actions";
 import {
   CATEGORIE_TACHE_LABELS,
@@ -35,8 +37,15 @@ import {
 import { businessDaysBetween } from "@/lib/dates";
 import { listerJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { getCurrentUser, listUtilisateursActifsForCurrentUnite, formatUtilisateurNom } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
+import { NotesPanel } from "@/components/notes/NotesPanel";
+import { JournalBordPanel } from "@/components/journal/JournalBordPanel";
+import { QuickTacheForm } from "@/components/taches/QuickTacheForm";
+import { listerNotes } from "@/lib/notes";
+import { listerJournalBord } from "@/lib/journal-bord";
+import { JournalTimeline } from "@/components/historique/JournalTimeline";
+
 
 export const dynamic = "force-dynamic";
 
@@ -54,13 +63,14 @@ export default async function ConseilDetailPage({
       ? sp.edit
       : null;
   const user = await getCurrentUser();
-  const [conseil, journal, users] = await Promise.all([
+  const [conseil, journal, journalBord, notes, users] = await Promise.all([
     prisma.conseil.findUnique({
       where: { id },
       include: {
         responsable: true,
         creePar: true,
         modifiePar: true,
+        conseilPrecedent: { select: { id: true, code: true, objet: true } },
         taches: {
           include: { responsable: true },
           orderBy: { dateEcheance: "asc" },
@@ -68,6 +78,8 @@ export default async function ConseilDetailPage({
       },
     }),
     listerJournal("CONSEIL", id),
+    listerJournalBord("CONSEIL", id),
+    listerNotes("CONSEIL", id),
     listUtilisateursActifsForCurrentUnite(),
   ]);
   if (!conseil) notFound();
@@ -94,6 +106,15 @@ export default async function ConseilDetailPage({
         description={conseil.description ?? "Aucune description."}
         actions={
           <>
+            {!conseil.archive ? (
+              <ConfirmActionButton
+                action={duplicateConseil}
+                id={conseil.id}
+                label="Nouveau lié"
+                confirmMessage="Créer un nouveau conseil lié à celui-ci ?"
+                variant="ghost"
+              />
+            ) : null}
             {estClos && !conseil.archive ? (
               <ConfirmActionButton
                 action={reopenConseil}
@@ -126,6 +147,7 @@ export default async function ConseilDetailPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <TrackRecentView href={baseHref} label={`${conseil.code} — ${conseil.objet}`} />
       {conseil.archive ? (
         <div className="flash flash--warn" role="status">
           Ce conseil est archivé.
@@ -210,7 +232,28 @@ export default async function ConseilDetailPage({
         {conseil.raisonnement ? (
           <p className="detail-note">{conseil.raisonnement}</p>
         ) : null}
+        {conseil.conseilPrecedent ? (
+          <p className="muted">
+            Suite de{" "}
+            <Link href={`/conseils/${conseil.conseilPrecedent.id}`}>
+              {conseil.conseilPrecedent.code}
+            </Link>
+          </p>
+        ) : null}
       </EditableSection>
+
+      <section className="conseil-reponse" aria-label="Réponse / Conclusion">
+        <h3>Réponse / Conclusion</h3>
+        {conseil.reponseConclusion ? (
+          <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+            {conseil.reponseConclusion}
+          </p>
+        ) : (
+          <p className="muted" style={{ margin: 0 }}>
+            Aucune réponse formalisée — passez en Modifier pour la saisir.
+          </p>
+        )}
+      </section>
 
       <CollapsibleSection
         title="Tâches liées"
@@ -218,20 +261,17 @@ export default async function ConseilDetailPage({
         defaultOpen
       >
         {!conseil.archive ? (
-          <form
-            action={createTacheDepuisConseil}
-            className="form-actions"
-            style={{ marginBottom: "0.85rem" }}
-          >
-            <input type="hidden" name="conseilId" value={conseil.id} />
-            <SubmitButton>Créer une tâche liée</SubmitButton>
-            <BtnLink
-              href={`/taches/nouvelle?conseilId=${conseil.id}&categorie=CONSEIL&retour=/conseils/${conseil.id}`}
-              variant="ghost"
-            >
-              Formulaire complet
-            </BtnLink>
-          </form>
+          <div style={{ marginBottom: "0.85rem" }}>
+            <QuickTacheForm
+              users={users.map((u) => ({
+                id: u.id,
+                nom: formatUtilisateurNom(u),
+              }))}
+              retour={baseHref}
+              defaults={{ responsableId: conseil.responsableId }}
+              hidden={{ conseilId: conseil.id }}
+            />
+          </div>
         ) : null}
         {conseil.taches.length === 0 ? (
           <p className="empty">Aucune tâche liée.</p>
@@ -310,49 +350,31 @@ export default async function ConseilDetailPage({
         </p>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Journal d’activité" defaultOpen>
+      <NotesPanel
+        typeObjet="CONSEIL"
+        objetId={conseil.id}
+        notes={notes}
+        users={users.map((u) => ({
+          id: u.id,
+          nom: formatUtilisateurNom(u),
+        }))}
+        canEdit={canEdit}
+        baseHref={baseHref}
+      />
+
+      <JournalBordPanel
+        typeObjet="CONSEIL"
+        objetId={conseil.id}
+        entrees={journalBord}
+        canEdit={canEdit}
+        baseHref={baseHref}
+      />
+
+      <CollapsibleSection title="Historique système" defaultOpen={false} badge={journal.length || undefined}>
         <p className="muted" style={{ marginBottom: "0.65rem" }}>
-          Notes et événements (réouvertures, échanges).
+          Traçabilité automatique (création, statuts, réouvertures).
         </p>
-        {!conseil.archive ? (
-          <form action={addNoteJournal} className="entity-form">
-            <input type="hidden" name="conseilId" value={conseil.id} />
-            <label className="field" htmlFor="message">
-              <span className="field__label">Ajouter une note</span>
-              <textarea
-                id="message"
-                name="message"
-                rows={2}
-                required
-                placeholder="Ex. Relance effectuée auprès du demandeur…"
-              />
-            </label>
-            <div className="form-actions">
-              <SubmitButton>Ajouter au journal</SubmitButton>
-            </div>
-          </form>
-        ) : null}
-        {journal.length === 0 ? (
-          <p className="empty">Aucune entrée pour l&apos;instant.</p>
-        ) : (
-          <ul className="history-list" style={{ marginTop: "0.85rem" }}>
-            {journal.map((e) => (
-              <li key={e.id}>
-                <strong>
-                  {e.typeEvenement === "NOTE"
-                    ? "Note"
-                    : e.typeEvenement === "REOUVERTURE"
-                      ? "Réouverture"
-                      : e.typeEvenement}
-                </strong>
-                <span>{e.message}</span>
-                <em>
-                  {e.auteur?.nom ?? "Système"} · {formatDate(e.creeLe)}
-                </em>
-              </li>
-            ))}
-          </ul>
-        )}
+        <JournalTimeline entries={journal} />
         <p className="detail-trace" style={{ marginTop: "0.85rem" }}>
           Créé par {conseil.creePar.nom} · Modifié par {conseil.modifiePar.nom}{" "}
           · {formatDate(conseil.modifieLe)}

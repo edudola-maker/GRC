@@ -37,7 +37,6 @@ export default async function NouveauAuditPage({
       <BackLink href="/missions" label="← Retour aux missions" />
       <PageHeader
         title="Nouvelle mission"
-        description="Choisissez le type, le descriptif et le calendrier."
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">

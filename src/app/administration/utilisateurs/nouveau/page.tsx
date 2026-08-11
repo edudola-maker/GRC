@@ -26,7 +26,6 @@ export default async function NouveauUtilisateurPage({
       />
       <PageHeader
         title="Nouvel utilisateur"
-        description="Compte applicatif — mot de passe stocké en hash démo uniquement."
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">

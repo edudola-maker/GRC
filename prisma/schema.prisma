@@ -134,6 +134,18 @@ enum StatutProcessus {
   SUSPENDU
 }
 
+enum TypeNoteTravail {
+  TRAVAIL
+  SEANCE
+}
+
+enum StatutDocMission {
+  DEMANDE
+  RECU
+  ANALYSE
+}
+
+
 /// Classification LPD / confidentialité (socle — règles avancées en roadmap).
 enum NiveauConfidentialite {
   PUBLIC
@@ -264,6 +276,8 @@ model Unite {
   objectifsModule  ObjectifModule[]
   sequences        SequenceCode[]
   journal          JournalEvenement[]
+  notesTravail    NoteTravail[]
+  journalBord     JournalBordEntree[]
   historiquesModification HistoriqueModification[]
   parametres       ParametreFonctionnel[]
   liensObjets      LienObjet[]
@@ -362,6 +376,9 @@ model Utilisateur {
   journalEvenements       JournalEvenement[]
   sectionsRedaction       SectionRedaction[] @relation("SectionRedactionModifiePar")
   risquesReevaluations    RisqueReevaluation[]
+  notesTravailAuteur      NoteTravail[]      @relation("NoteTravailAuteur")
+  noteParticipants        NoteParticipant[]
+  journalBordAuteur       JournalBordEntree[] @relation("JournalBordAuteur")
 }
 
 // ─── Projet ─────────────────────────────────────────────────
@@ -450,6 +467,10 @@ model Conseil {
   commentaires      String?
   /// Raisonnement ayant conduit à l’avis (≠ journal d’activité).
   raisonnement      String?
+  /// Réponse / conclusion clairement identifiable (≠ journal, ≠ notes de travail).
+  reponseConclusion String?
+  /// Lien optionnel vers un conseil précédent (réouverture / suite).
+  conseilPrecedentId String?
   archive           Boolean       @default(false)
   creeParId         String
   modifieParId      String
@@ -461,10 +482,13 @@ model Conseil {
   responsable Utilisateur @relation("ConseilResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur @relation("ConseilCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur @relation("ConseilModifiePar", fields: [modifieParId], references: [id])
+  conseilPrecedent Conseil?  @relation("ConseilSuite", fields: [conseilPrecedentId], references: [id], onDelete: SetNull)
+  conseilsSuites   Conseil[] @relation("ConseilSuite")
   taches      Tache[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
+  @@index([conseilPrecedentId])
 }
 
 // ─── Tâche (action) ─────────────────────────────────────────
@@ -481,6 +505,10 @@ model Tache {
   missionId      String?
   documentId     String?
   recommandationId String?
+  /// Note de travail / séance à l’origine (si créée depuis une Note).
+  noteTravailId  String?
+  /// Lien optionnel vers un Risque GRC (création rapide depuis fiche risque).
+  risqueId       String?
   /// Référence informative au modèle d’origine (pas de sync rétroactive).
   modeleTacheId  String?
   dateCreation   DateTime       @default(now())
@@ -513,6 +541,8 @@ model Tache {
   mission        Mission?        @relation(fields: [missionId], references: [id], onDelete: SetNull)
   document       Document?       @relation(fields: [documentId], references: [id], onDelete: SetNull)
   recommandation Recommandation? @relation(fields: [recommandationId], references: [id], onDelete: SetNull)
+  noteTravail    NoteTravail?    @relation(fields: [noteTravailId], references: [id], onDelete: SetNull)
+  risque         Risque?         @relation(fields: [risqueId], references: [id], onDelete: SetNull)
   modeleTache    ModeleTache?    @relation(fields: [modeleTacheId], references: [id], onDelete: SetNull)
   creePar        Utilisateur     @relation("TacheCreePar", fields: [creeParId], references: [id])
   modifiePar     Utilisateur     @relation("TacheModifiePar", fields: [modifieParId], references: [id])
@@ -527,6 +557,8 @@ model Tache {
 
   @@index([uniteId, statut, dateEcheance])
   @@index([modeleTacheId])
+  @@index([noteTravailId])
+  @@index([risqueId])
 }
 
 /// Dépendance optionnelle entre tâches d’un même Projet (activation progressive).
@@ -684,6 +716,9 @@ model Risque {
   processusRef Processus?      @relation(fields: [processusId], references: [id], onDelete: SetNull)
   controles   RisqueControle[]
   reevaluations RisqueReevaluation[]
+
+  taches         Tache[]
+  missionRisques MissionRisque[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, criticite])
@@ -892,6 +927,9 @@ model Mission {
   recommandations  Recommandation[]
   checklistItems   MissionChecklistItem[]
   validationPoints MissionValidationPoint[]
+  objectifsMission MissionObjectif[]
+  risquesMission   MissionRisque[]
+  documentationDemandee MissionDocumentation[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1328,6 +1366,132 @@ model JournalEvenement {
   @@index([typeObjet, objetId, creeLe])
   @@index([uniteId, creeLe])
 }
+
+
+// ─── Notes de travail / Séances (transversal Projet, Conseil, Mission) ───
+
+/// Note de travail ou séance — espace de préparation / capture.
+/// Distincte du Journal de bord (chronologie métier) et du Journal système.
+model NoteTravail {
+  id           String         @id @default(cuid())
+  uniteId      String
+  typeObjet    TypeObjetMetier
+  objetId      String
+  titre        String
+  date         DateTime       @default(now())
+  type         TypeNoteTravail @default(TRAVAIL)
+  /// Rattachement optionnel à une étape Mission (ex. PLANIFICATION).
+  etapeMission String?
+  notesLibres  String?
+  auteurId     String
+  creeLe       DateTime       @default(now())
+  modifieLe    DateTime       @updatedAt
+
+  unite        Unite            @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+  auteur       Utilisateur      @relation("NoteTravailAuteur", fields: [auteurId], references: [id])
+  questions    NoteQuestion[]
+  participants NoteParticipant[]
+  taches       Tache[]
+
+  @@index([typeObjet, objetId, date])
+  @@index([uniteId, date])
+  @@index([etapeMission])
+}
+
+model NoteQuestion {
+  id       String  @id @default(cuid())
+  noteId   String
+  libelle  String
+  reponse  String?
+  ordre    Int     @default(0)
+
+  note NoteTravail @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, ordre])
+}
+
+model NoteParticipant {
+  id            String  @id @default(cuid())
+  noteId        String
+  /// Utilisateur interne (optionnel).
+  utilisateurId String?
+  /// Personne externe saisie librement (audité, partenaire…).
+  nomExterne    String?
+
+  note        NoteTravail  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur? @relation(fields: [utilisateurId], references: [id], onDelete: SetNull)
+
+  @@index([noteId])
+}
+
+// ─── Journal de bord métier (volontaire) ─────────────────────
+
+/// Chronologie métier volontaire — ≠ Notes (espace de travail) ≠ JournalEvenement (système).
+model JournalBordEntree {
+  id       String         @id @default(cuid())
+  uniteId  String
+  typeObjet TypeObjetMetier
+  objetId  String
+  date     DateTime
+  texte    String
+  auteurId String
+  /// Lien optionnel si issue d’une tâche clôturée (« Ajouter au journal »).
+  tacheId  String?
+  creeLe   DateTime       @default(now())
+
+  unite  Unite       @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+  auteur Utilisateur @relation("JournalBordAuteur", fields: [auteurId], references: [id])
+
+  @@index([typeObjet, objetId, date])
+  @@index([uniteId, date])
+  @@index([tacheId])
+}
+
+// ─── Planification Mission — enrichissements ─────────────────
+
+model MissionObjectif {
+  id          String  @id @default(cuid())
+  missionId   String
+  libelle     String
+  description String?
+  ordre       Int     @default(0)
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([missionId, ordre])
+}
+
+/// Risque propre à la mission (≠ Risque GRC référentiel). Lien GRC facultatif.
+model MissionRisque {
+  id          String  @id @default(cuid())
+  missionId   String
+  titre       String
+  description String?
+  risqueId    String?
+  ordre       Int     @default(0)
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  risque  Risque? @relation(fields: [risqueId], references: [id], onDelete: SetNull)
+
+  @@index([missionId, ordre])
+  @@index([risqueId])
+}
+
+model MissionDocumentation {
+  id               String           @id @default(cuid())
+  missionId        String
+  documentAttendu  String
+  interlocuteur    String?
+  dateDemandee     DateTime?
+  dateRecue        DateTime?
+  statut           StatutDocMission @default(DEMANDE)
+  ordre            Int              @default(0)
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([missionId, ordre])
+}
+
 
 /// Historique de contenu générique (diffs champ-par-champ).
 /// Phase 1 : pas de snapshot JSON, pas de purge automatique.

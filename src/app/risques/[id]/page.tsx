@@ -12,6 +12,8 @@ import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader } from "@/components/ui";
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
+import { QuickTacheForm } from "@/components/taches/QuickTacheForm";
 import { RisqueReevaluationForm } from "@/components/risques/RisqueReevaluationForm";
 import { archiveRisque, deleteRisque, updateRisque } from "../actions";
 import { listerHistorique } from "@/lib/historique";
@@ -33,8 +35,7 @@ import { parseTags } from "@/lib/tags";
 import {
   formatUtilisateurNom,
   getCurrentUser,
-  listUtilisateursActifsForCurrentUnite,
-} from "@/lib/session";
+  listUtilisateursActifsForCurrentUnite,} from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -127,6 +128,10 @@ export default async function RisqueDetailPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <TrackRecentView
+        href={`/risques/${risque.id}`}
+        label={`${risque.code} — ${risque.nom}`}
+      />
 
       {risque.archive ? (
         <div className="flash flash--warn" role="status">
@@ -290,6 +295,20 @@ export default async function RisqueDetailPage({
           wrapInSection={false}
         />
       </EditableSection>
+
+      {!risque.archive ? (
+        <CollapsibleSection title="Actions" defaultOpen>
+          <QuickTacheForm
+            users={users.map((u) => ({
+              id: u.id,
+              nom: formatUtilisateurNom(u),
+            }))}
+            retour={`/risques/${risque.id}`}
+            defaults={{ responsableId: risque.responsableId }}
+            hidden={{ risqueId: risque.id }}
+          />
+        </CollapsibleSection>
+      ) : null}
 
       <CollapsibleSection title="Tags" defaultOpen>
         <p style={{ margin: 0 }}>

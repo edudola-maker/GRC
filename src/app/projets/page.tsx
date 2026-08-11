@@ -121,7 +121,6 @@ export default async function ProjetsPage({
     <>
       <PageHeader
         title="Projets"
-        description="Initiatives structurées — du statut Idée à la clôture."
         help={<ModuleHelp {...MODULE_HELP.projets} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

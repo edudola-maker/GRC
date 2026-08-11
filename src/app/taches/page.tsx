@@ -178,7 +178,6 @@ export default async function TachesInventoryPage({
     <>
       <PageHeader
         title="Tâches"
-        description="Inventaire transversal — les tâches Projet en attente de prérequis sont masquées par défaut (pas d’action opérationnelle)."
         help={<ModuleHelp {...MODULE_HELP.taches} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

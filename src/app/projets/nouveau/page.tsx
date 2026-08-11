@@ -21,7 +21,6 @@ export default async function NouveauProjetPage({
       <BackLink href="/projets" label="← Retour aux projets" />
       <PageHeader
         title="Nouveau projet"
-        description="Renseignez les informations essentielles. Vous pourrez y rattacher des tâches ensuite."
         help={<ModuleHelp {...MODULE_HELP.projets} />}
       />
       <FlashBanner erreur={sp.erreur} />

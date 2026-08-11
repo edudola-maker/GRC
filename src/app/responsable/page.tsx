@@ -3,12 +3,20 @@ import { notFound } from "next/navigation";
 import { ActionRow } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { ModuleHelp } from "@/components/ModuleHelp";
+import {
+  AttentionCounters,
+  DonutChart,
+  HBarChart,
+  TimeBuckets,
+} from "@/components/dashboard/RespCharts";
 import { PageHeader } from "@/components/ui";
 import { getActionsUnite } from "@/lib/actions-view";
 import { getDashboardResponsable } from "@/lib/dashboard-responsable";
 import {
   PRIORITE_OPTIONS,
   STATUT_TACHE_OPTIONS,
+  TACHE_STATUTS_CLOS,
 } from "@/lib/catalog";
 import {
   CATEGORIE_RISQUE_LABELS,
@@ -85,7 +93,13 @@ export default async function DashboardResponsablePage({
     sp.rag === "vert" || sp.rag === "jaune" || sp.rag === "rouge"
       ? sp.rag
       : null;
-  const [data, users, monitoring, objectifsModule, unite] = await Promise.all([
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const in7 = new Date(today);
+  in7.setDate(in7.getDate() + 7);
+
+  const [data, users, monitoring, objectifsModule, unite, auditsActifs, revuesActives, conseilsRetard, tachesSemaine, tachesPlus] =
+    await Promise.all([
     getDashboardResponsable(user.uniteId),
     listUtilisateursActifsForCurrentUnite(),
     getActionsUnite(user.uniteId, {
@@ -102,6 +116,44 @@ export default async function DashboardResponsablePage({
     prisma.unite.findUnique({
       where: { id: user.uniteId },
       select: { nom: true, code: true },
+    }),
+    prisma.mission.count({
+      where: {
+        uniteId: user.uniteId,
+        archive: false,
+        statut: { in: ["EN_COURS", "EN_REVUE", "PLANIFIE"] },
+        type: { code: { startsWith: "AUDIT" } },
+      },
+    }),
+    prisma.mission.count({
+      where: {
+        uniteId: user.uniteId,
+        archive: false,
+        statut: { in: ["EN_COURS", "EN_REVUE", "PLANIFIE"] },
+        type: { code: { startsWith: "REVUE" } },
+      },
+    }),
+    prisma.conseil.count({
+      where: {
+        uniteId: user.uniteId,
+        archive: false,
+        statut: { notIn: ["REPONDU", "CLOTURE", "ANNULE"] },
+        dateEcheance: { lt: today },
+      },
+    }),
+    prisma.tache.count({
+      where: {
+        uniteId: user.uniteId,
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        dateEcheance: { gte: today, lte: in7 },
+      },
+    }),
+    prisma.tache.count({
+      where: {
+        uniteId: user.uniteId,
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        dateEcheance: { gt: in7 },
+      },
     }),
   ]);
 
@@ -123,53 +175,161 @@ export default async function DashboardResponsablePage({
   return (
     <>
       <PageHeader
-        title="Dashboard responsable"
-        description={`Comment va mon unité${unite ? ` (${unite.nom})` : ""} ? Vue consolidée — les objectifs et KPI sont définis par chaque module.`}
-        badge="Vue de pilotage"
+        title="Cockpit responsable"
+        help={
+          <ModuleHelp
+            title="Dashboard responsable"
+            body="Monitoring de l’unité : charge, échéances, activité. Chaque indicateur mène à l’inventaire filtré."
+          />
+        }
+        badge="Pilotage"
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <CollapsibleSection title="Vue synthétique" defaultOpen>
-        <div className="kpi-domains">
-          <article className="kpi-domain">
-            <h3>Audits</h3>
-            <p>
-              <strong>{s.auditsEnCours}</strong> en cours ·{" "}
-              <strong>{s.auditsRealises}</strong> réalisés
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Conseils</h3>
-            <p>
-              <strong>{s.conseilsOuverts}</strong> ouverts · respect délai{" "}
-              <strong>{s.tauxRespectDelai ?? "—"}</strong>
-              {s.tauxRespectDelai != null ? " %" : ""}
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Projets</h3>
-            <p>
-              <strong>{s.projetsActifs}</strong> actifs ·{" "}
-              <strong>{s.projetsEnRetard}</strong> en retard
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Contrôles SCI</h3>
-            <p>
-              <strong>{s.controlesPrevus}</strong> actifs ·{" "}
-              <strong>{s.controlesEnRetard}</strong> échéances en retard ·{" "}
-              <strong>{s.controlesRealises}</strong> occurrences réalisées
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Risques</h3>
-            <p>
-              <strong>{s.risquesCritiques}</strong> critiques ·{" "}
-              <strong>{s.risquesEleves}</strong> élevés
-            </p>
-          </article>
+      <AttentionCounters
+        items={[
+          {
+            key: "retard",
+            value: s.actionsEnRetard ?? 0,
+            label: "en retard",
+            href: "/taches?filtre=retard",
+            tone: (s.actionsEnRetard ?? 0) > 0 ? "danger" : "default",
+          },
+          {
+            key: "conseils-retard",
+            value: conseilsRetard,
+            label: "conseils à traiter",
+            href: "/conseils?filtre=retard",
+            tone: conseilsRetard > 0 ? "warn" : "default",
+          },
+          {
+            key: "sci",
+            value: s.controlesEnRetard,
+            label: "contrôles échus",
+            href: "/controles-sci?filtre=retard",
+            tone: s.controlesEnRetard > 0 ? "danger" : "default",
+          },
+          {
+            key: "risques",
+            value: s.risquesCritiques,
+            label: "risques critiques",
+            href: "/risques?filtre=critiques",
+            tone: s.risquesCritiques > 0 ? "danger" : "default",
+          },
+        ]}
+      />
+
+      <section className="resp-cockpit" aria-label="Vue cockpit">
+        <div className="resp-block">
+          <h3>Répartition de l’activité</h3>
+          <DonutChart
+            centerLabel="ouverts"
+            slices={[
+              {
+                key: "audits",
+                label: "Audits",
+                value: auditsActifs,
+                href: "/missions?famille=audits",
+                color: "#3d6b4f",
+              },
+              {
+                key: "revues",
+                label: "Revues",
+                value: revuesActives,
+                href: "/missions?famille=revues",
+                color: "#6a8f74",
+              },
+              {
+                key: "conseils",
+                label: "Conseils",
+                value: s.conseilsOuverts,
+                href: "/conseils?filtre=ouverts",
+                color: "#2a6f9e",
+              },
+              {
+                key: "projets",
+                label: "Projets",
+                value: s.projetsActifs,
+                href: "/projets",
+                color: "#c48a2a",
+              },
+            ]}
+          />
         </div>
-      </CollapsibleSection>
+
+        <div className="resp-block">
+          <h3>Charge de l’équipe</h3>
+          <HBarChart
+            items={users.slice(0, 8).map((u) => {
+              const n = chargeMap.get(u.id) ?? 0;
+              return {
+                key: u.id,
+                label: u.nom,
+                value: n,
+                href: `/responsable?collaborateur=${u.id}`,
+                tone: n > 5 ? "warn" : "default",
+              };
+            })}
+          />
+        </div>
+
+        <div className="resp-block">
+          <h3>Échéances</h3>
+          <TimeBuckets
+            items={[
+              {
+                key: "retard",
+                label: "En retard",
+                value: s.actionsEnRetard ?? 0,
+                href: "/taches?filtre=retard",
+                tone: "danger",
+              },
+              {
+                key: "semaine",
+                label: "7 jours",
+                value: tachesSemaine,
+                href: "/taches",
+                tone: "warn",
+              },
+              {
+                key: "plus",
+                label: "Plus loin",
+                value: tachesPlus,
+                href: "/taches",
+                tone: "info",
+              },
+              {
+                key: "sci",
+                label: "SCI échus",
+                value: s.controlesEnRetard,
+                href: "/controles-sci?filtre=retard",
+                tone: s.controlesEnRetard > 0 ? "danger" : "default",
+              },
+            ]}
+          />
+        </div>
+
+        <div className="resp-block">
+          <h3>Objectifs annuels</h3>
+          <HBarChart
+            items={objectifsModule.slice(0, 6).map((o) => ({
+              key: o.id,
+              label: o.libelle,
+              value: o.progression ?? 0,
+              href: "/unite#objectifs",
+              tone: (o.progression ?? 0) < 40 ? "warn" : "default",
+            }))}
+            max={100}
+          />
+          {objectifsModule.length === 0 ? (
+            <p className="muted">Aucun objectif module défini.</p>
+          ) : (
+            <p className="muted" style={{ marginTop: "0.5rem" }}>
+              Progression en % de la cible (cliquable).
+            </p>
+          )}
+        </div>
+      </section>
 
       <CollapsibleSection
         title="Que fait actuellement l'unité ?"

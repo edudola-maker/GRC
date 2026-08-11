@@ -43,7 +43,6 @@ export default function AdminRolesPage() {
       <BackLink href="/administration" label="← Retour à l’administration" />
       <PageHeader
         title="Rôles"
-        description="Rôles applicatifs (compte) — distincts des rôles portés dans une mission d’assurance."
       />
 
       <section className="admin-roles">

@@ -115,7 +115,6 @@ export default async function DocumentsPage({
     <>
       <PageHeader
         title="Documents"
-        description="Inventaire et planification des revues — contenu dans Confluence."
         help={<ModuleHelp {...MODULE_HELP.documents} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

@@ -8,7 +8,7 @@ import {
   RisqueInventory,
   type RisqueInventoryItem,
 } from "@/components/risques/RisqueInventory";
-import { MODULE_HELP, RISQUE_STATUTS_MAITRISES } from "@/lib/catalog";
+import { MODULE_HELP } from "@/lib/catalog";
 import {
   CATEGORIE_RISQUE_LABELS,
   STATUT_RISQUE_LABELS,
@@ -46,9 +46,6 @@ export default async function RisquesPage({
   const critiques = actifs.filter((r) => r.criticite >= 20).length;
   const eleves = actifs.filter(
     (r) => r.criticite >= 12 && r.criticite < 20,
-  ).length;
-  const maitrises = actifs.filter((r) =>
-    (RISQUE_STATUTS_MAITRISES as readonly string[]).includes(r.statut),
   ).length;
   const sansStrategie = actifs.filter((r) => !r.strategie).length;
 
@@ -122,31 +119,26 @@ export default async function RisquesPage({
         : undefined;
 
   const kpiItems: PilotageItem[] = [
-    { value: total, label: "total" },
-    { value: eleves, label: "élevés" },
-    { value: maitrises, label: "maîtrisés", tone: "ok" },
     {
       value: critiques,
-      label: "à traiter",
+      label: "critiques",
       tone: critiques > 0 ? "danger" : "default",
       href: critiques > 0 ? "?filtre=critiques#inventaire" : undefined,
     },
-  ];
-
-  if (sansStrategie > 0) {
-    kpiItems.splice(2, 0, {
+    { value: eleves, label: "élevés" },
+    {
       value: sansStrategie,
       label: "sans stratégie",
-      tone: "warn",
-      href: "?filtre=sans_strategie#inventaire",
-    });
-  }
+      tone: sansStrategie > 0 ? "warn" : "default",
+      href: sansStrategie > 0 ? "?filtre=sans_strategie#inventaire" : undefined,
+    },
+    { value: total, label: "total" },
+  ];
 
   return (
     <>
       <PageHeader
         title="Risques"
-        description="Cartographie des risques — criticité = probabilité × impact."
         help={<ModuleHelp {...MODULE_HELP.risques} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

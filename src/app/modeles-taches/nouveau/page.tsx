@@ -21,7 +21,6 @@ export default async function NouveauModeleTachePage({
       <BackLink href="/modeles-taches" label="← Retour aux modèles" />
       <PageHeader
         title="Nouveau modèle de tâche"
-        description="Définissez le référentiel ; la checklist sera copiée à chaque création de tâche."
         help={<ModuleHelp {...MODULE_HELP.modelesTaches} />}
       />
       <FlashBanner erreur={sp.erreur} />

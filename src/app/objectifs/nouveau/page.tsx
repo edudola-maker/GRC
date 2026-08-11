@@ -21,7 +21,6 @@ export default async function NouveauObjectifPage({
       <BackLink href="/unite" label="← Retour à l’unité" />
       <PageHeader
         title="Nouvel objectif"
-        description="Objectif stratégique de l’unité — le pourquoi. Liez ensuite les objets qui y contribuent."
         help={<ModuleHelp {...MODULE_HELP.objectifs} />}
       />
       <FlashBanner erreur={sp.erreur} />

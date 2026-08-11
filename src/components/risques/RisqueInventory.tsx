@@ -8,6 +8,7 @@ import {
   filterByQuery,
   useInventorySearch,
 } from "@/components/inventory/InventoryBrowser";
+import { InventoryCreateLink } from "@/components/inventory/InventoryCreateLink";
 import {
   InventoryEmpty,
   InventoryList,
@@ -157,9 +158,7 @@ export function RisqueInventory({
       canResetFilters={canReset}
       createAction={
         createHref && createLabel ? (
-          <Link className="btn" href={createHref}>
-            {createLabel}
-          </Link>
+          <InventoryCreateLink href={createHref} label={createLabel} />
         ) : undefined
       }
       quickFilters={
