@@ -12,6 +12,7 @@ export const TYPE_EVENEMENT = {
   NOTE: "NOTE",
   LIEN: "LIEN",
   VALIDATION: "VALIDATION",
+  REEVALUATION: "REEVALUATION",
 } as const;
 
 export const TYPE_EVENEMENT_LABELS: Record<string, string> = {
@@ -24,6 +25,7 @@ export const TYPE_EVENEMENT_LABELS: Record<string, string> = {
   NOTE: "Note",
   LIEN: "Liaison",
   VALIDATION: "Validation",
+  REEVALUATION: "Réévaluation",
 };
 
 export async function ajouterJournal(params: {

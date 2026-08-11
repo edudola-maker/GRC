@@ -7,11 +7,15 @@ import {
 import { addDays, startOfToday, SOON_DAYS } from "@/lib/labels";
 import { businessDaysBetween, endOfMonth, endOfWeek } from "@/lib/dates";
 import { getConseilDelaiCibleJours } from "@/lib/referentiels";
+import { getBlockedTacheIdsForUnite } from "@/lib/tache-dependances";
 
 export async function getPilotageDashboard(uniteId: string) {
   const today = startOfToday();
   const soon = addDays(today, SOON_DAYS);
   const delaiCible = await getConseilDelaiCibleJours(uniteId);
+  const blockedIds = await getBlockedTacheIdsForUnite(uniteId);
+  const tacheActiveFilter =
+    blockedIds.length > 0 ? { id: { notIn: blockedIds } } : {};
 
   const [
     auditsEnCours,
@@ -147,6 +151,7 @@ export async function getPilotageDashboard(uniteId: string) {
       where: {
         uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        ...tacheActiveFilter,
       },
     }),
     prisma.tache.count({
@@ -154,14 +159,18 @@ export async function getPilotageDashboard(uniteId: string) {
         uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { lt: today },
+        ...tacheActiveFilter,
       },
     }),
-    prisma.tache.count({ where: { uniteId, statut: "A_VALIDER" } }),
+    prisma.tache.count({
+      where: { uniteId, statut: "A_VALIDER", ...tacheActiveFilter },
+    }),
     prisma.tache.findMany({
       where: {
         uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { lt: today },
+        ...tacheActiveFilter,
       },
       include: { responsable: true, projet: true, conseil: true },
       orderBy: { dateEcheance: "asc" },
@@ -172,13 +181,14 @@ export async function getPilotageDashboard(uniteId: string) {
         uniteId,
         statut: { notIn: [...TACHE_STATUTS_CLOS] },
         dateEcheance: { gte: today, lte: soon },
+        ...tacheActiveFilter,
       },
       include: { responsable: true, projet: true, conseil: true },
       orderBy: { dateEcheance: "asc" },
       take: 8,
     }),
     prisma.tache.findMany({
-      where: { uniteId, statut: "A_VALIDER" },
+      where: { uniteId, statut: "A_VALIDER", ...tacheActiveFilter },
       include: { responsable: true, soumisPar: true, projet: true },
       orderBy: { dateSoumission: "asc" },
       take: 6,

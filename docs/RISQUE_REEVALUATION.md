@@ -1,6 +1,6 @@
-# Architecture proposée — réévaluation des risques
+# Architecture — réévaluation des risques
 
-> Proposition simple avant nouveau référentiel lourd.
+> Implémenté (Phase 1). Distinct de l’Historique de contenu.
 
 ## Besoin
 
@@ -10,11 +10,7 @@ Documenter une réévaluation périodique **même si la note ne change pas** :
 - ancienne / nouvelle évaluation (P, I, résiduel)
 - commentaire / réflexion
 
-## Modélisation recommandée (légère)
-
-**Option A (préférée Phase 1) — événement + snapshot dans le journal**
-
-`JournalEvenement` avec `typeEvenement = REEVALUATION` et message structuré, **plus** une entrée JSON courte en `message` ou table mince :
+## Modèle
 
 ```
 RisqueReevaluation
@@ -28,20 +24,25 @@ RisqueReevaluation
   creeLe
 ```
 
-- Si les notes changent → aussi `HistoriqueModification` (diffs de champs) + bump `contenuVersion`.
-- Si les notes **ne changent pas** → uniquement `RisqueReevaluation` + journal `REEVALUATION` (pas de faux diff).
+## Règles
+
+| Situation | Effets |
+|-----------|--------|
+| Notes **inchangées** | `RisqueReevaluation` + journal `REEVALUATION` — **pas** d’entrée Historique |
+| Notes **modifiées** | Idem + maj des champs risque + `HistoriqueModification` + bump `contenuVersion` |
 
 ## Distinction
 
-| Flux | Quand |
-|------|--------|
-| **Historique** | Changement de valeur de champ |
-| **Journal / réévaluation** | Acte métier « j’ai réévalué », avec réflexion |
+| Flux | Rôle |
+|------|------|
+| **Réévaluation** | Acte métier « j’ai revu le risque » |
+| **Historique** | Diffs de champs (qui / quand / avant → après) |
+| **Journal** | Événements fonctionnels (dont `REEVALUATION` résumé) |
 
 ## UI
 
-Action « Documenter une réévaluation » sur la fiche Risque → formulaire court → liste chronologique sous Journal ou box « Réévaluations ».
+Fiche Risque → section **Réévaluations** (`?edit=REEVALUATION`) : formulaire court + liste chronologique.
 
-## Hors scope immédiat
+## Hors scope
 
-Pas de calendrier automatique de revue ni de module LPD dédié ; lien futur avec conservation / Protection des données.
+Calendrier automatique de revue ; conservation LPD paramétrique (Protection des données).

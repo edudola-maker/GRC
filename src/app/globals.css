@@ -3165,3 +3165,66 @@ a {
 .mission-famille-tabs a {
   text-decoration: none;
 }
+
+.projet-taches-table__head,
+.projet-taches-table__row--static {
+  grid-template-columns: minmax(8rem, 1.5fr) 6.5rem 7.5rem 3.2rem 5.5rem minmax(7rem, 1fr) minmax(5rem, 0.9fr);
+}
+.projet-taches-table__row--static {
+  display: grid;
+  gap: 0.4rem 0.65rem;
+  align-items: start;
+  padding: 0.55rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.projet-taches-table__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-decoration: none;
+  color: inherit;
+}
+.projet-tache-prerequis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.projet-tache-prerequis select {
+  max-width: 100%;
+  font-size: 0.8rem;
+}
+.tag--warn {
+  display: inline-block;
+  background: #f5f0d8;
+  color: #5c4a12;
+  font-size: 0.72rem;
+  font-weight: 650;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.reevaluation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.reevaluation-item {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.reevaluation-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.reevaluation-item__head {
+  margin-bottom: 0.35rem;
+}
+.reevaluation-item__scores {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}

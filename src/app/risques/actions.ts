@@ -9,7 +9,7 @@ import {
   STRATEGIE_RISQUE_OPTIONS,
 } from "@/lib/catalog";
 import { assertNomUnique, nextCode } from "@/lib/codes";
-import { optInt, optStr, str } from "@/lib/form";
+import { optDate, optInt, optStr, str } from "@/lib/form";
 import {
   diffChamps,
   enregistrerModifications,
@@ -486,4 +486,194 @@ export async function setRisqueControles(formData: FormData) {
 
   revalidateApp([`/risques/${risqueId}`, `/risques/${risqueId}?edit=INFOS_GENERALES`]);
   redirectWithOk(retour, "lien");
+}
+
+/**
+ * Documente un acte de réévaluation (même si les notes ne changent pas).
+ * Si P/I (inhérent / résiduel) changent → maj risque + HistoriqueModification.
+ * Toujours : RisqueReevaluation + journal REEVALUATION.
+ */
+export async function documenterReevaluationRisque(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/risques", "Identifiant risque manquant.");
+
+  const existing = await prisma.risque.findUnique({ where: { id } });
+  if (!existing) redirectWithError("/risques", "Risque introuvable.");
+  if (existing.archive) {
+    redirectWithError(`/risques/${id}`, "Risque archivé — réévaluation impossible.");
+  }
+
+  const dateReevaluation = optDate(formData, "dateReevaluation");
+  if (!dateReevaluation) {
+    redirectWithError(
+      `/risques/${id}?edit=REEVALUATION`,
+      "Date de réévaluation requise.",
+    );
+  }
+
+  const probabilite = parseEchelle(formData, "probabilite", existing.probabilite);
+  const impact = parseEchelle(formData, "impact", existing.impact);
+  if (probabilite == null || impact == null) {
+    redirectWithError(
+      `/risques/${id}?edit=REEVALUATION`,
+      "Probabilité et impact inhérents doivent être entre 1 et 5.",
+    );
+  }
+
+  const commentaire = str(formData, "commentaire");
+  if (!commentaire) {
+    redirectWithError(
+      `/risques/${id}?edit=REEVALUATION`,
+      "Le commentaire de réévaluation est obligatoire.",
+    );
+  }
+
+  const rawPRes = str(formData, "probabiliteResiduelle");
+  const rawIRes = str(formData, "impactResiduel");
+  let probabiliteResiduelle: number | null = null;
+  let impactResiduel: number | null = null;
+  if (rawPRes) {
+    const n = Number.parseInt(rawPRes, 10);
+    if (!ECHELLE.has(n)) {
+      redirectWithError(
+        `/risques/${id}?edit=REEVALUATION`,
+        "Probabilité résiduelle invalide.",
+      );
+    }
+    probabiliteResiduelle = n;
+  }
+  if (rawIRes) {
+    const n = Number.parseInt(rawIRes, 10);
+    if (!ECHELLE.has(n)) {
+      redirectWithError(
+        `/risques/${id}?edit=REEVALUATION`,
+        "Impact résiduel invalide.",
+      );
+    }
+    impactResiduel = n;
+  }
+  if (
+    (probabiliteResiduelle == null) !== (impactResiduel == null)
+  ) {
+    redirectWithError(
+      `/risques/${id}?edit=REEVALUATION`,
+      "Renseigner P et I résiduels ensemble, ou laisser les deux vides.",
+    );
+  }
+
+  const criticite = probabilite * impact;
+  const criticiteResiduelle =
+    probabiliteResiduelle != null && impactResiduel != null
+      ? probabiliteResiduelle * impactResiduel
+      : null;
+
+  const scoresChanged =
+    existing.probabilite !== probabilite ||
+    existing.impact !== impact ||
+    existing.probabiliteResiduelle !== probabiliteResiduelle ||
+    existing.impactResiduel !== impactResiduel;
+
+  const nextVersion = scoresChanged
+    ? existing.contenuVersion + 1
+    : existing.contenuVersion;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.risqueReevaluation.create({
+      data: {
+        risqueId: id,
+        uniteId: existing.uniteId,
+        dateReevaluation,
+        auteurId: current.id,
+        probabiliteAvant: existing.probabilite,
+        impactAvant: existing.impact,
+        criticiteAvant: existing.criticite,
+        probabiliteApres: probabilite,
+        impactApres: impact,
+        criticiteApres: criticite,
+        probabiliteResiduelleAvant: existing.probabiliteResiduelle,
+        impactResiduelAvant: existing.impactResiduel,
+        criticiteResiduelleAvant: existing.criticiteResiduelle,
+        probabiliteResiduelleApres: probabiliteResiduelle,
+        impactResiduelApres: impactResiduel,
+        criticiteResiduelleApres: criticiteResiduelle,
+        commentaire,
+      },
+    });
+
+    if (scoresChanged) {
+      await tx.risque.update({
+        where: { id },
+        data: {
+          probabilite,
+          impact,
+          criticite,
+          probabiliteResiduelle,
+          impactResiduel,
+          criticiteResiduelle,
+          modifieParId: current.id,
+          contenuVersion: nextVersion,
+        },
+      });
+    } else {
+      await tx.risque.update({
+        where: { id },
+        data: { modifieParId: current.id },
+      });
+    }
+  });
+
+  if (scoresChanged) {
+    await enregistrerModifications({
+      typeObjet: "RISQUE",
+      objetId: id,
+      uniteId: existing.uniteId,
+      modifieParId: current.id,
+      changes: diffChamps([
+        { champ: "probabilite", avant: existing.probabilite, apres: probabilite },
+        { champ: "impact", avant: existing.impact, apres: impact },
+        { champ: "criticite", avant: existing.criticite, apres: criticite },
+        {
+          champ: "probabiliteResiduelle",
+          avant: existing.probabiliteResiduelle,
+          apres: probabiliteResiduelle,
+        },
+        {
+          champ: "impactResiduel",
+          avant: existing.impactResiduel,
+          apres: impactResiduel,
+        },
+        {
+          champ: "criticiteResiduelle",
+          avant: existing.criticiteResiduelle,
+          apres: criticiteResiduelle,
+        },
+      ]),
+      versionObjet: nextVersion,
+    });
+  }
+
+  const fmt = (p: number, i: number, c: number) => `P${p}·I${i}·${c}`;
+  const inhAvant = fmt(
+    existing.probabilite,
+    existing.impact,
+    existing.criticite,
+  );
+  const inhApres = fmt(probabilite, impact, criticite);
+  const resLabel = (p: number | null, i: number | null, c: number | null) =>
+    p != null && i != null && c != null ? fmt(p, i, c) : "non renseigné";
+
+  await ajouterJournal({
+    typeObjet: "RISQUE",
+    objetId: id,
+    uniteId: existing.uniteId,
+    typeEvenement: TYPE_EVENEMENT.REEVALUATION,
+    message: scoresChanged
+      ? `Réévaluation : inhérent ${inhAvant} → ${inhApres} ; résiduel ${resLabel(existing.probabiliteResiduelle, existing.impactResiduel, existing.criticiteResiduelle)} → ${resLabel(probabiliteResiduelle, impactResiduel, criticiteResiduelle)}.`
+      : `Réévaluation sans changement de notes (inhérent ${inhApres} ; résiduel ${resLabel(probabiliteResiduelle, impactResiduel, criticiteResiduelle)}).`,
+    auteurId: current.id,
+  });
+
+  revalidateApp([`/risques/${id}`, `/risques/${id}?edit=REEVALUATION`]);
+  redirectWithOk(`/risques/${id}`, "reevaluation");
 }

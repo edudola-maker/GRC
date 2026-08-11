@@ -258,12 +258,13 @@ Voir [`docs/MISSIONS_ARCHITECTURE.md`](./docs/MISSIONS_ARCHITECTURE.md).
 
 Voir [`docs/PROJET_TACHES_DEPENDANCES.md`](./docs/PROJET_TACHES_DEPENDANCES.md).
 
-Socle livré / en cours : plages dates, charge jours, commentaire, box Tâches unique, priorité masquée en contexte Projet.  
-Dépendances / activation progressive : modèle `TacheDependance` proposé, pas encore implémenté.
+Socle livré : plages dates, charge jours, commentaire, box Tâches unique, priorité masquée en contexte Projet.  
+Dépendances / activation progressive : modèle `TacheDependance` **implémenté** (badge « En attente du prérequis » sur fiche Projet ; exclusion Dashboard / inventaire par défaut ; `?planifiees=1`).
 
-### 5septies-quater. Risques — réévaluation (roadmap proche)
+### 5septies-quater. Risques — réévaluation
 
-Voir [`docs/RISQUE_REEVALUATION.md`](./docs/RISQUE_REEVALUATION.md). Acte métier distinct de l’historique de champs.
+Voir [`docs/RISQUE_REEVALUATION.md`](./docs/RISQUE_REEVALUATION.md).  
+Acte métier `RisqueReevaluation` **implémenté** (distinct de l’historique de champs ; traçable même sans changement de notes).
 
 ### 5octies. Versioning / historique (chantier structurant)
 

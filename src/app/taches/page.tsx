@@ -15,6 +15,7 @@ import {
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { formatUtilisateurNom, getCurrentUser } from "@/lib/session";
+import { getActivationByTacheIds } from "@/lib/tache-dependances";
 
 export const dynamic = "force-dynamic";
 
@@ -84,10 +85,17 @@ function sourceOf(t: {
 export default async function TachesInventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; filtre?: string }>;
+  searchParams: Promise<{
+    ok?: string;
+    erreur?: string;
+    filtre?: string;
+    /** Inclure les tâches Projet encore en attente de prérequis */
+    planifiees?: string;
+  }>;
 }) {
   const sp = await searchParams;
   await getCurrentUser();
+  const inclurePlanifiees = sp.planifiees === "1";
   // Inventaire transversal : toutes les tâches, indépendamment de l’objet
   // d’origine. Le Dashboard reste la vue personnelle ; ici on filtre.
   const [taches, unites] = await Promise.all([
@@ -111,7 +119,12 @@ export default async function TachesInventoryPage({
     }),
   ]);
 
-  const items: TacheInventoryItem[] = taches.map((t) => {
+  const activation = await getActivationByTacheIds(taches.map((t) => t.id));
+  const tachesVisibles = inclurePlanifiees
+    ? taches
+    : taches.filter((t) => activation.get(t.id)?.active !== false);
+
+  const items: TacheInventoryItem[] = tachesVisibles.map((t) => {
     const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(t.statut);
     const estOuverte = !clos;
     const estTerminee = t.statut === "TERMINE";
@@ -143,6 +156,7 @@ export default async function TachesInventoryPage({
   const ouvertes = items.filter((t) => t.estOuverte).length;
   const enRetard = items.filter((t) => t.estRetard).length;
   const terminees = items.filter((t) => t.estTerminee).length;
+  const nbBloquees = taches.length - tachesVisibles.length;
 
   const responsables = Array.from(
     new Map(
@@ -164,11 +178,27 @@ export default async function TachesInventoryPage({
     <>
       <PageHeader
         title="Tâches"
-        description="Inventaire transversal — le Dashboard reste la vue personnelle du quotidien."
+        description="Inventaire transversal — les tâches Projet en attente de prérequis sont masquées par défaut (pas d’action opérationnelle)."
         help={<ModuleHelp {...MODULE_HELP.taches} />}
         actions={<BtnLink href="/taches/nouvelle">Nouvelle tâche</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+
+      <p className="muted" style={{ marginTop: 0 }}>
+        {inclurePlanifiees ? (
+          <>
+            Affichage y compris planifiées.{" "}
+            <a href="/taches">Masquer les tâches en attente de prérequis</a>
+          </>
+        ) : (
+          <>
+            {nbBloquees > 0
+              ? `${nbBloquees} tâche${nbBloquees > 1 ? "s" : ""} en attente de prérequis masquée${nbBloquees > 1 ? "s" : ""}. `
+              : null}
+            <a href="/taches?planifiees=1">Inclure les planifiées</a>
+          </>
+        )}
+      </p>
 
       <KpiZone
         items={[

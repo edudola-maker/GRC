@@ -1,20 +1,16 @@
-# Architecture proposée — dépendances de tâches Projet
+# Architecture — dépendances de tâches Projet
 
-> Proposition avant moteur de workflow complexe. **Pas d’implémentation du graphe dans ce sprint.**
+> Implémenté (Phase 1). Voir aussi Roadmap §5septies-ter.
 
 ## Objectif
 
-Permettre une planification séquentielle **optionnelle** :
+Planification séquentielle **optionnelle** :
 
 - Tâche A → Tâche B → Tâche C
 - tâches parallèles sans dépendance
 - tâches sans dépendance
 
-Tant qu’un prédécesseur n’est pas terminé / validé, le successeur reste **planifié dans le Projet** mais n’apparaît pas comme tâche active dans les vues opérationnelles (Dashboard, inventaire Tâches filtré « à traiter »).
-
-## Modèle simple (recommandé)
-
-Ne pas créer un moteur BPMN.
+## Modèle
 
 ```
 TacheDependance
@@ -25,25 +21,25 @@ TacheDependance
   @@unique([tacheId, prerequisId])
 ```
 
-- Une tâche peut avoir **0..n** prérequis (tous doivent être clos pour activer).
+- Une tâche peut avoir **0..n** prérequis (tous doivent être `TERMINE` pour activer).
 - Pas de cycles (validation à l’écriture).
-- Champ dérivé / calculé : `activeOperationnelle` = aucun prérequis ouvert **ou** pas de prérequis.
+- UI Phase 1 : **0 ou 1** prérequis par tâche (select simple) ; le modèle accepte N.
 
-Statuts « clos » réutilisés : `TERMINE` (+ éventuellement `VALIDE` / `ANNULE` selon règle métier à figer).
+## Activation opérationnelle
 
-## Activation
+`activeOperationnelle` = aucun prérequis **ou** tous les prérequis en statut `TERMINE`.
 
-1. À la clôture d’une tâche Projet → recalculer les successeurs directs.
-2. Inventaire `/taches` et Dashboard : filtre par défaut `activeOperationnelle = true` (avec option « Inclure planifiées »).
-3. Fiche Projet box Tâches : **toujours** toutes les tâches (planifiées + actives), avec indication « En attente de… ».
+| Vue | Comportement |
+|-----|----------------|
+| **Fiche Projet** (box Tâches) | Toutes les tâches visibles ; badge « En attente du prérequis » si bloquée |
+| **Dashboard** collaborateur / responsable | Exclut les tâches non activables |
+| **Pilotage** (KPI tâches) | Idem |
+| **Inventaire `/taches`** | Par défaut actives seulement ; `?planifiees=1` pour inclure les bloquées |
 
-## Hors scope Phase 1 (déjà livré / en cours)
+Dès clôture (`TERMINE`) du/des prérequis, le successeur devient automatiquement actif (pas d’action manuelle).
 
-- `dateDebut` / `dateEcheance` (fin)
-- `chargeJours`
-- commentaire métier (`commentaires`)
-- priorité masquée dans le contexte Projet (conservée hors Projet)
+## Hors scope Phase 1
 
-## Suite
-
-Calendrier / Gantt léger ; charge collaborateur agrégée via `chargeJours`.
+- Gantt / calendrier
+- Charge agrégée collaborateur
+- Multi-prérequis dans l’UI (modèle déjà prêt)
