@@ -4,12 +4,19 @@ import { ActionRow } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { ModuleHelp } from "@/components/ModuleHelp";
+import {
+  AttentionCounters,
+  DonutChart,
+  HBarChart,
+  TimeBuckets,
+} from "@/components/dashboard/RespCharts";
 import { PageHeader } from "@/components/ui";
 import { getActionsUnite } from "@/lib/actions-view";
 import { getDashboardResponsable } from "@/lib/dashboard-responsable";
 import {
   PRIORITE_OPTIONS,
   STATUT_TACHE_OPTIONS,
+  TACHE_STATUTS_CLOS,
 } from "@/lib/catalog";
 import {
   CATEGORIE_RISQUE_LABELS,
@@ -86,7 +93,13 @@ export default async function DashboardResponsablePage({
     sp.rag === "vert" || sp.rag === "jaune" || sp.rag === "rouge"
       ? sp.rag
       : null;
-  const [data, users, monitoring, objectifsModule, unite] = await Promise.all([
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const in7 = new Date(today);
+  in7.setDate(in7.getDate() + 7);
+
+  const [data, users, monitoring, objectifsModule, unite, auditsActifs, revuesActives, conseilsRetard, tachesSemaine, tachesPlus] =
+    await Promise.all([
     getDashboardResponsable(user.uniteId),
     listUtilisateursActifsForCurrentUnite(),
     getActionsUnite(user.uniteId, {
@@ -103,6 +116,44 @@ export default async function DashboardResponsablePage({
     prisma.unite.findUnique({
       where: { id: user.uniteId },
       select: { nom: true, code: true },
+    }),
+    prisma.mission.count({
+      where: {
+        uniteId: user.uniteId,
+        archive: false,
+        statut: { in: ["EN_COURS", "EN_REVUE", "PLANIFIE"] },
+        type: { code: { startsWith: "AUDIT" } },
+      },
+    }),
+    prisma.mission.count({
+      where: {
+        uniteId: user.uniteId,
+        archive: false,
+        statut: { in: ["EN_COURS", "EN_REVUE", "PLANIFIE"] },
+        type: { code: { startsWith: "REVUE" } },
+      },
+    }),
+    prisma.conseil.count({
+      where: {
+        uniteId: user.uniteId,
+        archive: false,
+        statut: { notIn: ["REPONDU", "CLOTURE", "ANNULE"] },
+        dateEcheance: { lt: today },
+      },
+    }),
+    prisma.tache.count({
+      where: {
+        uniteId: user.uniteId,
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        dateEcheance: { gte: today, lte: in7 },
+      },
+    }),
+    prisma.tache.count({
+      where: {
+        uniteId: user.uniteId,
+        statut: { notIn: [...TACHE_STATUTS_CLOS] },
+        dateEcheance: { gt: in7 },
+      },
     }),
   ]);
 
@@ -135,162 +186,148 @@ export default async function DashboardResponsablePage({
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
+      <AttentionCounters
+        items={[
+          {
+            key: "retard",
+            value: s.actionsEnRetard ?? 0,
+            label: "en retard",
+            href: "/taches?filtre=retard",
+            tone: (s.actionsEnRetard ?? 0) > 0 ? "danger" : "default",
+          },
+          {
+            key: "conseils-retard",
+            value: conseilsRetard,
+            label: "conseils à traiter",
+            href: "/conseils?filtre=retard",
+            tone: conseilsRetard > 0 ? "warn" : "default",
+          },
+          {
+            key: "sci",
+            value: s.controlesEnRetard,
+            label: "contrôles échus",
+            href: "/controles-sci?filtre=retard",
+            tone: s.controlesEnRetard > 0 ? "danger" : "default",
+          },
+          {
+            key: "risques",
+            value: s.risquesCritiques,
+            label: "risques critiques",
+            href: "/risques?filtre=critiques",
+            tone: s.risquesCritiques > 0 ? "danger" : "default",
+          },
+        ]}
+      />
+
       <section className="resp-cockpit" aria-label="Vue cockpit">
         <div className="resp-block">
+          <h3>Répartition de l’activité</h3>
+          <DonutChart
+            centerLabel="ouverts"
+            slices={[
+              {
+                key: "audits",
+                label: "Audits",
+                value: auditsActifs,
+                href: "/missions?famille=audits",
+                color: "#3d6b4f",
+              },
+              {
+                key: "revues",
+                label: "Revues",
+                value: revuesActives,
+                href: "/missions?famille=revues",
+                color: "#6a8f74",
+              },
+              {
+                key: "conseils",
+                label: "Conseils",
+                value: s.conseilsOuverts,
+                href: "/conseils?filtre=ouverts",
+                color: "#2a6f9e",
+              },
+              {
+                key: "projets",
+                label: "Projets",
+                value: s.projetsActifs,
+                href: "/projets",
+                color: "#c48a2a",
+              },
+            ]}
+          />
+        </div>
+
+        <div className="resp-block">
           <h3>Charge de l’équipe</h3>
-          <div className="resp-bars">
-            {users.slice(0, 8).map((u) => {
+          <HBarChart
+            items={users.slice(0, 8).map((u) => {
               const n = chargeMap.get(u.id) ?? 0;
-              const max = Math.max(
-                1,
-                ...users.map((x) => chargeMap.get(x.id) ?? 0),
-              );
-              const pct = Math.round((n / max) * 100);
-              return (
-                <Link
-                  key={u.id}
-                  href={`/responsable?collaborateur=${u.id}`}
-                  className="resp-bar"
-                >
-                  <span>{u.nom}</span>
-                  <span className="resp-bar__track">
-                    <span
-                      className={`resp-bar__fill${n > 5 ? " resp-bar__fill--warn" : ""}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </span>
-                  <strong>{n}</strong>
-                </Link>
-              );
+              return {
+                key: u.id,
+                label: u.nom,
+                value: n,
+                href: `/responsable?collaborateur=${u.id}`,
+                tone: n > 5 ? "warn" : "default",
+              };
             })}
-          </div>
+          />
         </div>
 
         <div className="resp-block">
-          <h3>Échéances / retards</h3>
-          <div className="resp-bars">
-            <Link href="/taches?filtre=retard" className="resp-bar">
-              <span>Tâches en retard</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill resp-bar__fill--danger"
-                  style={{
-                    width: `${Math.min(100, (s.actionsEnRetard ?? 0) * 10)}%`,
-                  }}
-                />
-              </span>
-              <strong>{s.actionsEnRetard ?? 0}</strong>
-            </Link>
-            <Link href="/conseils?filtre=retard" className="resp-bar">
-              <span>Conseils en retard</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill resp-bar__fill--warn"
-                  style={{ width: `${Math.min(100, s.conseilsOuverts * 15)}%` }}
-                />
-              </span>
-              <strong>{s.conseilsOuverts}</strong>
-            </Link>
-            <Link href="/controles-sci?filtre=retard" className="resp-bar">
-              <span>Contrôles SCI en retard</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill resp-bar__fill--danger"
-                  style={{
-                    width: `${Math.min(100, s.controlesEnRetard * 15)}%`,
-                  }}
-                />
-              </span>
-              <strong>{s.controlesEnRetard}</strong>
-            </Link>
-            <Link href="/risques?filtre=critiques" className="resp-bar">
-              <span>Risques critiques</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill resp-bar__fill--danger"
-                  style={{
-                    width: `${Math.min(100, s.risquesCritiques * 20)}%`,
-                  }}
-                />
-              </span>
-              <strong>{s.risquesCritiques}</strong>
-            </Link>
-          </div>
-        </div>
-
-        <div className="resp-block">
-          <h3>Répartition d’activité</h3>
-          <div className="resp-bars">
-            <Link href="/missions" className="resp-bar">
-              <span>Missions en cours</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill"
-                  style={{ width: `${Math.min(100, s.auditsEnCours * 20)}%` }}
-                />
-              </span>
-              <strong>{s.auditsEnCours}</strong>
-            </Link>
-            <Link href="/projets" className="resp-bar">
-              <span>Projets actifs</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill"
-                  style={{ width: `${Math.min(100, s.projetsActifs * 15)}%` }}
-                />
-              </span>
-              <strong>{s.projetsActifs}</strong>
-            </Link>
-            <Link href="/conseils" className="resp-bar">
-              <span>Conseils ouverts</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill"
-                  style={{ width: `${Math.min(100, s.conseilsOuverts * 15)}%` }}
-                />
-              </span>
-              <strong>{s.conseilsOuverts}</strong>
-            </Link>
-            <Link href="/taches" className="resp-bar">
-              <span>Actions ouvertes</span>
-              <span className="resp-bar__track">
-                <span
-                  className="resp-bar__fill"
-                  style={{
-                    width: `${Math.min(100, (s.actionsOuvertes ?? 0) * 5)}%`,
-                  }}
-                />
-              </span>
-              <strong>{s.actionsOuvertes ?? 0}</strong>
-            </Link>
-          </div>
+          <h3>Échéances</h3>
+          <TimeBuckets
+            items={[
+              {
+                key: "retard",
+                label: "En retard",
+                value: s.actionsEnRetard ?? 0,
+                href: "/taches?filtre=retard",
+                tone: "danger",
+              },
+              {
+                key: "semaine",
+                label: "7 jours",
+                value: tachesSemaine,
+                href: "/taches",
+                tone: "warn",
+              },
+              {
+                key: "plus",
+                label: "Plus loin",
+                value: tachesPlus,
+                href: "/taches",
+                tone: "info",
+              },
+              {
+                key: "sci",
+                label: "SCI échus",
+                value: s.controlesEnRetard,
+                href: "/controles-sci?filtre=retard",
+                tone: s.controlesEnRetard > 0 ? "danger" : "default",
+              },
+            ]}
+          />
         </div>
 
         <div className="resp-block">
           <h3>Objectifs annuels</h3>
-          <div className="resp-bars">
-            {objectifsModule.slice(0, 6).map((o) => (
-              <Link
-                key={o.id}
-                href={`/unite#objectifs`}
-                className="resp-bar"
-              >
-                <span>{o.libelle}</span>
-                <span className="resp-bar__track">
-                  <span
-                    className="resp-bar__fill"
-                    style={{
-                      width: `${Math.min(100, o.progression ?? 0)}%`,
-                    }}
-                  />
-                </span>
-                <strong>{o.realise ?? "—"}</strong>
-              </Link>
-            ))}
-            {objectifsModule.length === 0 ? (
-              <p className="muted">Aucun objectif module défini.</p>
-            ) : null}
-          </div>
+          <HBarChart
+            items={objectifsModule.slice(0, 6).map((o) => ({
+              key: o.id,
+              label: o.libelle,
+              value: o.progression ?? 0,
+              href: "/unite#objectifs",
+              tone: (o.progression ?? 0) < 40 ? "warn" : "default",
+            }))}
+            max={100}
+          />
+          {objectifsModule.length === 0 ? (
+            <p className="muted">Aucun objectif module défini.</p>
+          ) : (
+            <p className="muted" style={{ marginTop: "0.5rem" }}>
+              Progression en % de la cible (cliquable).
+            </p>
+          )}
         </div>
       </section>
 

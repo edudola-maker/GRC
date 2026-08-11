@@ -76,7 +76,12 @@ export default async function ConseilsPage({
   const clotures = actifs.filter((c) => c.statut === "CLOTURE").length;
   const enRetard = items.filter((c) => c.estRetard && !c.archive).length;
 
-  const initialQuick = sp.filtre === "retard" ? "retard" : undefined;
+  const initialQuick =
+    sp.filtre === "retard"
+      ? "retard"
+      : sp.filtre === "ouverts"
+        ? "ouverts"
+        : undefined;
 
   return (
     <>

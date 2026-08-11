@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -8,6 +7,7 @@ import {
   filterByQuery,
   useInventorySearch,
 } from "@/components/inventory/InventoryBrowser";
+import { InventoryCreateLink } from "@/components/inventory/InventoryCreateLink";
 import {
   InventoryEmpty,
   InventoryList,
@@ -150,9 +150,7 @@ export function ProcessusInventory({
       canResetFilters={canReset}
       createAction={
         createHref && createLabel ? (
-          <Link className="btn" href={createHref}>
-            {createLabel}
-          </Link>
+          <InventoryCreateLink href={createHref} label={createLabel} />
         ) : undefined
       }
       quickFilters={
