@@ -132,6 +132,7 @@ export default async function ControleSCIDetailPage({
             users={users}
             values={controle}
             cancelHref={baseHref}
+            sectionKey="INFOS_GENERALES"
             submitLabel="Enregistrer"
           />
         }

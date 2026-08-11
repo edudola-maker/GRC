@@ -119,13 +119,15 @@ export function UniteForm({
 
       {draftActions ? (
         <SectionSaveActions
+          baseHref={cancelHref}
+          sectionKey="VUE_ENSEMBLE"
           cancelHref={cancelHref}
           finalizeLabel={submitLabel}
         />
       ) : (
         <div className="form-actions">
           <SubmitButton>{submitLabel}</SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
+          <BtnLink href={cancelHref} variant="ghost" scroll={false}>
             Annuler
           </BtnLink>
         </div>

@@ -217,7 +217,7 @@ export default async function ProcessusDetailPage({
             <form action={updateProcessus} className="entity-form">
               <input type="hidden" name="id" value={processus.id} />
               <input type="hidden" name="sectionKey" value="ETAPES" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="ETAPES" />
             </form>
           </>
         }
@@ -267,7 +267,7 @@ export default async function ProcessusDetailPage({
             <form action={updateProcessus} className="entity-form">
               <input type="hidden" name="id" value={processus.id} />
               <input type="hidden" name="sectionKey" value="ELEMENTS_ASSOCIES" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="ELEMENTS_ASSOCIES" />
             </form>
           </>
         }

@@ -304,7 +304,7 @@ export default async function ProjetDetailPage({
                   </li>
                 ))}
             </ul>
-            <SectionSaveActions cancelHref={baseHref} />
+            <SectionSaveActions baseHref={baseHref} sectionKey="EQUIPE" />
           </form>
         }
       >
@@ -438,7 +438,7 @@ export default async function ProjetDetailPage({
             <form action={updateProjet} className="entity-form">
               <input type="hidden" name="id" value={projet.id} />
               <input type="hidden" name="sectionKey" value="ELEMENTS_ASSOCIES" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="ELEMENTS_ASSOCIES" />
             </form>
           </>
         }

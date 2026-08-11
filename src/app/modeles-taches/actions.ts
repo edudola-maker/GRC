@@ -12,6 +12,7 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 
 const CATEGORIES = new Set<string>(CATEGORIE_TACHE_OPTIONS.map((o) => o.value));
@@ -68,7 +69,8 @@ export async function updateModeleTache(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/modeles-taches/${id}?edit=${sectionKey}`;
+  const base = `/modeles-taches/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
 
   if (sectionKey === "INFOS_GENERALES") {
     const nom = str(formData, "nom");
@@ -124,7 +126,9 @@ export async function updateModeleTache(formData: FormData) {
 
   revalidateModele(id);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/modeles-taches/${id}`,
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }
@@ -158,7 +162,7 @@ export async function addModeleTacheEtape(formData: FormData) {
   const libelle = str(formData, "libelle");
   if (!libelle) {
     redirectWithError(
-      `/modeles-taches/${modeleTacheId}?edit=CHECKLIST`,
+      sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"),
       "Libellé d’étape obligatoire.",
     );
   }
@@ -176,7 +180,7 @@ export async function addModeleTacheEtape(formData: FormData) {
   });
   await markChecklistBrouillon(modeleTacheId, current.id, modele.uniteId);
   revalidateModele(modeleTacheId);
-  redirectWithOk(`/modeles-taches/${modeleTacheId}?edit=CHECKLIST`, "etape");
+  redirectWithOk(sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"), "etape");
 }
 
 export async function updateModeleTacheEtape(formData: FormData) {
@@ -197,7 +201,7 @@ export async function updateModeleTacheEtape(formData: FormData) {
   const libelle = str(formData, "libelle");
   if (!libelle) {
     redirectWithError(
-      `/modeles-taches/${modeleTacheId}?edit=CHECKLIST`,
+      sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"),
       "Libellé d’étape obligatoire.",
     );
   }
@@ -208,7 +212,7 @@ export async function updateModeleTacheEtape(formData: FormData) {
     etape.modeleTache.uniteId,
   );
   revalidateModele(modeleTacheId);
-  redirectWithOk(`/modeles-taches/${modeleTacheId}?edit=CHECKLIST`, "etape");
+  redirectWithOk(sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"), "etape");
 }
 
 export async function deleteModeleTacheEtape(formData: FormData) {
@@ -245,7 +249,7 @@ export async function deleteModeleTacheEtape(formData: FormData) {
     etape.modeleTache.uniteId,
   );
   revalidateModele(modeleTacheId);
-  redirectWithOk(`/modeles-taches/${modeleTacheId}?edit=CHECKLIST`, "etape");
+  redirectWithOk(sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"), "etape");
 }
 
 export async function moveModeleTacheEtape(formData: FormData) {
@@ -265,13 +269,13 @@ export async function moveModeleTacheEtape(formData: FormData) {
   const index = etapes.findIndex((e) => e.id === id);
   if (index < 0) {
     redirectWithError(
-      `/modeles-taches/${modeleTacheId}?edit=CHECKLIST`,
+      sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"),
       "Étape introuvable.",
     );
   }
   const swapWith = direction === "up" ? index - 1 : index + 1;
   if (swapWith < 0 || swapWith >= etapes.length) {
-    redirect(`/modeles-taches/${modeleTacheId}?edit=CHECKLIST`);
+    redirect(sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"));
   }
 
   const a = etapes[index]!;
@@ -292,7 +296,7 @@ export async function moveModeleTacheEtape(formData: FormData) {
     a.modeleTache.uniteId,
   );
   revalidateModele(modeleTacheId);
-  redirectWithOk(`/modeles-taches/${modeleTacheId}?edit=CHECKLIST`, "etape");
+  redirectWithOk(sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "CHECKLIST"), "etape");
 }
 
 async function markProcessusBrouillon(
@@ -328,7 +332,7 @@ export async function linkModeleTacheProcessus(formData: FormData) {
   });
   if (!processus) {
     redirectWithError(
-      `/modeles-taches/${modeleTacheId}?edit=PROCESSUS_ASSOCIES`,
+      sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "PROCESSUS_ASSOCIES"),
       "Processus introuvable.",
     );
   }
@@ -348,7 +352,7 @@ export async function linkModeleTacheProcessus(formData: FormData) {
   revalidateModele(modeleTacheId);
   revalidateApp([`/processus/${processusId}`]);
   redirectWithOk(
-    `/modeles-taches/${modeleTacheId}?edit=PROCESSUS_ASSOCIES`,
+    sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "PROCESSUS_ASSOCIES"),
     "lien_ajoute",
   );
 }
@@ -378,7 +382,7 @@ export async function unlinkModeleTacheProcessus(formData: FormData) {
   revalidateModele(modeleTacheId);
   revalidateApp([`/processus/${link.processusId}`]);
   redirectWithOk(
-    `/modeles-taches/${modeleTacheId}?edit=PROCESSUS_ASSOCIES`,
+    sectionDraftHref(`/modeles-taches/${modeleTacheId}`, "PROCESSUS_ASSOCIES"),
     "lien_supprime",
   );
 }

@@ -175,7 +175,7 @@ export default async function UnitePage({
             <form action={updateUnite} className="entity-form">
               <input type="hidden" name="id" value={unite.id} />
               <input type="hidden" name="sectionKey" value="OBJECTIFS" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="OBJECTIFS" />
             </form>
           </>
         }
@@ -326,7 +326,7 @@ export default async function UnitePage({
                 name="sectionKey"
                 value="ELEMENTS_ASSOCIES"
               />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="ELEMENTS_ASSOCIES" />
             </form>
           </>
         }

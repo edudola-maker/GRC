@@ -10,6 +10,7 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 
 function revalidateUnite() {
@@ -28,7 +29,8 @@ export async function updateUnite(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "VUE_ENSEMBLE";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/unite?edit=${sectionKey}`;
+  const base = "/unite";
+  const editFallback = sectionEditHref(base, sectionKey);
 
   if (sectionKey === "VUE_ENSEMBLE") {
     const nom = str(formData, "nom");
@@ -90,7 +92,9 @@ export async function updateUnite(formData: FormData) {
 
   revalidateUnite();
   redirectWithOk(
-    intent === "brouillon" ? editFallback : "/unite",
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }

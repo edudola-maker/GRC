@@ -7,11 +7,16 @@ import {
   formatSectionEtatLabel,
   type SectionRedactionVue,
 } from "@/lib/section-redaction";
+import {
+  sectionCancelHref,
+  sectionEditHref,
+} from "@/lib/section-nav";
 
 /**
  * Grande box : repliable, lecture seule par défaut, édition indépendante.
- * Le bouton Modifier reste dans l’en-tête (visible même box repliée).
- * Pattern : Lecture seule → Modifier (?edit=KEY) → Brouillon / Finaliser / Annuler.
+ * Pattern : Lecture seule → Modifier → Brouillon / Finaliser / Annuler.
+ * Modifier / Annuler / Enregistrer restaurent la position de la section
+ * (ancre `#KEY` ou `?focus=KEY` après redirect serveur).
  */
 export function EditableSection({
   title,
@@ -58,9 +63,8 @@ export function EditableSection({
     </>
   );
 
-  // Ancre = sectionKey : évite le saut en haut de page au clic Modifier.
   const sectionId = sectionKey;
-  const editHref = `${baseHref}?edit=${sectionKey}#${sectionId}`;
+  const editHref = sectionEditHref(baseHref, sectionKey);
 
   const headerActions =
     canEdit && !edit ? (
@@ -90,20 +94,30 @@ export function EditableSection({
 /** Boutons Enregistrer comme brouillon / Finaliser / Annuler (dans un <form>). */
 export function SectionSaveActions({
   cancelHref,
+  baseHref,
+  sectionKey,
   draftLabel = "Enregistrer comme brouillon",
   finalizeLabel = "Finaliser",
 }: {
-  cancelHref: string;
+  /** @deprecated Préférer baseHref + sectionKey pour l’ancre Annuler. */
+  cancelHref?: string;
+  baseHref?: string;
+  sectionKey?: string;
   draftLabel?: string;
   finalizeLabel?: string;
 }) {
+  const resolvedCancel =
+    baseHref && sectionKey
+      ? sectionCancelHref(baseHref, sectionKey)
+      : (cancelHref ?? "#");
+
   return (
     <div className="form-actions section-save-actions">
       <SubmitButton name="intent" value="brouillon" variant="ghost">
         {draftLabel}
       </SubmitButton>
       <SubmitButton name="intent" value="finaliser">{finalizeLabel}</SubmitButton>
-      <BtnLink href={cancelHref} variant="ghost">
+      <BtnLink href={resolvedCancel} variant="ghost" scroll={false}>
         Annuler
       </BtnLink>
     </div>

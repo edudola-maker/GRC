@@ -136,6 +136,7 @@ export default async function DocumentDetailPage({
             users={users}
             values={document}
             cancelHref={baseHref}
+            sectionKey="INFOS_GENERALES"
             submitLabel="Enregistrer"
           />
         }

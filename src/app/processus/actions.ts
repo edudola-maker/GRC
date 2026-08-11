@@ -15,6 +15,7 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -87,7 +88,8 @@ export async function updateProcessus(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/processus/${id}?edit=${sectionKey}`;
+  const base = `/processus/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
 
   if (sectionKey === "INFOS_GENERALES") {
     const nom = str(formData, "nom");
@@ -148,7 +150,9 @@ export async function updateProcessus(formData: FormData) {
 
   revalidateProcessus(id);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/processus/${id}`,
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }
@@ -177,12 +181,10 @@ export async function addProcessusEtape(formData: FormData) {
     redirectWithError(`/processus/${processusId}`, "Processus archivé.");
   }
 
+  const etapesHref = sectionDraftHref(`/processus/${processusId}`, "ETAPES");
   const libelle = str(formData, "libelle");
   if (!libelle) {
-    redirectWithError(
-      `/processus/${processusId}?edit=ETAPES`,
-      "Libellé d’étape obligatoire.",
-    );
+    redirectWithError(etapesHref, "Libellé d’étape obligatoire.");
   }
 
   const max = await prisma.processusEtape.aggregate({
@@ -198,7 +200,7 @@ export async function addProcessusEtape(formData: FormData) {
   });
   await markEtapesBrouillon(processusId, current.id, processus.uniteId);
   revalidateProcessus(processusId);
-  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+  redirectWithOk(etapesHref, "etape");
 }
 
 export async function updateProcessusEtape(formData: FormData) {
@@ -214,17 +216,15 @@ export async function updateProcessusEtape(formData: FormData) {
   });
   if (!etape) redirectWithError(`/processus/${processusId}`, "Étape introuvable.");
 
+  const etapesHref = sectionDraftHref(`/processus/${processusId}`, "ETAPES");
   const libelle = str(formData, "libelle");
   if (!libelle) {
-    redirectWithError(
-      `/processus/${processusId}?edit=ETAPES`,
-      "Libellé d’étape obligatoire.",
-    );
+    redirectWithError(etapesHref, "Libellé d’étape obligatoire.");
   }
   await prisma.processusEtape.update({ where: { id }, data: { libelle } });
   await markEtapesBrouillon(processusId, current.id, etape.processus.uniteId);
   revalidateProcessus(processusId);
-  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+  redirectWithOk(etapesHref, "etape");
 }
 
 export async function deleteProcessusEtape(formData: FormData) {
@@ -253,7 +253,7 @@ export async function deleteProcessusEtape(formData: FormData) {
   );
   await markEtapesBrouillon(processusId, current.id, etape.processus.uniteId);
   revalidateProcessus(processusId);
-  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+  redirectWithOk(sectionDraftHref(`/processus/${processusId}`, "ETAPES"), "etape");
 }
 
 export async function moveProcessusEtape(formData: FormData) {
@@ -270,13 +270,14 @@ export async function moveProcessusEtape(formData: FormData) {
     orderBy: { ordre: "asc" },
     include: { processus: true },
   });
+  const etapesHref = sectionDraftHref(`/processus/${processusId}`, "ETAPES");
   const index = etapes.findIndex((e) => e.id === id);
   if (index < 0) {
-    redirectWithError(`/processus/${processusId}?edit=ETAPES`, "Étape introuvable.");
+    redirectWithError(etapesHref, "Étape introuvable.");
   }
   const swapWith = direction === "up" ? index - 1 : index + 1;
   if (swapWith < 0 || swapWith >= etapes.length) {
-    redirect(`/processus/${processusId}?edit=ETAPES`);
+    redirect(etapesHref);
   }
 
   const a = etapes[index]!;
@@ -293,7 +294,7 @@ export async function moveProcessusEtape(formData: FormData) {
   ]);
   await markEtapesBrouillon(processusId, current.id, a.processus.uniteId);
   revalidateProcessus(processusId);
-  redirectWithOk(`/processus/${processusId}?edit=ETAPES`, "etape");
+  redirectWithOk(etapesHref, "etape");
 }
 
 export async function archiveProcessus(formData: FormData) {

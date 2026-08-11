@@ -148,11 +148,16 @@ export function ModeleTacheForm({
       ) : null}
 
       {draftActions ? (
-        <SectionSaveActions cancelHref={cancelHref} finalizeLabel={submitLabel} />
+        <SectionSaveActions
+          baseHref={cancelHref}
+          sectionKey={section !== "ALL" ? section : undefined}
+          cancelHref={cancelHref}
+          finalizeLabel={submitLabel}
+        />
       ) : (
         <div className="form-actions">
           <SubmitButton>{submitLabel}</SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
+          <BtnLink href={cancelHref} variant="ghost" scroll={false}>
             Annuler
           </BtnLink>
         </div>

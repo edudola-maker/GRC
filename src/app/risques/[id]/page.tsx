@@ -136,6 +136,7 @@ export default async function RisqueDetailPage({
             users={users}
             values={risque}
             cancelHref={baseHref}
+            sectionKey="INFOS_GENERALES"
             submitLabel="Enregistrer"
           />
         }

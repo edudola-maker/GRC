@@ -15,6 +15,7 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 
 const STATUTS = new Set(STATUT_OBJECTIF_OPTIONS.map((o) => o.value));
@@ -81,7 +82,8 @@ export async function updateObjectif(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/objectifs/${id}?edit=${sectionKey}`;
+  const base = `/objectifs/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
 
   if (sectionKey === "INFOS_GENERALES") {
     const intitule = str(formData, "intitule");
@@ -141,7 +143,9 @@ export async function updateObjectif(formData: FormData) {
 
   revalidateObjectif(id);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/objectifs/${id}`,
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }

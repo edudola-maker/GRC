@@ -15,6 +15,7 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 import { setTachePrerequis } from "@/lib/tache-dependances";
@@ -102,7 +103,8 @@ export async function updateProjet(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/projets/${id}?edit=${sectionKey}`;
+  const base = `/projets/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
 
   if (sectionKey === "INFOS_GENERALES") {
     const nom = str(formData, "nom");
@@ -202,7 +204,9 @@ export async function updateProjet(formData: FormData) {
 
   revalidateProjetViews(id);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/projets/${id}`,
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }

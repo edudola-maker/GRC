@@ -209,6 +209,7 @@ export default async function TacheDetailPage({
               documents={documents}
               values={tache}
               cancelHref={baseHref}
+              sectionKey="INFOS_GENERALES"
               submitLabel="Enregistrer"
               projetContext={Boolean(tache.projetId)}
               retour={retour !== "/taches" ? retour : undefined}

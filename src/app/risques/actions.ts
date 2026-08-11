@@ -18,6 +18,7 @@ import { ajouterJournal, TYPE_EVENEMENT } from "@/lib/journal";
 import { STATUT_RISQUE_LABELS } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { formatUtilisateurNom, getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -157,41 +158,45 @@ export async function updateRisque(formData: FormData) {
   const existing = await prisma.risque.findUnique({ where: { id } });
   if (!existing) redirectWithError("/risques", "Risque introuvable.");
 
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const base = `/risques/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
+
   const nom = str(formData, "nom");
   if (!nom) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Le nom du risque est obligatoire.");
+    redirectWithError(editFallback, "Le nom du risque est obligatoire.");
   }
 
   const categorie = str(formData, "categorie") || existing.categorie;
   if (!CATEGORIES.has(categorie)) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Catégorie invalide.");
+    redirectWithError(editFallback, "Catégorie invalide.");
   }
 
   const statut = str(formData, "statut") || existing.statut;
   if (!STATUTS.has(statut)) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Statut invalide.");
+    redirectWithError(editFallback, "Statut invalide.");
   }
 
   const responsableId = str(formData, "responsableId") || existing.responsableId;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const probabilite = parseEchelle(formData, "probabilite", existing.probabilite);
   const impact = parseEchelle(formData, "impact", existing.impact);
   if (probabilite == null || impact == null) {
     redirectWithError(
-      `/risques/${id}?edit=INFOS_GENERALES`,
+      editFallback,
       "Probabilité et impact doivent être entre 1 et 5.",
     );
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
   const nomErr = await assertNomUnique("RISQUE", nom, uniteId, id);
-  if (nomErr) redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, nomErr);
+  if (nomErr) redirectWithError(editFallback, nomErr);
   const strategie = optStr(formData, "strategie");
   if (strategie && !STRATEGIES.has(strategie)) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Stratégie invalide.");
+    redirectWithError(editFallback, "Stratégie invalide.");
   }
 
   const prRaw = optInt(formData, "probabiliteResiduelle");
@@ -203,7 +208,7 @@ export async function updateRisque(formData: FormData) {
     probabiliteResiduelle = prRaw ?? probabilite;
     impactResiduel = irRaw ?? impact;
     if (!ECHELLE.has(probabiliteResiduelle) || !ECHELLE.has(impactResiduel)) {
-      redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Échelle résiduelle invalide (1–5).");
+      redirectWithError(editFallback, "Échelle résiduelle invalide (1–5).");
     }
     criticiteResiduelle = clamp(probabiliteResiduelle * impactResiduel, 1, 25);
   }
@@ -310,7 +315,7 @@ export async function updateRisque(formData: FormData) {
   }
 
   revalidateApp([`/risques/${id}`, `/risques/${id}?edit=INFOS_GENERALES`]);
-  redirectWithOk(`/risques/${id}`, "modifie");
+  redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");
 }
 
 /** Archive / désarchive via archive=1|0 */
