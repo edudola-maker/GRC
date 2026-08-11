@@ -5,7 +5,7 @@ const PREFIXES = {
   CONSEIL: "CNS",
   MISSION: "MIS",
   RECOMMANDATION: "REC",
-  RISQUE: "RIS",
+  RISQUE: "RSK",
   CONTROLE_SCI: "CTL",
   DOCUMENT: "DOC",
   PROCESSUS: "PRC",
@@ -34,13 +34,6 @@ export function assertCodeFormat(
     return `Format de code invalide (attendu : ${PREFIXES[type]}-0001).`;
   }
   const prefix = PREFIXES[type];
-  // Legacy RISQUE : RSK-xxxx encore accepté à l’édition.
-  if (type === "RISQUE") {
-    if (!c.startsWith("RIS-") && !c.startsWith("RSK-")) {
-      return "Le code doit commencer par RIS- (ou RSK- pour les codes existants).";
-    }
-    return null;
-  }
   if (!c.startsWith(`${prefix}-`)) {
     return `Le code doit commencer par ${prefix}-.`;
   }

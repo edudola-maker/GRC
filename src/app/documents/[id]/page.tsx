@@ -7,6 +7,7 @@ import {
 } from "@/components/FormControls";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { DocumentForm } from "@/components/EntityForms";
+import { DocumentProcessusPanel } from "@/components/documents/DocumentProcessusPanel";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
@@ -45,24 +46,37 @@ export default async function DocumentDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const edit =
-    sp.edit === "INFOS_GENERALES" || sp.edit === "ELEMENTS_ASSOCIES"
+    sp.edit === "INFOS_GENERALES" ||
+    sp.edit === "ELEMENTS_ASSOCIES" ||
+    sp.edit === "PROCESSUS"
       ? sp.edit
       : null;
   const user = await getCurrentUser();
-  const [document, users] = await Promise.all([
-  prisma.document.findUnique({
-    where: { id },
-    include: {
-      responsable: true,
-      creePar: true,
-      modifiePar: true,
-      tachesRevue: {
-        include: { responsable: true },
-        orderBy: { dateEcheance: "asc" },
+  const [document, users, processusActifs] = await Promise.all([
+    prisma.document.findUnique({
+      where: { id },
+      include: {
+        responsable: true,
+        creePar: true,
+        modifiePar: true,
+        tachesRevue: {
+          include: { responsable: true },
+          orderBy: { dateEcheance: "asc" },
+        },
+        processus: {
+          include: {
+            processus: { select: { id: true, code: true, nom: true } },
+          },
+          orderBy: { lieLe: "asc" },
+        },
       },
-    },
-  }),
-  listUtilisateursActifsForCurrentUnite(),
+    }),
+    listUtilisateursActifsForCurrentUnite(),
+    prisma.processus.findMany({
+      where: { uniteId: user.uniteId, archive: false },
+      orderBy: { nom: "asc" },
+      select: { id: true, code: true, nom: true },
+    }),
   ]);
   if (!document) notFound();
 
@@ -219,6 +233,31 @@ export default async function DocumentDetailPage({
             : ""}{" "}
           · {formatDate(document.modifieLe)}
         </p>
+      </EditableSection>
+
+      <EditableSection
+        title="Processus liés"
+        sectionKey="PROCESSUS"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen
+        badge={`${document.processus.length}`}
+        editChildren={
+          <DocumentProcessusPanel
+            documentId={document.id}
+            links={document.processus}
+            candidats={processusActifs}
+            editable
+          />
+        }
+      >
+        <DocumentProcessusPanel
+          documentId={document.id}
+          links={document.processus}
+          candidats={processusActifs}
+          editable={false}
+        />
       </EditableSection>
 
       <EditableSection

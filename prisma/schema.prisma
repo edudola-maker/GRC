@@ -355,6 +355,7 @@ model Utilisateur {
   modelesTacheCrees       ModeleTache[]        @relation("ModeleTacheCreePar")
   modelesTacheResponsable ModeleTache[]        @relation("ModeleTacheResponsableDefaut")
   modelesTacheProcessus   ModeleTacheProcessus[] @relation("ModeleTacheProcessusLiePar")
+  documentsProcessus      DocumentProcessus[]    @relation("DocumentProcessusLiePar")
   validationsPreparees    MissionValidationPoint[] @relation("ValidationPreparePar")
   validationsSoumises     MissionValidationPoint[] @relation("ValidationSoumisPar")
   visasMission            MissionValidationVisa[]
@@ -777,6 +778,7 @@ model Document {
   projets     ProjetDocument[]
   missions   MissionDocument[]
   tachesRevue Tache[]
+  processus   DocumentProcessus[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1157,6 +1159,7 @@ model Processus {
   etapes      ProcessusEtape[]
   modelesTache ModeleTacheProcessus[]
   risques     Risque[]
+  documents   DocumentProcessus[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1234,6 +1237,24 @@ model ModeleTacheProcessus {
   @@unique([modeleTacheId, processusId])
   @@index([processusId])
   @@index([modeleTacheId])
+}
+
+/// Relation N–N dédiée Document ↔ Processus (procédures liées à un ou plusieurs processus).
+/// Distinct de LienObjet générique — cas d’usage métier explicite.
+model DocumentProcessus {
+  id          String   @id @default(cuid())
+  documentId  String
+  processusId String
+  lieParId    String
+  lieLe       DateTime @default(now())
+
+  document  Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  processus Processus   @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  liePar    Utilisateur @relation("DocumentProcessusLiePar", fields: [lieParId], references: [id])
+
+  @@unique([documentId, processusId])
+  @@index([processusId])
+  @@index([documentId])
 }
 
 /// État de rédaction d’une box (brouillon / finalisé…) — transversal, ≠ statut métier.

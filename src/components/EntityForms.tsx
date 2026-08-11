@@ -1128,19 +1128,19 @@ export function RisqueForm({
           <Field
             label="Code *"
             htmlFor="code"
-            hint="Format RIS-0001 (codes RSK- existants encore acceptés)"
+            hint="Format RSK-0001 — généré automatiquement à la création"
           >
             <input
               id="code"
               name="code"
               required
               defaultValue={values.code ?? ""}
-              placeholder="RIS-0001"
+              placeholder="RSK-0001"
             />
           </Field>
         ) : (
           <p className="muted" style={{ marginTop: 0 }}>
-            Le code <code>RIS-xxxx</code> sera attribué automatiquement.
+            Le code <code>RSK-xxxx</code> sera attribué automatiquement.
           </p>
         )}
         <Field label="Nom *" htmlFor="nom">

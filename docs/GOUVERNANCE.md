@@ -8,7 +8,8 @@ Unité (UNT)
   ├─ Objectifs stratégiques (OBJ)
   ├─ Collaborateurs (Utilisateur, Admin)
   └─ Processus (PRC)
-        └─ Risques (RIS)  ← Risque.processusId
+        ├─ Documents (DOC)  ← DocumentProcessus (N–N métier)
+        └─ Risques (RSK)  ← Risque.processusId
               └─ Contrôles SCI (CTL)  ← RisqueControle
                     └─ Occurrences (Tâches)
 ```
@@ -24,15 +25,27 @@ Missions d’assurance (`Mission` MIS-xxxx) sont **parallèles** : elles examine
 | Objectifs d’unité | Livré |
 | Processus + étapes + code PRC éditable | Livré |
 | Risque ↔ Processus (`processusId`) | Livré |
-| Risques associés sur fiche Processus | Livré |
-| CTL liés affichés | Livré |
+| Document ↔ Processus (`DocumentProcessus`) | Livré — cas d’usage procédures |
+| Risques / documents associés sur fiche Processus | Livré |
+| CTL liés via Risque (pas de lien CTL→Processus direct) | Livré |
 | LPD léger (champs secondaires) | Socle — approche légère maintenue |
+
+## Principes de liaison
+
+Ajouter un lien direct **seulement** s’il correspond à un vrai besoin métier :
+
+| Lien | Statut | Raison |
+|------|--------|--------|
+| Processus → Risque | Oui | Analyse des risques de processus |
+| Document → Processus | Oui | Procédures naturellement multi-processus |
+| Contrôle SCI → Processus | Non | Déjà obtenu via Processus → Risque → CTL |
 
 ## Roadmap (pas maintenant)
 
 - **Conformité** : référentiel légal / exigences / liens / revues — **architecture TBD avant build**.
 - **Éditeur key user**, **multi-unités**, **RBAC fin** — préparation documentée dans `ROADMAP.md` / `EDITEUR_PREPARATION.md`.
 - Module LPD transversal de pilotage — voir `LPD.md` (rester léger).
+- Rattachements `UniteAttribution` → Processus / Objectifs : **pas maintenant** (attributions autonomes).
 
 ## Documents liés
 

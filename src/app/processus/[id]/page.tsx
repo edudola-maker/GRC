@@ -62,7 +62,8 @@ export default async function ProcessusDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [processus, users, redactions, risques] = await Promise.all([
+  const [processus, users, redactions, risques, documentsLies] =
+    await Promise.all([
     prisma.processus.findUnique({
       where: { id },
       include: {
@@ -100,6 +101,13 @@ export default async function ProcessusDetailPage({
         },
       },
       orderBy: [{ criticite: "desc" }, { code: "asc" }],
+    }),
+    prisma.documentProcessus.findMany({
+      where: { processusId: id, document: { archive: false } },
+      include: {
+        document: { select: { id: true, code: true, nom: true, statut: true } },
+      },
+      orderBy: { lieLe: "asc" },
     }),
   ]);
   if (!processus) notFound();
@@ -302,6 +310,31 @@ export default async function ProcessusDetailPage({
                 </li>
               );
             })}
+          </ul>
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Documents liés"
+        defaultOpen={false}
+        badge={`${documentsLies.length}`}
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Procédures / documents rattachés à ce processus (relation dédiée).
+        </p>
+        {documentsLies.length === 0 ? (
+          <p className="empty">Aucun document lié.</p>
+        ) : (
+          <ul className="unite-activite__list">
+            {documentsLies.map((l) => (
+              <li key={l.id}>
+                <Link href={`/documents/${l.document.id}`}>
+                  <strong>
+                    {l.document.code} — {l.document.nom}
+                  </strong>
+                </Link>
+              </li>
+            ))}
           </ul>
         )}
       </CollapsibleSection>
