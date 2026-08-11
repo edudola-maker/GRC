@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -58,11 +59,15 @@ export function TacheInventory({
   responsables,
   unites,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: TacheInventoryItem[];
   responsables: { id: string; nom: string }[];
   unites: { id: string; nom: string }[];
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "ouvertes");
@@ -203,6 +208,13 @@ export function TacheInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           {(Object.keys(QUICK_LABELS) as QuickFilter[]).map((k) => (
@@ -309,8 +321,8 @@ export function TacheInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Tâche", "Statut", "Responsable", "Échéance"]}
-          secondaryColumns={["Source", "Unité", "Priorité", "Catégorie"]}
+          dense
+          columns={["Titre", "Responsable", "Échéance", "Statut"]}
         >
           {filtered.map((t) => (
             <li key={t.id}>
@@ -319,18 +331,9 @@ export function TacheInventory({
                 urgence={t.urgence}
                 primary={[
                   { value: t.titre, emphasis: "title" },
-                  { value: t.statutLabel, badgeTone: toneFromStatut(t.statut) },
                   { value: t.responsableNom },
                   { value: formatDateDot(t.dateEcheance) },
-                ]}
-                secondary={[
-                  {
-                    value: t.sourceLabel ?? "Libre",
-                    href: t.sourceHref,
-                  },
-                  { value: t.uniteNom },
-                  { value: t.prioriteLabel },
-                  { value: t.categorieLabel },
+                  { value: t.statutLabel, badgeTone: toneFromStatut(t.statut) },
                 ]}
               />
             </li>

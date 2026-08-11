@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -18,6 +19,7 @@ export type ProcessusInventoryItem = {
   id: string;
   code: string;
   nom: string;
+  uniteNom: string;
   statut: string;
   statutLabel: string;
   responsableId: string;
@@ -45,10 +47,14 @@ export function ProcessusInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: ProcessusInventoryItem[];
   responsables: { id: string; nom: string }[];
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
@@ -77,6 +83,7 @@ export function ProcessusInventory({
     return filterByQuery(list, deferredQuery, (p) => [
       p.code,
       p.nom,
+      p.uniteNom,
       p.parentNom ?? "",
       p.tags ?? "",
     ]);
@@ -141,6 +148,13 @@ export function ProcessusInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           {(Object.keys(QUICK_LABELS) as QuickFilter[]).map((k) => (
@@ -204,8 +218,8 @@ export function ProcessusInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Statut", "Responsable"]}
-          secondaryColumns={["Parent", "Criticité", "Tags", ""]}
+          dense
+          columns={["Code", "Unité", "Nom", "Responsable", "Statut"]}
         >
           {filtered.map((p) => (
             <li key={p.id}>
@@ -214,21 +228,13 @@ export function ProcessusInventory({
                 archived={p.archive}
                 primary={[
                   { value: p.code, emphasis: "code" },
+                  { value: p.uniteNom },
                   { value: p.nom, emphasis: "title" },
+                  { value: p.responsableNom },
                   {
                     value: p.statutLabel,
                     badgeTone: toneFromStatut(p.statut),
                   },
-                  { value: p.responsableNom },
-                ]}
-                secondary={[
-                  { value: p.parentNom ?? "—" },
-                  {
-                    value:
-                      p.criticite != null ? `Criticité ${p.criticite}` : "—",
-                  },
-                  { value: p.tags ? p.tags : "—" },
-                  { value: "" },
                 ]}
               />
             </li>

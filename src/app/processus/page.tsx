@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -28,6 +28,7 @@ export default async function ProcessusPage({
       include: {
         responsable: true,
         parent: { select: { nom: true } },
+        unite: { select: { code: true, nom: true } },
       },
       orderBy: [{ nom: "asc" }],
     }),
@@ -43,6 +44,7 @@ export default async function ProcessusPage({
     id: p.id,
     code: p.code,
     nom: p.nom,
+    uniteNom: `${p.unite.code} — ${p.unite.nom}`,
     statut: p.statut,
     statutLabel: STATUT_PROCESSUS_LABELS[p.statut] ?? p.statut,
     responsableId: p.responsableId,
@@ -76,9 +78,6 @@ export default async function ProcessusPage({
         title="Processus"
         description="Référentiel et cartographie — point d'entrée vers risques, contrôles et documents."
         help={<ModuleHelp {...MODULE_HELP.processus} />}
-        actions={
-          <BtnLink href="/processus/nouveau">Nouveau processus</BtnLink>
-        }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -103,6 +102,8 @@ export default async function ProcessusPage({
         items={items}
         responsables={responsables}
         initialQuick={initialQuick}
+        createHref="/processus/nouveau"
+        createLabel="Nouveau processus"
       />
     </>
   );

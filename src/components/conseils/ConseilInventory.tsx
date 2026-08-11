@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -20,7 +21,6 @@ import {
   type ConseilAdvancedFilters,
   type ConseilQuickFilter,
 } from "@/lib/inventory-filters";
-import { formatDateDot } from "@/lib/labels";
 
 export type ConseilInventoryItem = {
   id: string;
@@ -55,10 +55,14 @@ export function ConseilInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: ConseilInventoryItem[];
   responsables: { id: string; nom: string }[];
   initialQuick?: ConseilQuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<ConseilQuickFilter>(initialQuick ?? "ouverts");
@@ -131,8 +135,6 @@ export function ConseilInventory({
     setAdvanced(EMPTY_CONSEIL_ADVANCED);
   };
 
-  const provenance = (c: ConseilInventoryItem) =>
-    c.entiteDemandeuse || c.demandeur || "—";
 
   return (
     <InventoryBrowser
@@ -146,6 +148,13 @@ export function ConseilInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -302,8 +311,8 @@ export function ConseilInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Provenance", "Statut"]}
-          secondaryColumns={["Responsable", "Échéance", "Tags", ""]}
+          dense
+          columns={["Code", "Nom", "Responsable", "Statut"]}
         >
           {filtered.map((c) => (
             <li key={c.id}>
@@ -314,14 +323,8 @@ export function ConseilInventory({
                 primary={[
                   { value: c.code, emphasis: "code" },
                   { value: c.objet, emphasis: "title" },
-                  { value: provenance(c) },
-                  { value: c.statutLabel, badgeTone: toneFromStatut(c.statut) },
-                ]}
-                secondary={[
                   { value: c.responsableNom },
-                  { value: formatDateDot(c.dateEcheance) },
-                  { value: "" },
-                  { value: c.tags || "—" },
+                  { value: c.statutLabel, badgeTone: toneFromStatut(c.statut) },
                 ]}
               />
             </li>

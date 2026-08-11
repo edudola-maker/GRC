@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -113,9 +113,6 @@ export default async function ControlesSCIPage({
         title="Contrôles SCI"
         description="Définitions permanentes — l'exécution passe par les occurrences (tâches)."
         help={<ModuleHelp {...MODULE_HELP.controles} />}
-        actions={
-          <BtnLink href="/controles-sci/nouveau">Nouveau contrôle</BtnLink>
-        }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -138,6 +135,8 @@ export default async function ControlesSCIPage({
         items={items}
         responsables={responsables}
         initialQuick={initialQuick}
+        createHref="/controles-sci/nouveau"
+        createLabel="Nouveau contrôle"
       />
     </>
   );

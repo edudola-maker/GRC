@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -148,7 +148,6 @@ export default async function RisquesPage({
         title="Risques"
         description="Cartographie des risques — criticité = probabilité × impact."
         help={<ModuleHelp {...MODULE_HELP.risques} />}
-        actions={<BtnLink href="/risques/nouveau">Nouveau risque</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -160,6 +159,8 @@ export default async function RisquesPage({
         items={items}
         responsables={responsables}
         initialQuick={initialQuick}
+        createHref="/risques/nouveau"
+        createLabel="Nouveau risque"
       />
     </>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -138,7 +138,6 @@ export default async function AuditsPage({
         title={title}
         description="Un seul moteur Mission — vues séparées Audits / Revues de processus."
         help={<ModuleHelp {...MODULE_HELP.audits} />}
-        actions={<BtnLink href="/missions/nouveau">Nouvelle mission</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -183,6 +182,8 @@ export default async function AuditsPage({
         items={items}
         responsables={responsables}
         initialQuick={initialQuick}
+        createHref="/missions/nouveau"
+        createLabel="Nouvelle mission"
       />
     </>
   );

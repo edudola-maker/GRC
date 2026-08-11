@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 
 export type InventoryCell = {
@@ -151,15 +151,29 @@ export function InventoryList({
   children,
   /** Une seule ligne de colonnes (densité desktop). */
   dense = false,
+  className,
 }: {
   columns: string[];
   secondaryColumns?: string[];
   children: ReactNode;
   dense?: boolean;
+  /** Ex. `inventory-table--risque` pour grille dense dédiée. */
+  className?: string;
 }) {
   return (
     <div
-      className={`inventory-table${dense ? " inventory-table--dense" : ""}`}
+      className={[
+        "inventory-table",
+        dense ? "inventory-table--dense" : null,
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={
+        dense
+          ? ({ ["--inventory-cols"]: columns.length } as CSSProperties)
+          : undefined
+      }
     >
       <div className="inventory-columns-group" role="rowgroup">
         <InventoryColumns columns={columns} variant="primary" />

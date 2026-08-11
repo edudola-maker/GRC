@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -180,7 +180,6 @@ export default async function TachesInventoryPage({
         title="Tâches"
         description="Inventaire transversal — les tâches Projet en attente de prérequis sont masquées par défaut (pas d’action opérationnelle)."
         help={<ModuleHelp {...MODULE_HELP.taches} />}
-        actions={<BtnLink href="/taches/nouvelle">Nouvelle tâche</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -222,6 +221,8 @@ export default async function TachesInventoryPage({
           nom: `${u.code} — ${u.nom}`,
         }))}
         initialQuick={initialQuick}
+        createHref="/taches/nouvelle"
+        createLabel="Nouvelle tâche"
       />
     </>
   );

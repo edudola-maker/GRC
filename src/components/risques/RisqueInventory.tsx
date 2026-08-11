@@ -65,10 +65,14 @@ export function RisqueInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: RisqueInventoryItem[];
   responsables: { id: string; nom: string }[];
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "tous");
@@ -151,6 +155,13 @@ export function RisqueInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           {(Object.keys(QUICK_LABELS) as QuickFilter[]).map((k) => (
@@ -212,6 +223,7 @@ export function RisqueInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
+          className="inventory-table--risque"
           columns={[
             "Code",
             "Unité",

@@ -23,6 +23,7 @@ export function InventoryBrowser({
   activeFilterChips = [],
   onResetFilters,
   canResetFilters = false,
+  createAction,
   children,
 }: {
   searchPlaceholder: string;
@@ -40,6 +41,8 @@ export function InventoryBrowser({
   activeFilterChips?: string[];
   onResetFilters?: () => void;
   canResetFilters?: boolean;
+  /** Bouton + Nouveau juste au-dessus de la recherche / métriques. */
+  createAction?: ReactNode;
   children: ReactNode;
 }) {
   const filtered = resultCount !== totalCount;
@@ -59,6 +62,9 @@ export function InventoryBrowser({
         className="page-zone page-zone--inventory collapsible-section--zone"
       >
         <div className="inventory__toolbar">
+          {createAction ? (
+            <div className="inventory__create">{createAction}</div>
+          ) : null}
           <div className="inventory__search-row">
             <label className="inventory__search" htmlFor="inventory-q">
               <span className="sr-only">Recherche</span>

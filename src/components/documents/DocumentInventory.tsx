@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -13,7 +14,6 @@ import {
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { toneFromStatut } from "@/components/ui/StatusBadge";
-import { formatDateDot } from "@/lib/labels";
 
 export type DocumentInventoryItem = {
   id: string;
@@ -50,11 +50,15 @@ export function DocumentInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: DocumentInventoryItem[];
   responsables: { id: string; nom: string }[];
   /** Filtre rapide initial (ex. depuis ?filtre=retard). */
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
@@ -143,6 +147,13 @@ export function DocumentInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -233,13 +244,8 @@ export function DocumentInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Type", "Statut"]}
-          secondaryColumns={[
-            "Responsable",
-            "Prochaine revue",
-            "Fréquence",
-            "Tags",
-          ]}
+          dense
+          columns={["Code", "Nom", "Responsable", "Statut"]}
         >
           {filtered.map((d) => (
             <li key={d.id}>
@@ -250,16 +256,8 @@ export function DocumentInventory({
                 primary={[
                   { value: d.code, emphasis: "code" },
                   { value: d.nom, emphasis: "title" },
-                  {
-                    value: `${d.typeLabel}${d.version ? ` · v${d.version}` : ""}`,
-                  },
-                  { value: d.statutLabel, badgeTone: toneFromStatut(d.statut) },
-                ]}
-                secondary={[
                   { value: d.responsableNom },
-                  { value: formatDateDot(d.prochaineRevue) },
-                  { value: d.frequenceLabel || "—" },
-                  { value: d.tags || "—" },
+                  { value: d.statutLabel, badgeTone: toneFromStatut(d.statut) },
                 ]}
               />
             </li>

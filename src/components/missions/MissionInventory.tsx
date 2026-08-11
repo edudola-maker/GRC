@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -13,7 +14,6 @@ import {
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { toneFromStatut } from "@/components/ui/StatusBadge";
-import { formatDateDot } from "@/lib/labels";
 
 export type MissionInventoryItem = {
   id: string;
@@ -48,10 +48,14 @@ export function MissionInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: MissionInventoryItem[];
   responsables: { id: string; nom: string }[];
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
@@ -137,6 +141,13 @@ export function MissionInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -221,8 +232,8 @@ export function MissionInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Type", "Statut"]}
-          secondaryColumns={["Responsable", "Échéance", "Reco / tâches", "Tags"]}
+          dense
+          columns={["Code", "Titre", "Responsable", "Statut"]}
         >
           {filtered.map((a) => (
             <li key={a.id}>
@@ -233,16 +244,8 @@ export function MissionInventory({
                 primary={[
                   { value: a.code, emphasis: "code" },
                   { value: a.titre, emphasis: "title" },
-                  { value: a.typeLabel },
-                  { value: a.statutLabel, badgeTone: toneFromStatut(a.statut) },
-                ]}
-                secondary={[
                   { value: a.responsableNom },
-                  { value: formatDateDot(a.dateFin ?? a.dateDebut) },
-                  {
-                    value: `${a.nbReco} reco · ${a.nbTaches} tâche${a.nbTaches > 1 ? "s" : ""}`,
-                  },
-                  { value: a.tags || "—" },
+                  { value: a.statutLabel, badgeTone: toneFromStatut(a.statut) },
                 ]}
               />
             </li>
