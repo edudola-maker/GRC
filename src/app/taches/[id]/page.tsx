@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ConfirmDeleteButton } from "@/components/FormControls";
 import { TacheForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
@@ -9,7 +8,15 @@ import { EditableSection } from "@/components/module/EditableSection";
 import { TacheActionsRapides } from "@/components/TacheActionsRapides";
 import { TacheChecklistPanel } from "@/components/taches/TacheChecklistPanel";
 import { PageHeader, BtnLink } from "@/components/ui";
-import { deleteTache, updateTache } from "../actions";
+import {
+  ConfirmDeleteButton,
+  SubmitButton,
+} from "@/components/FormControls";
+import {
+  deleteTache,
+  updateTache,
+  ajouterTacheAuJournalBord,
+} from "../actions";
 import {
   CATEGORIE_TACHE_LABELS,
   PRIORITE_LABELS,
@@ -179,6 +186,28 @@ export default async function TacheDetailPage({
       />
 
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+
+      {tache.statut === "TERMINE" &&
+      (tache.projetId || tache.conseilId || tache.missionId) ? (
+        <details className="inline-create" style={{ marginBottom: "1rem" }}>
+          <summary className="btn btn--ghost" style={{ cursor: "pointer" }}>
+            Ajouter au journal de bord
+          </summary>
+          <form action={ajouterTacheAuJournalBord} className="entity-form" style={{ marginTop: "0.65rem" }}>
+            <input type="hidden" name="tacheId" value={tache.id} />
+            <input type="hidden" name="retour" value={baseHref} />
+            <label>
+              Texte
+              <input
+                name="texte"
+                defaultValue={`Tâche terminée : ${tache.titre}`}
+                required
+              />
+            </label>
+            <SubmitButton>Ajouter</SubmitButton>
+          </form>
+        </details>
+      ) : null}
 
       {urgence === "retard" ? (
         <div className="flash flash--error" role="status">

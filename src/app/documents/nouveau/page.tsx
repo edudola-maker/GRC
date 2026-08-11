@@ -21,7 +21,6 @@ export default async function NouveauDocumentPage({
       <BackLink href="/documents" label="← Retour aux documents" />
       <PageHeader
         title="Nouveau document"
-        description="Inventoriez un document et référencez sa page Confluence. Le contenu détaillé reste dans Confluence."
         help={<ModuleHelp {...MODULE_HELP.documents} />}
       />
       <FlashBanner erreur={sp.erreur} />

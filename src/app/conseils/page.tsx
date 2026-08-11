@@ -10,14 +10,12 @@ import {
   CONSEIL_STATUTS_CLOS,
   MODULE_HELP,
 } from "@/lib/catalog";
-import { businessDaysBetween } from "@/lib/dates";
 import {
   STATUT_CONSEIL_LABELS,
   startOfToday,
   urgenceEcheance,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
-import { getConseilDelaiCibleJours } from "@/lib/referentiels";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -32,14 +30,13 @@ export default async function ConseilsPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [conseils, responsables, delaiCible] = await Promise.all([
+  const [conseils, responsables] = await Promise.all([
     prisma.conseil.findMany({
       where: { uniteId },
       include: { responsable: true },
       orderBy: { dateReception: "desc" },
     }),
     listUtilisateursActifsForCurrentUnite(),
-    getConseilDelaiCibleJours(uniteId),
   ]);
 
   const items: ConseilInventoryItem[] = conseils.map((c) => {
@@ -79,28 +76,12 @@ export default async function ConseilsPage({
   const clotures = actifs.filter((c) => c.statut === "CLOTURE").length;
   const enRetard = items.filter((c) => c.estRetard && !c.archive).length;
 
-  const closAvecDelai = actifs.filter(
-    (c) =>
-      (c.statut === "CLOTURE" || c.statut === "REPONDU") &&
-      (c.dateCloture || c.dateReponse),
-  );
-  const respects = closAvecDelai.filter((c) => {
-    const fin = c.dateCloture ?? c.dateReponse;
-    if (!fin) return false;
-    return businessDaysBetween(c.dateReception, fin) <= delaiCible;
-  }).length;
-  const tauxRespect =
-    closAvecDelai.length > 0
-      ? Math.round((respects / closAvecDelai.length) * 100)
-      : null;
-
   const initialQuick = sp.filtre === "retard" ? "retard" : undefined;
 
   return (
     <>
       <PageHeader
         title="Conseils"
-        description={`Demandes ponctuelles — délai cible ${delaiCible} jours ouvrés.`}
         help={<ModuleHelp {...MODULE_HELP.conseils} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
@@ -108,22 +89,13 @@ export default async function ConseilsPage({
       <KpiZone
         items={[
           { value: ouverts, label: "ouverts" },
-          { value: clotures, label: "clôturés" },
-          {
-            value: (
-              <>
-                {tauxRespect ?? "—"}
-                {tauxRespect != null ? "%" : ""}
-              </>
-            ),
-            label: `respect délai ${delaiCible} j.`,
-          },
           {
             value: enRetard,
             label: "à traiter",
             tone: enRetard > 0 ? "danger" : "default",
             href: enRetard > 0 ? "?filtre=retard#inventaire" : undefined,
           },
+          { value: clotures, label: "clôturés" },
         ]}
       />
 

@@ -38,7 +38,6 @@ export default async function NouveauRisquePage({
       <BackLink href="/risques" label="← Retour aux risques" />
       <PageHeader
         title="Nouveau risque"
-        description="Identifiez un risque et évaluez sa criticité (probabilité × impact)."
         help={<ModuleHelp {...MODULE_HELP.risques} />}
       />
       <FlashBanner erreur={sp.erreur} />

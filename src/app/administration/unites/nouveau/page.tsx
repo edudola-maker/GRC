@@ -17,7 +17,6 @@ export default async function NouvelleUniteAdminPage({
       <BackLink href="/administration/unites" label="← Retour aux unités" />
       <PageHeader
         title="Nouvelle unité"
-        description="Le code UNT-xxxx est attribué automatiquement. Assignez responsable et adjoint après avoir rattaché des utilisateurs."
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">

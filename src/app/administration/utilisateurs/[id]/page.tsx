@@ -40,7 +40,6 @@ export default async function AdminUtilisateurDetailPage({
       />
       <PageHeader
         title={formatUtilisateurNom(user)}
-        description={`${ROLE_UTILISATEUR_LABELS[user.role] ?? user.role} · ${user.unite.code} — ${user.unite.nom}`}
         badge={user.actif ? undefined : "Inactif"}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

@@ -2,6 +2,8 @@
 
 > Document de vision. **Aucun de ces modules n’est à développer tant qu’il n’est pas explicitement demandé.**  
 > Objectif : garder les prochaines évolutions cohérentes avec l’architecture.
+>
+> **Sprint majeur en cours / livré :** trimming UX, dashboards, Notes/Séances, Journal de bord, Conseil réponse, Planification Mission — voir `docs/SPRINT_MAJEUR_TRIMMING.md`. Architecture substantif : `docs/ARCHITECTURE_SUBSTANTIF.md`.
 
 ---
 

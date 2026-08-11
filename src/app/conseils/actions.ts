@@ -66,6 +66,7 @@ export async function createConseil(formData: FormData) {
       dateCloture: optDate(formData, "dateCloture"),
       commentaires: optStr(formData, "commentaires"),
       raisonnement: optStr(formData, "raisonnement"),
+      reponseConclusion: optStr(formData, "reponseConclusion"),
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
@@ -170,6 +171,7 @@ export async function updateConseil(formData: FormData) {
       dateCloture,
       commentaires: optStr(formData, "commentaires"),
       raisonnement: optStr(formData, "raisonnement"),
+      reponseConclusion: optStr(formData, "reponseConclusion"),
       modifieParId: current.id,
     },
   });
@@ -303,4 +305,51 @@ export async function createTacheDepuisConseil(formData: FormData) {
 
   revalidateApp([`/conseils/${conseil.id}`, `/taches/${tache.id}`]);
   redirectWithOk(`/taches/${tache.id}`, "tache");
+}
+
+/** Crée un nouveau conseil lié à un précédent (suite / récurrence légère). */
+export async function duplicateConseil(formData: FormData) {
+  const current = await getCurrentUser();
+  const uniteId = current.uniteId;
+  const id = str(formData, "id");
+  if (!id) redirectWithError("/conseils", "Identifiant manquant.");
+
+  const source = await prisma.conseil.findUnique({ where: { id } });
+  if (!source) redirectWithError("/conseils", "Conseil introuvable.");
+
+  const delaiCible = await getConseilDelaiCibleJours(uniteId);
+  const dateReception = new Date();
+  const created = await prisma.conseil.create({
+    data: {
+      code: await nextCode("CONSEIL", uniteId),
+      uniteId,
+      objet: source.objet,
+      description: source.description,
+      taxinomie: source.taxinomie,
+      tags: source.tags,
+      demandeur: source.demandeur,
+      entiteDemandeuse: source.entiteDemandeuse,
+      dateReception,
+      responsableId: source.responsableId,
+      dateEcheance: addBusinessDays(dateReception, delaiCible),
+      statut: "RECU",
+      conseilPrecedentId: source.id,
+      archive: false,
+      creeParId: current.id,
+      modifieParId: current.id,
+    },
+  });
+
+  await ajouterJournal({
+    typeObjet: "CONSEIL",
+    objetId: created.id,
+    typeEvenement: "CREATION",
+    message: `Suite du conseil ${source.code}`,
+    auteurId: current.id,
+    automatique: true,
+    uniteId,
+  });
+
+  revalidateApp([`/conseils/${created.id}`, `/conseils/${source.id}`]);
+  redirectWithOk(`/conseils/${created.id}`, "cree");
 }

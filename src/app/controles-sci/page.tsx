@@ -111,7 +111,6 @@ export default async function ControlesSCIPage({
     <>
       <PageHeader
         title="Contrôles SCI"
-        description="Définitions permanentes — l'exécution passe par les occurrences (tâches)."
         help={<ModuleHelp {...MODULE_HELP.controles} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

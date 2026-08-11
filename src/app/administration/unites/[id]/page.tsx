@@ -36,7 +36,6 @@ export default async function AdminUniteDetailPage({
       <BackLink href="/administration/unites" label="← Retour aux unités" />
       <PageHeader
         title={`${unite.code} — ${unite.nom}`}
-        description="Édition administrative de l’unité (pas la fiche métier /unite)."
         badge={unite.actif ? undefined : "Inactif"}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

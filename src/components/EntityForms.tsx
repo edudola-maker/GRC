@@ -82,6 +82,7 @@ type ConseilValues = {
   dateCloture?: Date | string | null;
   commentaires?: string | null;
   raisonnement?: string | null;
+  reponseConclusion?: string | null;
 };
 
 type ControleValues = {
@@ -879,12 +880,24 @@ export function ConseilForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Réflexion / analyse" defaultOpen={false}>
-        <Field label="Raisonnement / analyse" htmlFor="raisonnement">
+      <FormSection title="Réponse / Conclusion" defaultOpen>
+        <Field
+          label="Réponse / Conclusion"
+          htmlFor="reponseConclusion"
+          hint="Ce qui a réellement été répondu — visible immédiatement sur la fiche."
+        >
+          <textarea
+            id="reponseConclusion"
+            name="reponseConclusion"
+            rows={4}
+            defaultValue={values?.reponseConclusion ?? ""}
+          />
+        </Field>
+        <Field label="Raisonnement / analyse (interne)" htmlFor="raisonnement">
           <textarea
             id="raisonnement"
             name="raisonnement"
-            rows={4}
+            rows={3}
             defaultValue={values?.raisonnement ?? ""}
           />
         </Field>

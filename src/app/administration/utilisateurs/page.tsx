@@ -44,7 +44,6 @@ export default async function AdminUtilisateursPage({
     <>
       <PageHeader
         title="Utilisateurs"
-        description="Inventaire des comptes — création et édition réservées aux administrateurs."
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 

@@ -29,7 +29,6 @@ export default async function AdminUnitesPage({
     <>
       <PageHeader
         title="Unités"
-        description="Administration technique des unités — distincte de la fiche métier « Mon unité »."
         actions={
           <BtnLink href="/administration/unites/nouveau">Nouvelle unité</BtnLink>
         }

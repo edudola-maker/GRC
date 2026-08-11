@@ -625,5 +625,87 @@ export async function completeTacheRapide(formData: FormData) {
   ]);
 
   revalidateTacheViews(id, existing);
+
+  // Proposition volontaire d’ajout au journal de bord (pas automatique).
+  if (
+    str(formData, "ajouterAuJournal") === "1" &&
+    (existing.projetId || existing.conseilId || existing.missionId)
+  ) {
+    const typeObjet = existing.projetId
+      ? "PROJET"
+      : existing.conseilId
+        ? "CONSEIL"
+        : "MISSION";
+    const objetId =
+      existing.projetId || existing.conseilId || existing.missionId!;
+    const texte =
+      optStr(formData, "texteJournal") || `Tâche terminée : ${existing.titre}`;
+    await prisma.journalBordEntree.create({
+      data: {
+        uniteId: existing.uniteId,
+        typeObjet,
+        objetId,
+        date: new Date(),
+        texte,
+        auteurId: current.id,
+        tacheId: existing.id,
+      },
+    });
+    revalidateApp([
+      typeObjet === "PROJET"
+        ? `/projets/${objetId}`
+        : typeObjet === "CONSEIL"
+          ? `/conseils/${objetId}`
+          : `/missions/${objetId}`,
+    ]);
+  }
+
   redirectWithOk(retour, "statut");
+}
+
+/** Proposition volontaire : ajouter une tâche terminée au journal de bord du parent. */
+export async function ajouterTacheAuJournalBord(formData: FormData) {
+  const current = await getCurrentUser();
+  const tacheId = str(formData, "tacheId");
+  const texte = str(formData, "texte");
+  const retour = str(formData, "retour") || "/taches";
+  if (!tacheId) redirectWithError(retour, "Tâche manquante.");
+  if (!texte) redirectWithError(retour, "Texte obligatoire.");
+
+  const tache = await prisma.tache.findUnique({ where: { id: tacheId } });
+  if (!tache) redirectWithError(retour, "Tâche introuvable.");
+
+  const typeObjet = tache.projetId
+    ? "PROJET"
+    : tache.conseilId
+      ? "CONSEIL"
+      : tache.missionId
+        ? "MISSION"
+        : null;
+  const objetId = tache.projetId || tache.conseilId || tache.missionId;
+  if (!typeObjet || !objetId) {
+    redirectWithError(retour, "Cette tâche n’est pas rattachée à un objet journalisable.");
+  }
+
+  await prisma.journalBordEntree.create({
+    data: {
+      uniteId: tache.uniteId,
+      typeObjet,
+      objetId,
+      date: new Date(),
+      texte,
+      auteurId: current.id,
+      tacheId: tache.id,
+    },
+  });
+
+  revalidateApp([
+    retour,
+    typeObjet === "PROJET"
+      ? `/projets/${objetId}`
+      : typeObjet === "CONSEIL"
+        ? `/conseils/${objetId}`
+        : `/missions/${objetId}`,
+  ]);
+  redirectWithOk(retour, "journal");
 }

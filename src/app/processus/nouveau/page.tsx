@@ -21,7 +21,6 @@ export default async function NouveauProcessusPage({
       <BackLink href="/processus" label="← Retour aux processus" />
       <PageHeader
         title="Nouveau processus"
-        description="Processus = quoi l’on fait. La procédure détaillée reste dans Confluence."
         help={<ModuleHelp {...MODULE_HELP.processus} />}
       />
       <FlashBanner erreur={sp.erreur} />

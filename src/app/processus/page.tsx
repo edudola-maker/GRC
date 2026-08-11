@@ -76,7 +76,6 @@ export default async function ProcessusPage({
     <>
       <PageHeader
         title="Processus"
-        description="Référentiel et cartographie — point d'entrée vers risques, contrôles et documents."
         help={<ModuleHelp {...MODULE_HELP.processus} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

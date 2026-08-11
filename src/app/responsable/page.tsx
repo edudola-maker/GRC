@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ActionRow } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { getActionsUnite } from "@/lib/actions-view";
 import { getDashboardResponsable } from "@/lib/dashboard-responsable";
@@ -123,53 +124,175 @@ export default async function DashboardResponsablePage({
   return (
     <>
       <PageHeader
-        title="Dashboard responsable"
-        description={`Comment va mon unité${unite ? ` (${unite.nom})` : ""} ? Vue consolidée — les objectifs et KPI sont définis par chaque module.`}
-        badge="Vue de pilotage"
+        title="Cockpit responsable"
+        help={
+          <ModuleHelp
+            title="Dashboard responsable"
+            body="Monitoring de l’unité : charge, échéances, activité. Chaque indicateur mène à l’inventaire filtré."
+          />
+        }
+        badge="Pilotage"
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <CollapsibleSection title="Vue synthétique" defaultOpen>
-        <div className="kpi-domains">
-          <article className="kpi-domain">
-            <h3>Audits</h3>
-            <p>
-              <strong>{s.auditsEnCours}</strong> en cours ·{" "}
-              <strong>{s.auditsRealises}</strong> réalisés
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Conseils</h3>
-            <p>
-              <strong>{s.conseilsOuverts}</strong> ouverts · respect délai{" "}
-              <strong>{s.tauxRespectDelai ?? "—"}</strong>
-              {s.tauxRespectDelai != null ? " %" : ""}
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Projets</h3>
-            <p>
-              <strong>{s.projetsActifs}</strong> actifs ·{" "}
-              <strong>{s.projetsEnRetard}</strong> en retard
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Contrôles SCI</h3>
-            <p>
-              <strong>{s.controlesPrevus}</strong> actifs ·{" "}
-              <strong>{s.controlesEnRetard}</strong> échéances en retard ·{" "}
-              <strong>{s.controlesRealises}</strong> occurrences réalisées
-            </p>
-          </article>
-          <article className="kpi-domain">
-            <h3>Risques</h3>
-            <p>
-              <strong>{s.risquesCritiques}</strong> critiques ·{" "}
-              <strong>{s.risquesEleves}</strong> élevés
-            </p>
-          </article>
+      <section className="resp-cockpit" aria-label="Vue cockpit">
+        <div className="resp-block">
+          <h3>Charge de l’équipe</h3>
+          <div className="resp-bars">
+            {users.slice(0, 8).map((u) => {
+              const n = chargeMap.get(u.id) ?? 0;
+              const max = Math.max(
+                1,
+                ...users.map((x) => chargeMap.get(x.id) ?? 0),
+              );
+              const pct = Math.round((n / max) * 100);
+              return (
+                <Link
+                  key={u.id}
+                  href={`/responsable?collaborateur=${u.id}`}
+                  className="resp-bar"
+                >
+                  <span>{u.nom}</span>
+                  <span className="resp-bar__track">
+                    <span
+                      className={`resp-bar__fill${n > 5 ? " resp-bar__fill--warn" : ""}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </span>
+                  <strong>{n}</strong>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </CollapsibleSection>
+
+        <div className="resp-block">
+          <h3>Échéances / retards</h3>
+          <div className="resp-bars">
+            <Link href="/taches?filtre=retard" className="resp-bar">
+              <span>Tâches en retard</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill resp-bar__fill--danger"
+                  style={{
+                    width: `${Math.min(100, (s.actionsEnRetard ?? 0) * 10)}%`,
+                  }}
+                />
+              </span>
+              <strong>{s.actionsEnRetard ?? 0}</strong>
+            </Link>
+            <Link href="/conseils?filtre=retard" className="resp-bar">
+              <span>Conseils en retard</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill resp-bar__fill--warn"
+                  style={{ width: `${Math.min(100, s.conseilsOuverts * 15)}%` }}
+                />
+              </span>
+              <strong>{s.conseilsOuverts}</strong>
+            </Link>
+            <Link href="/controles-sci?filtre=retard" className="resp-bar">
+              <span>Contrôles SCI en retard</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill resp-bar__fill--danger"
+                  style={{
+                    width: `${Math.min(100, s.controlesEnRetard * 15)}%`,
+                  }}
+                />
+              </span>
+              <strong>{s.controlesEnRetard}</strong>
+            </Link>
+            <Link href="/risques?filtre=critiques" className="resp-bar">
+              <span>Risques critiques</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill resp-bar__fill--danger"
+                  style={{
+                    width: `${Math.min(100, s.risquesCritiques * 20)}%`,
+                  }}
+                />
+              </span>
+              <strong>{s.risquesCritiques}</strong>
+            </Link>
+          </div>
+        </div>
+
+        <div className="resp-block">
+          <h3>Répartition d’activité</h3>
+          <div className="resp-bars">
+            <Link href="/missions" className="resp-bar">
+              <span>Missions en cours</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill"
+                  style={{ width: `${Math.min(100, s.auditsEnCours * 20)}%` }}
+                />
+              </span>
+              <strong>{s.auditsEnCours}</strong>
+            </Link>
+            <Link href="/projets" className="resp-bar">
+              <span>Projets actifs</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill"
+                  style={{ width: `${Math.min(100, s.projetsActifs * 15)}%` }}
+                />
+              </span>
+              <strong>{s.projetsActifs}</strong>
+            </Link>
+            <Link href="/conseils" className="resp-bar">
+              <span>Conseils ouverts</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill"
+                  style={{ width: `${Math.min(100, s.conseilsOuverts * 15)}%` }}
+                />
+              </span>
+              <strong>{s.conseilsOuverts}</strong>
+            </Link>
+            <Link href="/taches" className="resp-bar">
+              <span>Actions ouvertes</span>
+              <span className="resp-bar__track">
+                <span
+                  className="resp-bar__fill"
+                  style={{
+                    width: `${Math.min(100, (s.actionsOuvertes ?? 0) * 5)}%`,
+                  }}
+                />
+              </span>
+              <strong>{s.actionsOuvertes ?? 0}</strong>
+            </Link>
+          </div>
+        </div>
+
+        <div className="resp-block">
+          <h3>Objectifs annuels</h3>
+          <div className="resp-bars">
+            {objectifsModule.slice(0, 6).map((o) => (
+              <Link
+                key={o.id}
+                href={`/unite#objectifs`}
+                className="resp-bar"
+              >
+                <span>{o.libelle}</span>
+                <span className="resp-bar__track">
+                  <span
+                    className="resp-bar__fill"
+                    style={{
+                      width: `${Math.min(100, o.progression ?? 0)}%`,
+                    }}
+                  />
+                </span>
+                <strong>{o.realise ?? "—"}</strong>
+              </Link>
+            ))}
+            {objectifsModule.length === 0 ? (
+              <p className="muted">Aucun objectif module défini.</p>
+            ) : null}
+          </div>
+        </div>
+      </section>
 
       <CollapsibleSection
         title="Que fait actuellement l'unité ?"

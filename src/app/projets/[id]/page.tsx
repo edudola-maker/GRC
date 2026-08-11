@@ -1,3 +1,4 @@
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -38,6 +39,11 @@ import {
 import { listSectionRedactions } from "@/lib/section-redaction";
 import { getActivationByTacheIds } from "@/lib/tache-dependances";
 import { parseTags } from "@/lib/tags";
+import { NotesPanel } from "@/components/notes/NotesPanel";
+import { JournalBordPanel } from "@/components/journal/JournalBordPanel";
+import { listerNotes } from "@/lib/notes";
+import { listerJournalBord } from "@/lib/journal-bord";
+import { formatUtilisateurNom } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +78,7 @@ export default async function ProjetDetailPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [projet, users, redactions] = await Promise.all([
+  const [projet, users, redactions, notes, journalBord] = await Promise.all([
     prisma.projet.findUnique({
       where: { id },
       include: {
@@ -95,6 +101,8 @@ export default async function ProjetDetailPage({
     }),
     listUtilisateursActifsForCurrentUnite(),
     listSectionRedactions("PROJET", id),
+    listerNotes("PROJET", id),
+    listerJournalBord("PROJET", id),
   ]);
 
   if (!projet) notFound();
@@ -161,6 +169,7 @@ export default async function ProjetDetailPage({
       />
 
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <TrackRecentView href={baseHref} label={`${projet.code} — ${projet.nom}`} />
 
       {projet.archive ? (
         <div className="flash flash--warn" role="status">
@@ -507,6 +516,26 @@ export default async function ProjetDetailPage({
           {tags.length ? tags.map((t) => `#${t}`).join(" ") : "Aucun tag."}
         </p>
       </EditableSection>
+
+      <NotesPanel
+        typeObjet="PROJET"
+        objetId={projet.id}
+        notes={notes}
+        users={users.map((u) => ({
+          id: u.id,
+          nom: formatUtilisateurNom(u),
+        }))}
+        canEdit={canEdit}
+        baseHref={baseHref}
+      />
+
+      <JournalBordPanel
+        typeObjet="PROJET"
+        objetId={projet.id}
+        entrees={journalBord}
+        canEdit={canEdit}
+        baseHref={baseHref}
+      />
     </>
   );
 }

@@ -24,7 +24,6 @@ export default async function NouveauConseilPage({
       <BackLink href="/conseils" label="← Retour aux conseils" />
       <PageHeader
         title="Nouveau conseil"
-        description="Demande ponctuelle — échéance par défaut à 5 jours ouvrés."
         help={<ModuleHelp {...MODULE_HELP.conseils} />}
       />
       <FlashBanner erreur={sp.erreur} />

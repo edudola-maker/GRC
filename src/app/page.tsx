@@ -2,14 +2,17 @@ import Link from "next/link";
 import { ActionBucket } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
-import { PlanningCalendar } from "@/components/PlanningCalendar";
+import { ModuleHelp } from "@/components/ModuleHelp";
+import {
+  ReprendreTravail,
+} from "@/components/dashboard/ReprendreTravail";
+import {
+  SemaineCompacte,
+  buildSemaineDays,
+} from "@/components/dashboard/SemaineCompacte";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { getMesActions } from "@/lib/actions-view";
 import { formatDate } from "@/lib/labels";
-import {
-  getPlanningCollaborateur,
-  parsePlanningFilters,
-} from "@/lib/planning";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -21,22 +24,13 @@ export default async function DashboardCollaborateurPage({
     ok?: string;
     erreur?: string;
     vue?: string;
-    plan?: string;
-    f?: string;
   }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const weekOffset = Number.parseInt(sp.plan ?? "0", 10) || 0;
-  const planFilters = parsePlanningFilters(sp.f);
-  const [actions, planning] = await Promise.all([
-    getMesActions(user.id),
-    getPlanningCollaborateur(user.id, user.uniteId, { weekOffset }),
-  ]);
+  const actions = await getMesActions(user.id);
   const retourQs = new URLSearchParams();
   if (sp.vue) retourQs.set("vue", sp.vue);
-  if (weekOffset) retourQs.set("plan", String(weekOffset));
-  if (sp.f) retourQs.set("f", sp.f);
   const retour = retourQs.toString() ? `/?${retourQs}` : "/";
 
   const vue = sp.vue || "toutes";
@@ -77,40 +71,63 @@ export default async function DashboardCollaborateurPage({
         ? []
         : buckets.filter((b) => b.id === vue);
 
+  const semaineItems = [
+    ...actions.retard,
+    ...actions.aujourdhui,
+    ...actions.semaine,
+    ...actions.avenir,
+  ].map((t) => ({
+    id: t.id,
+    titre: t.titre,
+    href: `/taches/${t.id}`,
+    dateEcheance: t.dateEcheance,
+    dateDebut: t.dateDebut,
+  }));
+
+  const weekDays = buildSemaineDays(semaineItems);
+
   return (
     <>
       <PageHeader
-        title="Mon tableau de bord"
-        description={`Bonjour ${user.nom.split(" ")[0]} — que dois-je faire et sur quoi vais-je travailler ?`}
+        title="Ma journée"
+        help={
+          <ModuleHelp
+            title="Dashboard collaborateur"
+            sections={[
+              {
+                heading: "À quoi ça sert ?",
+                body: "Voir immédiatement ce qui demande votre attention : retards, échéances, semaine, et reprendre un travail récent.",
+              },
+              {
+                heading: "Semaine",
+                body: "⚑ = échéance à rendre ce jour. ▸ = début de plage planifiée. Outlook reste l’outil des réunions.",
+              },
+              {
+                heading: "Charge",
+                body: "La charge s’exprime en jours (0,25 · 0,5 · 1 · 2…) — pas de timesheet.",
+              },
+            ]}
+          />
+        }
         actions={
           <BtnLink href="/taches/nouvelle" variant="ghost">
-            Créer une action
+            + Action
           </BtnLink>
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <section className="section" aria-label="Ma planification">
-        <CollapsibleSection title="Ma planification" defaultOpen>
-          <p className="muted" style={{ marginBottom: "0.85rem" }}>
-            Sur quoi vais-je travailler les prochaines semaines ? Vue high
-            level — projets, audits et tâches (conseils, SCI, revues…). Outlook
-            reste l&apos;outil des réunions.
-          </p>
-          <PlanningCalendar
-            columns={planning.window.columns}
-            bands={planning.bands}
-            winStart={planning.window.start}
-            weeks={planning.window.weeks}
-            weekOffset={planning.window.weekOffset}
-            activeFilters={planFilters}
-            vue={sp.vue}
-          />
-        </CollapsibleSection>
-      </section>
+      <ReprendreTravail />
+
+      <CollapsibleSection title="Ma semaine" defaultOpen>
+        <p className="muted" style={{ marginTop: 0, marginBottom: "0.65rem" }}>
+          ⚑ échéance · ▸ plage planifiée
+        </p>
+        <SemaineCompacte days={weekDays} />
+      </CollapsibleSection>
 
       <CollapsibleSection
-        title="Mes actions"
+        title="À faire"
         defaultOpen
         badge={actions.totalOuvertes}
       >
@@ -118,71 +135,61 @@ export default async function DashboardCollaborateurPage({
           <Link href="/" className={`chip${vue === "toutes" ? " is-active" : ""}`}>
             Actives
           </Link>
-          {buckets.map((b) => (
-            <Link
-              key={b.id}
-              href={`/?vue=${b.id}`}
-              className={`chip${vue === b.id ? " is-active" : ""}`}
-            >
-              {b.title} ({b.items.length})
-            </Link>
-          ))}
+          <Link
+            href="/?vue=retard"
+            className={`chip${vue === "retard" ? " is-active" : ""}`}
+          >
+            En retard ({actions.retard.length})
+          </Link>
+          <Link
+            href="/?vue=aujourdhui"
+            className={`chip${vue === "aujourdhui" ? " is-active" : ""}`}
+          >
+            Aujourd&apos;hui
+          </Link>
+          <Link
+            href="/?vue=semaine"
+            className={`chip${vue === "semaine" ? " is-active" : ""}`}
+          >
+            Semaine
+          </Link>
           <Link
             href="/?vue=terminees"
             className={`chip${vue === "terminees" ? " is-active" : ""}`}
           >
-            Terminées ({actions.terminees.length})
+            Terminées
           </Link>
         </div>
 
         {vue === "terminees" ? (
-          <CollapsibleSection
-            title="Historique — actions terminées"
-            defaultOpen={false}
-          >
-            {actions.terminees.length === 0 ? (
-              <p className="empty">Aucune action terminée récemment.</p>
-            ) : (
-              <ul className="entity-list">
-                {actions.terminees.map((t) => (
-                  <li key={t.id}>
-                    <Link href={`/taches/${t.id}`} className="entity-row">
-                      <div className="entity-row__main">
-                        <strong>{t.titre}</strong>
-                        <span className="entity-row__meta">
-                          Clôturée le {formatDate(t.dateValidation ?? t.modifieLe)}
-                        </span>
-                      </div>
-                      <span className="entity-row__date">
-                        {formatDate(t.dateEcheance)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CollapsibleSection>
-        ) : actions.totalOuvertes === 0 ? (
-          <p className="empty empty--success">
-            Aucune action ouverte. Belle progression — consultez l&apos;historique
-            pour revoir les actions terminées.
-          </p>
+          <ActionBucket
+            title="Terminées récemment"
+            count={actions.terminees.length}
+            items={actions.terminees}
+            empty="Aucune tâche terminée récente."
+            retour={retour}
+          />
         ) : (
-          <div className="stack-panels">
-            {visible.map((b) => (
-              <ActionBucket
-                key={b.id}
-                title={b.title}
-                count={b.items.length}
-                items={b.items}
-                retour={retour}
-                empty={b.empty}
-                tone={b.tone}
-              />
-            ))}
-          </div>
+          visible.map((b) => (
+            <ActionBucket
+              key={b.id}
+              title={b.title}
+              count={b.items.length}
+              items={b.items}
+              empty={b.empty}
+              tone={b.tone}
+              retour={retour}
+            />
+          ))
         )}
       </CollapsibleSection>
+
+      <p className="muted" style={{ marginTop: "1rem" }}>
+        Bonjour {user.nom.split(" ")[0]} — inventaire complet :{" "}
+        <Link href="/taches">Tâches</Link>
+        {" · "}
+        aujourd&apos;hui {formatDate(new Date())}
+      </p>
     </>
   );
 }
