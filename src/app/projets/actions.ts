@@ -6,8 +6,17 @@ import {
   PRIORITE_OPTIONS,
   STATUT_PROJET_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  assertCodeUnique,
+  assertNomUnique,
+  nextCode,
+  normalizeCode,
+} from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import {
@@ -15,6 +24,7 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 import { setTachePrerequis } from "@/lib/tache-dependances";
@@ -102,7 +112,8 @@ export async function updateProjet(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/projets/${id}?edit=${sectionKey}`;
+  const base = `/projets/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
 
   if (sectionKey === "INFOS_GENERALES") {
     const nom = str(formData, "nom");
@@ -111,14 +122,44 @@ export async function updateProjet(formData: FormData) {
     }
     const nomErr = await assertNomUnique("PROJET", nom, uniteId, id);
     if (nomErr) redirectWithError(editFallback, nomErr);
+
+    const codeRaw = optStr(formData, "code") ?? existing.code;
+    const code = normalizeCode(codeRaw);
+    const codeErr = await assertCodeUnique("PROJET", code, uniteId, id);
+    if (codeErr) redirectWithError(editFallback, codeErr);
+
+    const description = optStr(formData, "description");
+    const changes = diffChamps([
+      { champ: "code", avant: existing.code, apres: code },
+      { champ: "nom", avant: existing.nom, apres: nom },
+      { champ: "description", avant: existing.description, apres: description },
+    ]);
+    const bump = changes.length > 0;
+    const nextVersion = bump
+      ? existing.contenuVersion + 1
+      : existing.contenuVersion;
+
     await prisma.projet.update({
       where: { id },
       data: {
+        code,
         nom,
-        description: optStr(formData, "description"),
+        description,
         modifieParId: current.id,
+        ...(bump ? { contenuVersion: nextVersion } : {}),
       },
     });
+
+    if (bump) {
+      await enregistrerModifications({
+        typeObjet: "PROJET",
+        objetId: id,
+        uniteId: existing.uniteId,
+        modifieParId: current.id,
+        changes,
+        versionObjet: nextVersion,
+      });
+    }
   } else if (sectionKey === "PILOTAGE") {
     const statut = str(formData, "statut") || "IDEE";
     const priorite = str(formData, "priorite") || "MOYENNE";
@@ -202,7 +243,9 @@ export async function updateProjet(formData: FormData) {
 
   revalidateProjetViews(id);
   redirectWithOk(
-    intent === "brouillon" ? editFallback : `/projets/${id}`,
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }

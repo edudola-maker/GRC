@@ -150,6 +150,7 @@ export default async function ConseilDetailPage({
             users={users}
             values={conseil}
             cancelHref={baseHref}
+            sectionKey="INFOS_GENERALES"
             submitLabel="Enregistrer"
           />
         }

@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -102,7 +102,6 @@ export default async function ConseilsPage({
         title="Conseils"
         description={`Demandes ponctuelles — délai cible ${delaiCible} jours ouvrés.`}
         help={<ModuleHelp {...MODULE_HELP.conseils} />}
-        actions={<BtnLink href="/conseils/nouveau">Nouveau conseil</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -132,6 +131,8 @@ export default async function ConseilsPage({
         items={items}
         responsables={responsables.map((r) => ({ id: r.id, nom: r.nom }))}
         initialQuick={initialQuick}
+        createHref="/conseils/nouveau"
+        createLabel="Nouveau conseil"
       />
     </>
   );

@@ -35,13 +35,15 @@ export function BtnLink({
   href,
   children,
   variant = "primary",
+  scroll,
 }: {
   href: string;
   children: React.ReactNode;
   variant?: "primary" | "ghost" | "danger";
+  scroll?: boolean;
 }) {
   return (
-    <Link href={href} className={`btn btn--${variant}`}>
+    <Link href={href} className={`btn btn--${variant}`} scroll={scroll}>
       {children}
     </Link>
   );

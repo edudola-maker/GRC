@@ -2238,6 +2238,70 @@ a {
   text-align: right;
 }
 
+/* Fiche Unité — box infos structurelles (haut de page, pas bande latérale) */
+.unite-structural-box {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, #6b7c6a);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #e8eee6 70%, var(--bg, #fff)) 0%,
+    color-mix(in srgb, #dfe6dc 55%, var(--bg, #fff)) 100%
+  );
+}
+
+.unite-structural-box__label {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--muted, #5a6358) 90%, #3d4a3c);
+}
+
+.unite-structural-box__kv {
+  margin: 0;
+}
+
+.unite-structural-box__kv dt {
+  font-size: 0.75rem;
+}
+
+/* Attributions / missions institutionnelles */
+.unite-attribution-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.unite-attribution-card {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bg, #fff) 92%, #e4ebe2);
+}
+
+.unite-attribution-card.is-inactive {
+  opacity: 0.6;
+}
+
+.unite-attribution-card__titre {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.unite-attribution-card__desc {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted, #5c6570);
+  white-space: pre-wrap;
+}
+
+.unite-attribution-list--edit .unite-attribution-card {
+  background: color-mix(in srgb, var(--bg, #fff) 96%, #dce4da);
+}
+
 .modele-suivi__list {
   list-style: none;
   margin: 0;
@@ -3061,18 +3125,29 @@ a {
 }
 .inline-link-list a { font-weight: 600; }
 
-/* Inventaire dense — une ligne desktop */
-.inventory-table--dense .inventory-columns {
-  display: grid;
-  grid-template-columns: 5.5rem 7rem minmax(8rem, 1.4fr) 7rem 2rem 2rem 3.5rem 3.5rem minmax(8rem, 1.6fr) 6rem;
+/* Inventaire dense — une ligne desktop (colonnes via --inventory-cols) */
+.inventory-table--dense .inventory-columns,
+.inventory-table--dense .inventory-row__line--primary {
+  grid-template-columns: repeat(var(--inventory-cols, 4), minmax(0, 1fr));
   gap: 0.35rem 0.55rem;
   font-size: 0.72rem;
 }
+.inventory-table--dense .inventory-row,
+.inventory-table--dense .inventory-row--split {
+  padding: 0.45rem 0.65rem;
+  gap: 0;
+}
+
+/* Risques — grille dense dédiée (lignes custom) */
+.inventory-table--risque.inventory-table--dense .inventory-columns,
 .inventory-row--dense {
   display: grid;
   grid-template-columns: 5.5rem 7rem minmax(8rem, 1.4fr) 7rem 2rem 2rem 3.5rem 3.5rem minmax(8rem, 1.6fr) 6rem;
   gap: 0.35rem 0.55rem;
   align-items: center;
+  font-size: 0.72rem;
+}
+.inventory-row--dense {
   padding: 0.45rem 0.65rem;
 }
 .inventory-row__dense-main {
@@ -3100,22 +3175,22 @@ a {
 
 @media (max-width: 1100px) {
   .inventory-row__hide-md { display: none !important; }
-  .inventory-table--dense .inventory-columns,
+  .inventory-table--risque.inventory-table--dense .inventory-columns,
   .inventory-row--dense {
     grid-template-columns: 5rem minmax(7rem, 1.2fr) 2rem 2rem 3.5rem minmax(7rem, 1.4fr) 5.5rem;
   }
-  .inventory-table--dense .inventory-columns__cell:nth-child(2),
-  .inventory-table--dense .inventory-columns__cell:nth-child(4),
-  .inventory-table--dense .inventory-columns__cell:nth-child(8) { display: none; }
+  .inventory-table--risque.inventory-table--dense .inventory-columns__cell:nth-child(2),
+  .inventory-table--risque.inventory-table--dense .inventory-columns__cell:nth-child(4),
+  .inventory-table--risque.inventory-table--dense .inventory-columns__cell:nth-child(8) { display: none; }
 }
 @media (max-width: 780px) {
   .inventory-row__hide-sm { display: none !important; }
-  .inventory-table--dense .inventory-columns,
+  .inventory-table--risque.inventory-table--dense .inventory-columns,
   .inventory-row--dense {
     grid-template-columns: 4.5rem minmax(6rem, 1fr) 3.2rem minmax(6rem, 1fr);
   }
-  .inventory-table--dense .inventory-columns__cell:nth-child(n+3):nth-child(-n+8) { display: none; }
-  .inventory-table--dense .inventory-columns__cell:nth-child(10) { display: none; }
+  .inventory-table--risque.inventory-table--dense .inventory-columns__cell:nth-child(n+3):nth-child(-n+8) { display: none; }
+  .inventory-table--risque.inventory-table--dense .inventory-columns__cell:nth-child(10) { display: none; }
   .inventory-row__dense-statut { display: none; }
 }
 
@@ -3154,6 +3229,16 @@ a {
   .projet-taches-table__row {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+.inventory__create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+}
+.inventory__create .btn {
+  text-decoration: none;
 }
 
 .mission-famille-tabs {

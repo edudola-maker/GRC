@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -117,7 +117,6 @@ export default async function DocumentsPage({
         title="Documents"
         description="Inventaire et planification des revues — contenu dans Confluence."
         help={<ModuleHelp {...MODULE_HELP.documents} />}
-        actions={<BtnLink href="/documents/nouveau">Nouveau document</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -139,6 +138,8 @@ export default async function DocumentsPage({
         items={items}
         responsables={responsables}
         initialQuick={initialQuick}
+        createHref="/documents/nouveau"
+        createLabel="Nouveau document"
       />
     </>
   );

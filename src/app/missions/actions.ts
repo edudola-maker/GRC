@@ -25,6 +25,7 @@ import {
   parseSaveIntent,
 } from "@/lib/section-redaction";
 import { missionEtapeHref, MISSION_ETAPES, slugFromSectionKey } from "@/lib/mission-etapes";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -176,9 +177,10 @@ export async function updateMission(formData: FormData) {
   const sectionKey = optStr(formData, "sectionKey") ?? "VUE_ENSEMBLE";
   const intent = parseSaveIntent(formData);
   const etapeSlug = slugFromSectionKey(sectionKey);
-  const editFallback = etapeSlug
-    ? missionEtapeHref(id, etapeSlug, { edit: sectionKey })
-    : `/missions/${id}?edit=${sectionKey}`;
+  const base = etapeSlug
+    ? missionEtapeHref(id, etapeSlug)
+    : `/missions/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(editFallback, "Le titre de la mission est obligatoire.");
@@ -310,7 +312,9 @@ export async function updateMission(formData: FormData) {
 
   revalidateMission(id);
   redirectWithOk(
-    intent === "brouillon" ? `${editFallback}#${sectionKey}` : `/missions/${id}`,
+    intent === "brouillon"
+      ? sectionDraftHref(base, sectionKey)
+      : sectionSavedHref(base, sectionKey),
     intent === "brouillon" ? "brouillon" : "modifie",
   );
 }

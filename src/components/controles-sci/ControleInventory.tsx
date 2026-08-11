@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -13,7 +14,6 @@ import {
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { toneFromStatut } from "@/components/ui/StatusBadge";
-import { formatDateDot } from "@/lib/labels";
 
 export type ControleInventoryItem = {
   id: string;
@@ -48,10 +48,14 @@ export function ControleInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: ControleInventoryItem[];
   responsables: { id: string; nom: string }[];
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
@@ -147,6 +151,13 @@ export function ControleInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -231,13 +242,8 @@ export function ControleInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Processus", "Statut"]}
-          secondaryColumns={[
-            "Responsable",
-            "Échéance",
-            "Type / fréquence",
-            "Occurrences",
-          ]}
+          dense
+          columns={["Code", "Nom", "Responsable", "Statut"]}
         >
           {filtered.map((c) => (
             <li key={c.id}>
@@ -248,18 +254,8 @@ export function ControleInventory({
                 primary={[
                   { value: c.code, emphasis: "code" },
                   { value: c.nom, emphasis: "title" },
-                  { value: c.processusConcerne },
-                  { value: c.statutLabel, badgeTone: toneFromStatut(c.statut) },
-                ]}
-                secondary={[
                   { value: c.responsableNom },
-                  { value: formatDateDot(c.dateProchaineEcheance) },
-                  {
-                    value: `${c.typeLabel} · ${c.frequenceLabel} · fenêtre ${c.fenetreDeclenchementJours} j.`,
-                  },
-                  {
-                    value: `${c.nbOccurrences} occurrence${c.nbOccurrences > 1 ? "s" : ""}`,
-                  },
+                  { value: c.statutLabel, badgeTone: toneFromStatut(c.statut) },
                 ]}
               />
             </li>

@@ -10,6 +10,7 @@ import { ajouterJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getConseilDelaiCibleJours } from "@/lib/referentiels";
+import { sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -112,25 +113,26 @@ export async function updateConseil(formData: FormData) {
   const existing = await prisma.conseil.findUnique({ where: { id } });
   if (!existing) redirectWithError("/conseils", "Conseil introuvable.");
 
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const base = `/conseils/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
+
   const objet = str(formData, "objet");
   if (!objet) {
-    redirectWithError(
-      `/conseils/${id}?edit=INFOS_GENERALES`,
-      "L'objet du conseil est obligatoire.",
-    );
+    redirectWithError(editFallback, "L'objet du conseil est obligatoire.");
   }
 
   const statut = str(formData, "statut") || "RECU";
   if (!STATUTS.has(statut)) {
-    redirectWithError(`/conseils/${id}?edit=INFOS_GENERALES`, "Statut invalide.");
+    redirectWithError(editFallback, "Statut invalide.");
   }
 
   const nomErr = await assertNomUnique("CONSEIL", objet, uniteId, id);
-  if (nomErr) redirectWithError(`/conseils/${id}?edit=INFOS_GENERALES`, nomErr);
+  if (nomErr) redirectWithError(editFallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/conseils/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const dateReception =
@@ -185,7 +187,7 @@ export async function updateConseil(formData: FormData) {
   }
 
   revalidateApp([`/conseils/${id}`, `/conseils/${id}?edit=INFOS_GENERALES`]);
-  redirectWithOk(`/conseils/${id}`, "modifie");
+  redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");
 }
 
 export async function addNoteJournal(formData: FormData) {

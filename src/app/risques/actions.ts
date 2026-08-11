@@ -8,7 +8,7 @@ import {
   STATUT_RISQUE_OPTIONS,
   STRATEGIE_RISQUE_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import { assertCodeUnique, assertNomUnique, nextCode, normalizeCode } from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import {
   diffChamps,
@@ -18,6 +18,7 @@ import { ajouterJournal, TYPE_EVENEMENT } from "@/lib/journal";
 import { STATUT_RISQUE_LABELS } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { formatUtilisateurNom, getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -107,6 +108,16 @@ export async function createRisque(formData: FormData) {
     redirectWithError(fallback, "Stratégie de traitement invalide.");
   }
 
+  const processusId = optStr(formData, "processusId");
+  if (processusId) {
+    const prc = await prisma.processus.findFirst({
+      where: { id: processusId, uniteId, archive: false },
+    });
+    if (!prc) {
+      redirectWithError(fallback, "Processus introuvable ou archivé.");
+    }
+  }
+
   const risque = await prisma.risque.create({
     data: {
       code: await nextCode("RISQUE", uniteId),
@@ -115,7 +126,8 @@ export async function createRisque(formData: FormData) {
       description: optStr(formData, "description"),
       taxinomie: optStr(formData, "taxinomie"),
       tags: serializeTags(optStr(formData, "tags")),
-      processus: optStr(formData, "processus"),
+      processus: null,
+      processusId,
       responsableId,
       categorie: categorie as "OPERATIONNEL",
       probabilite,
@@ -157,41 +169,45 @@ export async function updateRisque(formData: FormData) {
   const existing = await prisma.risque.findUnique({ where: { id } });
   if (!existing) redirectWithError("/risques", "Risque introuvable.");
 
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const base = `/risques/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
+
   const nom = str(formData, "nom");
   if (!nom) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Le nom du risque est obligatoire.");
+    redirectWithError(editFallback, "Le nom du risque est obligatoire.");
   }
 
   const categorie = str(formData, "categorie") || existing.categorie;
   if (!CATEGORIES.has(categorie)) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Catégorie invalide.");
+    redirectWithError(editFallback, "Catégorie invalide.");
   }
 
   const statut = str(formData, "statut") || existing.statut;
   if (!STATUTS.has(statut)) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Statut invalide.");
+    redirectWithError(editFallback, "Statut invalide.");
   }
 
   const responsableId = str(formData, "responsableId") || existing.responsableId;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const probabilite = parseEchelle(formData, "probabilite", existing.probabilite);
   const impact = parseEchelle(formData, "impact", existing.impact);
   if (probabilite == null || impact == null) {
     redirectWithError(
-      `/risques/${id}?edit=INFOS_GENERALES`,
+      editFallback,
       "Probabilité et impact doivent être entre 1 et 5.",
     );
   }
 
   const criticite = clamp(probabilite * impact, 1, 25);
   const nomErr = await assertNomUnique("RISQUE", nom, uniteId, id);
-  if (nomErr) redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, nomErr);
+  if (nomErr) redirectWithError(editFallback, nomErr);
   const strategie = optStr(formData, "strategie");
   if (strategie && !STRATEGIES.has(strategie)) {
-    redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Stratégie invalide.");
+    redirectWithError(editFallback, "Stratégie invalide.");
   }
 
   const prRaw = optInt(formData, "probabiliteResiduelle");
@@ -203,7 +219,7 @@ export async function updateRisque(formData: FormData) {
     probabiliteResiduelle = prRaw ?? probabilite;
     impactResiduel = irRaw ?? impact;
     if (!ECHELLE.has(probabiliteResiduelle) || !ECHELLE.has(impactResiduel)) {
-      redirectWithError(`/risques/${id}?edit=INFOS_GENERALES`, "Échelle résiduelle invalide (1–5).");
+      redirectWithError(editFallback, "Échelle résiduelle invalide (1–5).");
     }
     criticiteResiduelle = clamp(probabiliteResiduelle * impactResiduel, 1, 25);
   }
@@ -211,22 +227,55 @@ export async function updateRisque(formData: FormData) {
   const description = optStr(formData, "description");
   const taxinomie = optStr(formData, "taxinomie");
   const tags = serializeTags(optStr(formData, "tags"));
-  const processus = optStr(formData, "processus");
+  const processusId = optStr(formData, "processusId");
+  if (processusId) {
+    const prc = await prisma.processus.findFirst({
+      where: { id: processusId, uniteId, archive: false },
+    });
+    if (!prc) {
+      redirectWithError(editFallback, "Processus introuvable ou archivé.");
+    }
+  }
   const commentaires = optStr(formData, "commentaires");
   const justificationEvaluation = optStr(formData, "justificationEvaluation");
   const strategieVal = (strategie as "REDUIRE") ?? null;
 
-  const [avantResp, apresResp] = await Promise.all([
+  const codeRaw = optStr(formData, "code") ?? existing.code;
+  const code = normalizeCode(codeRaw);
+  const codeErr = await assertCodeUnique("RISQUE", code, uniteId, id);
+  if (codeErr) redirectWithError(editFallback, codeErr);
+
+  const [avantResp, apresResp, avantPrc, apresPrc] = await Promise.all([
     labelResponsable(existing.responsableId),
     labelResponsable(responsableId),
+    existing.processusId
+      ? prisma.processus.findUnique({
+          where: { id: existing.processusId },
+          select: { code: true, nom: true },
+        })
+      : Promise.resolve(null),
+    processusId
+      ? prisma.processus.findUnique({
+          where: { id: processusId },
+          select: { code: true, nom: true },
+        })
+      : Promise.resolve(null),
   ]);
 
+  const labelPrc = (p: { code: string; nom: string } | null) =>
+    p ? `${p.code} — ${p.nom}` : null;
+
   const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
     { champ: "nom", avant: existing.nom, apres: nom },
     { champ: "description", avant: existing.description, apres: description },
     { champ: "taxinomie", avant: existing.taxinomie, apres: taxinomie },
     { champ: "tags", avant: existing.tags, apres: tags },
-    { champ: "processus", avant: existing.processus, apres: processus },
+    {
+      champ: "processus",
+      avant: labelPrc(avantPrc) ?? existing.processus,
+      apres: labelPrc(apresPrc),
+    },
     { champ: "responsable", avant: avantResp, apres: apresResp },
     { champ: "categorie", avant: existing.categorie, apres: categorie },
     { champ: "probabilite", avant: existing.probabilite, apres: probabilite },
@@ -265,11 +314,13 @@ export async function updateRisque(formData: FormData) {
   await prisma.risque.update({
     where: { id },
     data: {
+      code,
       nom,
       description,
       taxinomie,
       tags,
-      processus,
+      processus: null,
+      processusId,
       responsableId,
       categorie: categorie as "OPERATIONNEL",
       probabilite,
@@ -310,7 +361,7 @@ export async function updateRisque(formData: FormData) {
   }
 
   revalidateApp([`/risques/${id}`, `/risques/${id}?edit=INFOS_GENERALES`]);
-  redirectWithOk(`/risques/${id}`, "modifie");
+  redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");
 }
 
 /** Archive / désarchive via archive=1|0 */

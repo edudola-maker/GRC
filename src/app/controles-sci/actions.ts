@@ -12,6 +12,7 @@ import { nextControleDate } from "@/lib/dates";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -95,41 +96,33 @@ export async function updateControleSCI(formData: FormData) {
   const existing = await prisma.controleSCI.findUnique({ where: { id } });
   if (!existing) redirectWithError("/controles-sci", "Contrôle introuvable.");
 
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const base = `/controles-sci/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
+
   const nom = str(formData, "nom");
   const processusConcerne = str(formData, "processusConcerne");
   if (!nom) {
-    redirectWithError(
-      `/controles-sci/${id}?edit=INFOS_GENERALES`,
-      "Le nom du contrôle est obligatoire.",
-    );
+    redirectWithError(editFallback, "Le nom du contrôle est obligatoire.");
   }
   if (!processusConcerne) {
-    redirectWithError(
-      `/controles-sci/${id}?edit=INFOS_GENERALES`,
-      "Le processus concerné est obligatoire.",
-    );
+    redirectWithError(editFallback, "Le processus concerné est obligatoire.");
   }
 
   const statut = str(formData, "statut") || "ACTIF";
   const frequence = str(formData, "frequence") || existing.frequence;
   if (!STATUTS.has(statut) || !FREQUENCES.has(frequence)) {
-    redirectWithError(
-      `/controles-sci/${id}?edit=INFOS_GENERALES`,
-      "Statut ou fréquence invalide.",
-    );
+    redirectWithError(editFallback, "Statut ou fréquence invalide.");
   }
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(
-      `/controles-sci/${id}?edit=INFOS_GENERALES`,
-      "Responsable introuvable.",
-    );
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const typeControle = str(formData, "typeControle") || existing.typeControle;
   if (!TYPES.has(typeControle)) {
-    redirectWithError(`/controles-sci/${id}?edit=INFOS_GENERALES`, "Type de contrôle invalide.");
+    redirectWithError(editFallback, "Type de contrôle invalide.");
   }
 
   const fenetreDeclenchementJours =
@@ -161,7 +154,7 @@ export async function updateControleSCI(formData: FormData) {
   });
 
   revalidateApp([`/controles-sci/${id}`, `/controles-sci/${id}?edit=INFOS_GENERALES`]);
-  redirectWithOk(`/controles-sci/${id}`, "modifie");
+  redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");
 }
 
 export async function lierRisqueControle(formData: FormData) {

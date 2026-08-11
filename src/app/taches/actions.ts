@@ -11,6 +11,7 @@ import { optDate, optFloat, optStr, str } from "@/lib/form";
 import { safeRetourPath } from "@/lib/navigation-retour";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 
 const STATUTS = new Set<string>(STATUT_TACHE_OPTIONS.map((o) => o.value));
@@ -219,12 +220,13 @@ export async function updateTache(formData: FormData) {
   const existing = await prisma.tache.findUnique({ where: { id } });
   if (!existing) redirectWithError("/taches", "Tâche introuvable.");
 
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const base = `/taches/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
+
   const titre = str(formData, "titre");
   if (!titre) {
-    redirectWithError(
-      `/taches/${id}?edit=INFOS_GENERALES`,
-      "Le titre de la tâche est obligatoire.",
-    );
+    redirectWithError(editFallback, "Le titre de la tâche est obligatoire.");
   }
 
   const statut = str(formData, "statut") || "A_FAIRE";
@@ -232,30 +234,27 @@ export async function updateTache(formData: FormData) {
   const categorie = str(formData, "categorie") || "AUTRE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite) || !CATEGORIES.has(categorie)) {
     redirectWithError(
-      `/taches/${id}?edit=INFOS_GENERALES`,
+      editFallback,
       "Statut, priorité ou catégorie invalide.",
     );
   }
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError(`/taches/${id}?edit=INFOS_GENERALES`, "Responsable introuvable.");
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const projetId = optStr(formData, "projetId");
   if (projetId && projetId !== existing.projetId) {
     if (!(await assertProjetOptional(projetId))) {
-      redirectWithError(
-        `/taches/${id}?edit=INFOS_GENERALES`,
-        "Projet introuvable ou archivé.",
-      );
+      redirectWithError(editFallback, "Projet introuvable ou archivé.");
     }
   }
 
   const links = readLinks(formData);
   const linkError = await assertOptionalLinks(links);
   if (linkError) {
-    redirectWithError(`/taches/${id}?edit=INFOS_GENERALES`, linkError);
+    redirectWithError(editFallback, linkError);
   }
 
   const dateDebut = optDate(formData, "dateDebut");
@@ -338,10 +337,10 @@ export async function updateTache(formData: FormData) {
     missionId: links.missionId ?? existing.missionId,
     documentId: links.documentId ?? existing.documentId,
   });
-  const detail = retour
+  const detailBase = retour
     ? `/taches/${id}?retour=${encodeURIComponent(retour)}`
-    : `/taches/${id}`;
-  redirectWithOk(detail, "modifie");
+    : base;
+  redirectWithOk(sectionSavedHref(detailBase, sectionKey), "modifie");
 }
 
 export async function updateTacheRapide(formData: FormData) {
@@ -435,7 +434,7 @@ export async function deleteTache(formData: FormData) {
 }
 
 function checklistEditHref(tacheId: string) {
-  return `/taches/${tacheId}?edit=CHECKLIST`;
+  return sectionDraftHref(`/taches/${tacheId}`, "CHECKLIST");
 }
 
 /** Cocher / décocher une étape — autorisé en consultation (exécution). */

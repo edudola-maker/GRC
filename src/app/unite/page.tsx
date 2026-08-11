@@ -10,6 +10,7 @@ import {
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { PilotageStrip } from "@/components/module/PilotageStrip";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { UniteAttributionsPanel } from "@/components/unite/UniteAttributionsPanel";
 import { updateUnite } from "./actions";
 import { MODULE_HELP } from "@/lib/catalog";
 import {
@@ -28,7 +29,7 @@ import { getUnitePilotage } from "@/lib/unite-overview";
 
 export const dynamic = "force-dynamic";
 
-const EDIT_SECTIONS = ["OBJECTIFS", "ELEMENTS_ASSOCIES"] as const;
+const EDIT_SECTIONS = ["ATTRIBUTIONS", "OBJECTIFS", "ELEMENTS_ASSOCIES"] as const;
 
 type EditSection = (typeof EDIT_SECTIONS)[number];
 
@@ -53,70 +54,81 @@ export default async function UnitePage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
+  const isAdmin = isAdministrateur(user);
 
-  const [unite, redactions, pilotage, objectifs, membres, processus, missions] =
-    await Promise.all([
-      prisma.unite.findUnique({
-        where: { id: uniteId },
-        include: {
-          responsable: true,
-          adjoint: true,
-        },
-      }),
-      listSectionRedactions("UNITE", uniteId),
-      getUnitePilotage(uniteId),
-      prisma.objectif.findMany({
-        where: { uniteId },
-        include: { responsable: true },
-        orderBy: [{ annee: "desc" }, { intitule: "asc" }],
-      }),
-      prisma.utilisateur.findMany({
-        where: { uniteId },
-        orderBy: [{ actif: "desc" }, { nom: "asc" }, { prenom: "asc" }],
-        select: {
-          id: true,
-          nom: true,
-          prenom: true,
-          role: true,
-          initiales: true,
-          fonction: true,
-          email: true,
-          actif: true,
-        },
-      }),
-      prisma.processus.findMany({
-        where: { uniteId, archive: false },
-        orderBy: { nom: "asc" },
-        select: { id: true, code: true, nom: true, statut: true },
-      }),
-      prisma.mission.findMany({
-        where: { uniteId, archive: false },
-        include: {
-          type: { select: { libelle: true } },
-          responsable: { select: { nom: true, prenom: true } },
-        },
-        orderBy: [{ dateDebut: "desc" }, { titre: "asc" }],
-      }),
-    ]);
+  const [
+    unite,
+    redactions,
+    pilotage,
+    attributions,
+    objectifs,
+    membres,
+    processus,
+    missions,
+  ] = await Promise.all([
+    prisma.unite.findUnique({
+      where: { id: uniteId },
+      include: {
+        responsable: true,
+        adjoint: true,
+      },
+    }),
+    listSectionRedactions("UNITE", uniteId),
+    getUnitePilotage(uniteId),
+    prisma.uniteAttribution.findMany({
+      where: { uniteId },
+      orderBy: [{ ordre: "asc" }, { titre: "asc" }],
+    }),
+    prisma.objectif.findMany({
+      where: { uniteId },
+      include: { responsable: true },
+      orderBy: [{ annee: "desc" }, { intitule: "asc" }],
+    }),
+    prisma.utilisateur.findMany({
+      where: { uniteId },
+      orderBy: [{ actif: "desc" }, { nom: "asc" }, { prenom: "asc" }],
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        role: true,
+        initiales: true,
+        fonction: true,
+        email: true,
+        actif: true,
+      },
+    }),
+    prisma.processus.findMany({
+      where: { uniteId, archive: false },
+      orderBy: { nom: "asc" },
+      select: { id: true, code: true, nom: true, statut: true },
+    }),
+    prisma.mission.findMany({
+      where: { uniteId, archive: false },
+      include: {
+        type: { select: { libelle: true } },
+        responsable: { select: { nom: true, prenom: true } },
+      },
+      orderBy: [{ dateDebut: "desc" }, { titre: "asc" }],
+    }),
+  ]);
 
   if (!unite) notFound();
 
   const baseHref = "/unite";
   const canEdit = unite.actif;
+  const attributionsActives = attributions.filter((a) => a.actif);
 
   return (
     <>
       <PageHeader
         title={`${unite.code} — ${unite.nom}`}
-        description={
-          unite.description ??
-          "Fiche métier de l’unité — agrégation, pas de double saisie."
-        }
+        description="Fiche métier de l’unité — présentation et agrégation, pas de double saisie."
         help={<ModuleHelp {...MODULE_HELP.unite} />}
         actions={
           <>
             <BtnLink href="/objectifs/nouveau">+ Objectif</BtnLink>
-            {isAdministrateur(user) ? (
+            {isAdmin ? (
               <BtnLink href="/administration/unites" variant="ghost">
                 Administration
               </BtnLink>
@@ -128,6 +140,47 @@ export default async function UnitePage({
       {!unite.actif ? (
         <div className="flash flash--warn">Cette unité est inactive.</div>
       ) : null}
+
+      <div className="unite-structural-box">
+        <p className="unite-structural-box__label">
+          Informations structurelles — administrées depuis Administration
+          {isAdmin ? (
+            <>
+              {" "}
+              (
+              <Link href="/administration/unites">gérer les unités</Link>)
+            </>
+          ) : null}
+        </p>
+        <dl className="kv unite-structural-box__kv">
+          <div>
+            <dt>Code</dt>
+            <dd>{unite.code}</dd>
+          </div>
+          <div>
+            <dt>Nom</dt>
+            <dd>{unite.nom}</dd>
+          </div>
+          <div>
+            <dt>Description</dt>
+            <dd>{unite.description ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Responsable</dt>
+            <dd>
+              {unite.responsable
+                ? formatUtilisateurNom(unite.responsable)
+                : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt>Adjoint</dt>
+            <dd>
+              {unite.adjoint ? formatUtilisateurNom(unite.adjoint) : "—"}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       <CollapsibleSection title="Pilotage" defaultOpen>
         <PilotageStrip
@@ -157,43 +210,14 @@ export default async function UnitePage({
         </p>
       </CollapsibleSection>
 
-      <EditableSection
-        title="Objectifs"
-        sectionKey="OBJECTIFS"
-        baseHref={baseHref}
-        edit={edit}
-        canEdit={canEdit}
-        redaction={redactions.get("OBJECTIFS")}
-        defaultOpen
-        badge={`${objectifs.filter((o) => o.statut === "EN_COURS").length}`}
-        editChildren={
-          <>
-            <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
-              <BtnLink href="/objectifs/nouveau">+ Nouvel objectif</BtnLink>
-            </div>
-            <ObjectifsList objectifs={objectifs} />
-            <form action={updateUnite} className="entity-form">
-              <input type="hidden" name="id" value={unite.id} />
-              <input type="hidden" name="sectionKey" value="OBJECTIFS" />
-              <SectionSaveActions cancelHref={baseHref} />
-            </form>
-          </>
-        }
-      >
-        <div id="objectifs">
-          <ObjectifsList objectifs={objectifs} />
-        </div>
-      </EditableSection>
-
       <div id="equipe">
         <CollapsibleSection
-          title="Équipe"
+          title="Collaborateurs"
           defaultOpen
           badge={`${membres.filter((m) => m.actif).length}/${membres.length}`}
         >
           <p className="muted" style={{ marginTop: 0 }}>
-            Tous les utilisateurs rattachés à cette unité (référentiel
-            Administration) — aucune ressaisie ici.
+            Utilisateurs rattachés à cette unité (référentiel Administration).
           </p>
           {membres.length === 0 ? (
             <p className="empty">Aucun collaborateur rattaché à l’unité.</p>
@@ -236,6 +260,67 @@ export default async function UnitePage({
         </CollapsibleSection>
       </div>
 
+      <EditableSection
+        title="Missions / attributions"
+        sectionKey="ATTRIBUTIONS"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("ATTRIBUTIONS")}
+        defaultOpen
+        badge={`${attributionsActives.length}`}
+        editChildren={
+          <>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Missions institutionnelles permanentes de l’unité — distinctes
+              des missions d’assurance (audits / revues).
+            </p>
+            <UniteAttributionsPanel attributions={attributions} editable />
+            <form action={updateUnite} className="entity-form">
+              <input type="hidden" name="id" value={unite.id} />
+              <input type="hidden" name="sectionKey" value="ATTRIBUTIONS" />
+              <SectionSaveActions
+                baseHref={baseHref}
+                sectionKey="ATTRIBUTIONS"
+              />
+            </form>
+          </>
+        }
+      >
+        <UniteAttributionsPanel
+          attributions={attributions}
+          editable={false}
+        />
+      </EditableSection>
+
+      <EditableSection
+        title="Objectifs"
+        sectionKey="OBJECTIFS"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("OBJECTIFS")}
+        defaultOpen
+        badge={`${objectifs.filter((o) => o.statut === "EN_COURS").length}`}
+        editChildren={
+          <>
+            <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
+              <BtnLink href="/objectifs/nouveau">+ Nouvel objectif</BtnLink>
+            </div>
+            <ObjectifsList objectifs={objectifs} />
+            <form action={updateUnite} className="entity-form">
+              <input type="hidden" name="id" value={unite.id} />
+              <input type="hidden" name="sectionKey" value="OBJECTIFS" />
+              <SectionSaveActions baseHref={baseHref} sectionKey="OBJECTIFS" />
+            </form>
+          </>
+        }
+      >
+        <div id="objectifs">
+          <ObjectifsList objectifs={objectifs} />
+        </div>
+      </EditableSection>
+
       <CollapsibleSection
         title="Processus"
         defaultOpen={false}
@@ -267,7 +352,7 @@ export default async function UnitePage({
       </CollapsibleSection>
 
       <CollapsibleSection
-        title="Missions"
+        title="Missions d’assurance"
         defaultOpen={false}
         badge={`${missions.length}`}
       >
@@ -277,7 +362,7 @@ export default async function UnitePage({
           </BtnLink>
         </div>
         {missions.length === 0 ? (
-          <p className="empty">Aucune mission.</p>
+          <p className="empty">Aucune mission d’assurance.</p>
         ) : (
           <ul className="unite-activite__list">
             {missions.map((m) => (
@@ -326,7 +411,10 @@ export default async function UnitePage({
                 name="sectionKey"
                 value="ELEMENTS_ASSOCIES"
               />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions
+                baseHref={baseHref}
+                sectionKey="ELEMENTS_ASSOCIES"
+              />
             </form>
           </>
         }

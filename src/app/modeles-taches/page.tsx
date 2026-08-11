@@ -1,12 +1,11 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
 import {
-  InventoryEmpty,
-  InventoryList,
-  InventoryRow,
-} from "@/components/inventory/InventoryRow";
+  ModeleTacheInventory,
+  type ModeleTacheInventoryItem,
+} from "@/components/modeles-taches/ModeleTacheInventory";
 import { MODULE_HELP } from "@/lib/catalog";
 import { CATEGORIE_TACHE_LABELS } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
@@ -35,15 +34,30 @@ export default async function ModelesTachesPage({
     prisma.modeleTache.count({ where: { uniteId, actif: true } }),
   ]);
 
+  const items: ModeleTacheInventoryItem[] = rows.map((m) => ({
+    id: m.id,
+    code: m.code,
+    nom: m.nom,
+    actif: m.actif,
+    etapesCount: m._count.etapes,
+    processusCount: m._count.processus,
+    parametres: [
+      m.delaiJours != null ? `${m.delaiJours} j` : null,
+      m.categorieDefaut
+        ? (CATEGORIE_TACHE_LABELS[m.categorieDefaut] ?? m.categorieDefaut)
+        : null,
+      m.responsableDefaut?.nom ?? null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  }));
+
   return (
     <>
       <PageHeader
         title="Modèles de tâches"
         description="Catalogue de checklists standard — copiées à la création, sans sync rétroactive."
         help={<ModuleHelp {...MODULE_HELP.modelesTaches} />}
-        actions={
-          <BtnLink href="/modeles-taches/nouveau">Nouveau modèle</BtnLink>
-        }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -55,57 +69,11 @@ export default async function ModelesTachesPage({
         ]}
       />
 
-      {rows.length === 0 ? (
-        <InventoryEmpty>Aucun modèle pour cette unité.</InventoryEmpty>
-      ) : (
-        <InventoryList
-          columns={["Code / nom", "Checklist", "État"]}
-          secondaryColumns={["Paramètres", "Processus", ""]}
-        >
-          {rows.map((m) => (
-            <li key={m.id}>
-              <InventoryRow
-                href={`/modeles-taches/${m.id}`}
-                archived={!m.actif}
-                primary={[
-                  {
-                    value: `${m.code} — ${m.nom}`,
-                    emphasis: "title",
-                  },
-                  {
-                    value: `${m._count.etapes} étape${m._count.etapes === 1 ? "" : "s"}`,
-                  },
-                  {
-                    value: m.actif ? "Actif" : "Inactif",
-                    emphasis: "status",
-                    badgeTone: m.actif ? "ok" : "neutral",
-                  },
-                ]}
-                secondary={[
-                  {
-                    value: [
-                      m.delaiJours != null ? `${m.delaiJours} j` : null,
-                      m.categorieDefaut
-                        ? (CATEGORIE_TACHE_LABELS[m.categorieDefaut] ??
-                          m.categorieDefaut)
-                        : null,
-                      m.responsableDefaut?.nom ?? null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "—",
-                    emphasis: "muted",
-                  },
-                  {
-                    value: `${m._count.processus} processus`,
-                    emphasis: "muted",
-                  },
-                  { value: "", emphasis: "muted" },
-                ]}
-              />
-            </li>
-          ))}
-        </InventoryList>
-      )}
+      <ModeleTacheInventory
+        items={items}
+        createHref="/modeles-taches/nouveau"
+        createLabel="Nouveau modèle"
+      />
     </>
   );
 }

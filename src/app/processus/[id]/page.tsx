@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ConfirmActionButton,
@@ -13,6 +14,7 @@ import {
 import { ProcessusEtapesPanel } from "@/components/processus/ProcessusEtapesPanel";
 import { ProcessusModelesTachesPanel } from "@/components/processus/ProcessusModelesTachesPanel";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
+import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
 import { PageHeader } from "@/components/ui";
 import {
   archiveProcessus,
@@ -60,7 +62,8 @@ export default async function ProcessusDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [processus, users, redactions] = await Promise.all([
+  const [processus, users, redactions, risques, documentsLies] =
+    await Promise.all([
     prisma.processus.findUnique({
       where: { id },
       include: {
@@ -88,6 +91,24 @@ export default async function ProcessusDetailPage({
     }),
     listUtilisateursActifsForCurrentUnite(),
     listSectionRedactions("PROCESSUS", id),
+    prisma.risque.findMany({
+      where: { processusId: id, archive: false },
+      include: {
+        controles: {
+          include: {
+            controle: { select: { id: true, code: true, nom: true } },
+          },
+        },
+      },
+      orderBy: [{ criticite: "desc" }, { code: "asc" }],
+    }),
+    prisma.documentProcessus.findMany({
+      where: { processusId: id, document: { archive: false } },
+      include: {
+        document: { select: { id: true, code: true, nom: true, statut: true } },
+      },
+      orderBy: { lieLe: "asc" },
+    }),
   ]);
   if (!processus) notFound();
 
@@ -217,7 +238,7 @@ export default async function ProcessusDetailPage({
             <form action={updateProcessus} className="entity-form">
               <input type="hidden" name="id" value={processus.id} />
               <input type="hidden" name="sectionKey" value="ETAPES" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="ETAPES" />
             </form>
           </>
         }
@@ -228,6 +249,95 @@ export default async function ProcessusDetailPage({
           editable={false}
         />
       </EditableSection>
+
+      <CollapsibleSection
+        title="Risques associés"
+        defaultOpen
+        badge={`${risques.length}`}
+      >
+        {risques.length === 0 ? (
+          <p className="empty">
+            Aucun risque lié à ce processus.{" "}
+            <Link href="/risques/nouveau">Créer un risque</Link>.
+          </p>
+        ) : (
+          <ul className="unite-activite__list">
+            {risques.map((r) => {
+              const ctlCodes = r.controles.map(({ controle: c }) => c);
+              return (
+                <li key={r.id}>
+                  <div>
+                    <Link href={`/risques/${r.id}`}>
+                      <strong>
+                        {r.code} — {r.nom}
+                      </strong>
+                    </Link>
+                    <span
+                      className="muted"
+                      style={{
+                        display: "inline-flex",
+                        gap: "0.35rem",
+                        alignItems: "center",
+                        marginLeft: "0.5rem",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span>Inhérent</span>
+                      <CriticiteBadge value={r.criticite} />
+                      <span>Résiduel</span>
+                      <CriticiteBadge value={r.criticiteResiduelle} />
+                    </span>
+                    {ctlCodes.length > 0 ? (
+                      <p
+                        className="muted"
+                        style={{
+                          margin: "0.2rem 0 0",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        CTL :{" "}
+                        {ctlCodes.map((c, i) => (
+                          <span key={c.id}>
+                            {i > 0 ? ", " : null}
+                            <Link href={`/controles-sci/${c.id}`}>
+                              {c.code}
+                            </Link>
+                          </span>
+                        ))}
+                      </p>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Documents liés"
+        defaultOpen={false}
+        badge={`${documentsLies.length}`}
+      >
+        <p className="muted" style={{ marginTop: 0 }}>
+          Procédures / documents rattachés à ce processus (relation dédiée).
+        </p>
+        {documentsLies.length === 0 ? (
+          <p className="empty">Aucun document lié.</p>
+        ) : (
+          <ul className="unite-activite__list">
+            {documentsLies.map((l) => (
+              <li key={l.id}>
+                <Link href={`/documents/${l.document.id}`}>
+                  <strong>
+                    {l.document.code} — {l.document.nom}
+                  </strong>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CollapsibleSection>
 
       <CollapsibleSection
         title="Modèles de tâches associés"
@@ -267,7 +377,10 @@ export default async function ProcessusDetailPage({
             <form action={updateProcessus} className="entity-form">
               <input type="hidden" name="id" value={processus.id} />
               <input type="hidden" name="sectionKey" value="ELEMENTS_ASSOCIES" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions
+                baseHref={baseHref}
+                sectionKey="ELEMENTS_ASSOCIES"
+              />
             </form>
           </>
         }

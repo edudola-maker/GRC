@@ -1,4 +1,4 @@
-import { PageHeader, BtnLink } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -123,7 +123,6 @@ export default async function ProjetsPage({
         title="Projets"
         description="Initiatives structurées — du statut Idée à la clôture."
         help={<ModuleHelp {...MODULE_HELP.projets} />}
-        actions={<BtnLink href="/projets/nouveau">Nouveau projet</BtnLink>}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
@@ -155,6 +154,8 @@ export default async function ProjetsPage({
         items={items}
         responsables={responsables}
         initialQuick={initialQuick}
+        createHref="/projets/nouveau"
+        createLabel="Nouveau projet"
       />
     </>
   );

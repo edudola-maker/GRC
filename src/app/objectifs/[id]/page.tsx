@@ -162,7 +162,7 @@ export default async function ObjectifDetailPage({
             <form action={updateObjectif} className="entity-form">
               <input type="hidden" name="id" value={objectif.id} />
               <input type="hidden" name="sectionKey" value="ELEMENTS_ASSOCIES" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="ELEMENTS_ASSOCIES" />
             </form>
           </>
         }

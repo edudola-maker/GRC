@@ -61,6 +61,36 @@ export async function assertCodeUnique(
     });
     if (existing) return "Une mission porte déjà ce code.";
   }
+  if (type === "PROJET") {
+    const existing = await prisma.projet.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un projet porte déjà ce code.";
+  }
+  if (type === "RISQUE") {
+    const existing = await prisma.risque.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un risque porte déjà ce code.";
+  }
+  if (type === "PROCESSUS") {
+    const existing = await prisma.processus.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un processus porte déjà ce code.";
+  }
   return null;
 }
 

@@ -14,6 +14,7 @@ import { optDate, optInt, optStr, str } from "@/lib/form";
 import { addDays, startOfToday } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
+import { sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 
@@ -130,34 +131,29 @@ export async function updateDocument(formData: FormData) {
   const existing = await prisma.document.findUnique({ where: { id } });
   if (!existing) redirectWithError("/documents", "Document introuvable.");
 
+  const sectionKey = optStr(formData, "sectionKey") ?? "INFOS_GENERALES";
+  const base = `/documents/${id}`;
+  const editFallback = sectionEditHref(base, sectionKey);
+
   const nom = str(formData, "nom");
   if (!nom) {
-    redirectWithError(
-      `/documents/${id}?edit=INFOS_GENERALES`,
-      "Le nom du document est obligatoire.",
-    );
+    redirectWithError(editFallback, "Le nom du document est obligatoire.");
   }
 
   const typeDocument = str(formData, "typeDocument") || "AUTRE";
   const statut = str(formData, "statut") || "BROUILLON";
   if (!TYPES.has(typeDocument) || !STATUTS.has(statut)) {
-    redirectWithError(`/documents/${id}?edit=INFOS_GENERALES`, "Type ou statut invalide.");
+    redirectWithError(editFallback, "Type ou statut invalide.");
   }
 
   const frequenceRevue = optStr(formData, "frequenceRevue");
   if (frequenceRevue && !FREQUENCES.has(frequenceRevue)) {
-    redirectWithError(
-      `/documents/${id}?edit=INFOS_GENERALES`,
-      "Fréquence de revue invalide.",
-    );
+    redirectWithError(editFallback, "Fréquence de revue invalide.");
   }
 
   const responsableId = optStr(formData, "responsableId");
   if (responsableId && !(await assertResponsable(responsableId))) {
-    redirectWithError(
-      `/documents/${id}?edit=INFOS_GENERALES`,
-      "Responsable introuvable.",
-    );
+    redirectWithError(editFallback, "Responsable introuvable.");
   }
 
   const dateDerniereRevue = optDate(formData, "dateDerniereRevue");
@@ -194,7 +190,7 @@ export async function updateDocument(formData: FormData) {
   });
 
   revalidateApp([`/documents/${id}`, `/documents/${id}?edit=INFOS_GENERALES`]);
-  redirectWithOk(`/documents/${id}`, "modifie");
+  redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");
 }
 
 export async function archiveDocument(formData: FormData) {
@@ -277,4 +273,69 @@ export async function creerTacheRevue(formData: FormData) {
 
   revalidateApp([`/documents/${document.id}`, `/taches/${tache.id}`]);
   redirectWithOk(`/taches/${tache.id}`, "tache");
+}
+
+export async function linkDocumentProcessus(formData: FormData) {
+  const current = await getCurrentUser();
+  const documentId = str(formData, "documentId");
+  const processusId = str(formData, "processusId");
+  if (!documentId || !processusId) {
+    redirectWithError("/documents", "Identifiant manquant.");
+  }
+
+  const document = await prisma.document.findUnique({
+    where: { id: documentId },
+  });
+  if (!document) redirectWithError("/documents", "Document introuvable.");
+
+  const processus = await prisma.processus.findFirst({
+    where: { id: processusId, uniteId: document.uniteId, archive: false },
+  });
+  const editHref = sectionEditHref(`/documents/${documentId}`, "PROCESSUS");
+  if (!processus) {
+    redirectWithError(editHref, "Processus introuvable ou archivé.");
+  }
+
+  await prisma.documentProcessus.upsert({
+    where: {
+      documentId_processusId: { documentId, processusId },
+    },
+    create: {
+      documentId,
+      processusId,
+      lieParId: current.id,
+    },
+    update: {},
+  });
+
+  revalidateApp([
+    `/documents/${documentId}`,
+    `/processus/${processusId}`,
+  ]);
+  redirectWithOk(editHref, "lien_ajoute");
+}
+
+export async function unlinkDocumentProcessus(formData: FormData) {
+  const documentId = str(formData, "documentId");
+  const id = str(formData, "id");
+  if (!documentId || !id) {
+    redirectWithError("/documents", "Identifiant manquant.");
+  }
+
+  const link = await prisma.documentProcessus.findFirst({
+    where: { id, documentId },
+  });
+  if (!link) {
+    redirectWithError(`/documents/${documentId}`, "Lien introuvable.");
+  }
+
+  await prisma.documentProcessus.delete({ where: { id } });
+  revalidateApp([
+    `/documents/${documentId}`,
+    `/processus/${link.processusId}`,
+  ]);
+  redirectWithOk(
+    sectionEditHref(`/documents/${documentId}`, "PROCESSUS"),
+    "lien_supprime",
+  );
 }

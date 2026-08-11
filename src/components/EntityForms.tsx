@@ -22,6 +22,8 @@ import {
 import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
 import { FormSection } from "@/components/module/FormSection";
+import { SectionSaveActions } from "@/components/module/EditableSection";
+import { sectionCancelHref } from "@/lib/section-nav";
 
 type UserOpt = { id: string; nom: string };
 type ProjetOpt = { id: string; nom: string };
@@ -29,6 +31,7 @@ type Opt = { id: string; nom: string };
 
 type ProjetValues = {
   id?: string;
+  code?: string;
   nom?: string;
   description?: string | null;
   taxinomie?: string | null;
@@ -101,11 +104,13 @@ type ControleValues = {
 
 type RisqueValues = {
   id?: string;
+  code?: string;
   nom?: string;
   description?: string | null;
   taxinomie?: string | null;
   tags?: string | null;
   processus?: string | null;
+  processusId?: string | null;
   responsableId?: string;
   categorie?: string;
   probabilite?: number;
@@ -164,6 +169,7 @@ type MissionDescriptifOpt = { id: string; libelle: string; typeId: string };
 
 type ProcessusValues = {
   id?: string;
+  code?: string;
   nom?: string;
   description?: string | null;
   tags?: string | null;
@@ -233,7 +239,26 @@ export function ProjetForm({
 
       {showInfos ? (
         <FormSection title="Informations générales" defaultOpen>
-          <Field label="Nom du projet *" htmlFor="nom">
+          {values?.id ? (
+            <Field
+              label="Code *"
+              htmlFor="code"
+              hint="Format PRO-0001 — généré automatiquement à la création"
+            >
+              <input
+                id="code"
+                name="code"
+                required
+                defaultValue={values.code ?? ""}
+                placeholder="PRO-0001"
+              />
+            </Field>
+          ) : (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Le code <code>PRO-xxxx</code> sera attribué automatiquement.
+            </p>
+          )}
+          <Field label="Nom *" htmlFor="nom">
             <input
               id="nom"
               name="nom"
@@ -248,6 +273,7 @@ export function ProjetForm({
               name="description"
               rows={3}
               defaultValue={values?.description ?? ""}
+              placeholder="Description plus complète du projet"
             />
           </Field>
         </FormSection>
@@ -365,21 +391,24 @@ export function ProjetForm({
       ) : null}
 
       {draftActions ? (
-        <div className="form-actions">
-          <SubmitButton name="intent" value="brouillon" variant="ghost">
-            Enregistrer comme brouillon
-          </SubmitButton>
-          <SubmitButton name="intent" value="finaliser">
-            Finaliser
-          </SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
-            Annuler
-          </BtnLink>
-        </div>
+        <SectionSaveActions
+          baseHref={cancelHref}
+          sectionKey={section !== "ALL" ? section : undefined}
+          cancelHref={cancelHref}
+          finalizeLabel={submitLabel}
+        />
       ) : (
         <div className="form-actions">
           <SubmitButton>{submitLabel}</SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
+          <BtnLink
+            href={
+              section !== "ALL"
+                ? sectionCancelHref(cancelHref, section)
+                : cancelHref
+            }
+            variant="ghost"
+            scroll={false}
+          >
             Annuler
           </BtnLink>
         </div>
@@ -404,6 +433,7 @@ export function TacheForm({
   /** Contexte Projet : masque la priorité, expose dates / charge. */
   projetContext = false,
   retour,
+  sectionKey,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -420,13 +450,20 @@ export function TacheForm({
   documents?: Opt[];
   projetContext?: boolean;
   retour?: string;
+  sectionKey?: string;
 }) {
   const missionOptions = missions ?? audits;
   const isProjet =
     projetContext || Boolean(values?.projetId);
+  const resolvedCancel = sectionKey
+    ? sectionCancelHref(cancelHref, sectionKey)
+    : cancelHref;
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {sectionKey ? (
+        <input type="hidden" name="sectionKey" value={sectionKey} />
+      ) : null}
       {retour ? <input type="hidden" name="retour" value={retour} /> : null}
       {values?.recommandationId ? (
         <input
@@ -692,7 +729,7 @@ export function TacheForm({
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
+        <BtnLink href={resolvedCancel} variant="ghost" scroll={false}>
           Annuler
         </BtnLink>
       </div>
@@ -707,6 +744,7 @@ export function ConseilForm({
   cancelHref,
   submitLabel,
   showCreerTache,
+  sectionKey,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -714,10 +752,17 @@ export function ConseilForm({
   cancelHref: string;
   submitLabel: string;
   showCreerTache?: boolean;
+  sectionKey?: string;
 }) {
+  const resolvedCancel = sectionKey
+    ? sectionCancelHref(cancelHref, sectionKey)
+    : cancelHref;
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {sectionKey ? (
+        <input type="hidden" name="sectionKey" value={sectionKey} />
+      ) : null}
 
       <FormSection title="Description">
         <Field label="Objet *" htmlFor="objet">
@@ -860,7 +905,7 @@ export function ConseilForm({
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
+        <BtnLink href={resolvedCancel} variant="ghost" scroll={false}>
           Annuler
         </BtnLink>
       </div>
@@ -874,16 +919,24 @@ export function ControleSCIForm({
   values,
   cancelHref,
   submitLabel,
+  sectionKey,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   values?: ControleValues;
   cancelHref: string;
   submitLabel: string;
+  sectionKey?: string;
 }) {
+  const resolvedCancel = sectionKey
+    ? sectionCancelHref(cancelHref, sectionKey)
+    : cancelHref;
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {sectionKey ? (
+        <input type="hidden" name="sectionKey" value={sectionKey} />
+      ) : null}
 
       <FormSection title="Description">
         <Field label="Nom *" htmlFor="nom">
@@ -1035,7 +1088,7 @@ export function ControleSCIForm({
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
+        <BtnLink href={resolvedCancel} variant="ghost" scroll={false}>
           Annuler
         </BtnLink>
       </div>
@@ -1049,18 +1102,47 @@ export function RisqueForm({
   values,
   cancelHref,
   submitLabel,
+  sectionKey,
+  processusOptions = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   values?: RisqueValues;
   cancelHref: string;
   submitLabel: string;
+  sectionKey?: string;
+  processusOptions?: { id: string; label: string }[];
 }) {
+  const resolvedCancel = sectionKey
+    ? sectionCancelHref(cancelHref, sectionKey)
+    : cancelHref;
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {sectionKey ? (
+        <input type="hidden" name="sectionKey" value={sectionKey} />
+      ) : null}
 
       <FormSection title="Description">
+        {values?.id ? (
+          <Field
+            label="Code *"
+            htmlFor="code"
+            hint="Format RSK-0001 — généré automatiquement à la création"
+          >
+            <input
+              id="code"
+              name="code"
+              required
+              defaultValue={values.code ?? ""}
+              placeholder="RSK-0001"
+            />
+          </Field>
+        ) : (
+          <p className="muted" style={{ marginTop: 0 }}>
+            Le code <code>RSK-xxxx</code> sera attribué automatiquement.
+          </p>
+        )}
         <Field label="Nom *" htmlFor="nom">
           <input
             id="nom"
@@ -1095,12 +1177,23 @@ export function RisqueForm({
               ))}
             </select>
           </Field>
-          <Field label="Processus" htmlFor="processus">
-            <input
-              id="processus"
-              name="processus"
-              defaultValue={values?.processus ?? ""}
-            />
+          <Field
+            label="Processus lié"
+            htmlFor="processusId"
+            hint="Référentiel Processus — pas de texte libre"
+          >
+            <select
+              id="processusId"
+              name="processusId"
+              defaultValue={values?.processusId ?? ""}
+            >
+              <option value="">— Aucun —</option>
+              {processusOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </Field>
         </div>
       </FormSection>
@@ -1251,7 +1344,7 @@ export function RisqueForm({
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
+        <BtnLink href={resolvedCancel} variant="ghost" scroll={false}>
           Annuler
         </BtnLink>
       </div>
@@ -1265,16 +1358,24 @@ export function DocumentForm({
   values,
   cancelHref,
   submitLabel,
+  sectionKey,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   values?: DocumentValues;
   cancelHref: string;
   submitLabel: string;
+  sectionKey?: string;
 }) {
+  const resolvedCancel = sectionKey
+    ? sectionCancelHref(cancelHref, sectionKey)
+    : cancelHref;
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {sectionKey ? (
+        <input type="hidden" name="sectionKey" value={sectionKey} />
+      ) : null}
 
       <FormSection title="Description">
         <Field label="Nom *" htmlFor="nom">
@@ -1445,7 +1546,7 @@ export function DocumentForm({
 
       <div className="form-actions">
         <SubmitButton>{submitLabel}</SubmitButton>
-        <BtnLink href={cancelHref} variant="ghost">
+        <BtnLink href={resolvedCancel} variant="ghost" scroll={false}>
           Annuler
         </BtnLink>
       </div>
@@ -1686,21 +1787,24 @@ export function MissionForm({
       </FormSection>
 
       {draftActions ? (
-        <div className="form-actions">
-          <SubmitButton name="intent" value="brouillon" variant="ghost">
-            Enregistrer comme brouillon
-          </SubmitButton>
-          <SubmitButton name="intent" value="finaliser">
-            Finaliser
-          </SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
-            Annuler
-          </BtnLink>
-        </div>
+        <SectionSaveActions
+          baseHref={cancelHref}
+          sectionKey={sectionKey}
+          cancelHref={cancelHref}
+          finalizeLabel={submitLabel}
+        />
       ) : (
         <div className="form-actions">
           <SubmitButton>{submitLabel}</SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
+          <BtnLink
+            href={
+              sectionKey
+                ? sectionCancelHref(cancelHref, sectionKey)
+                : cancelHref
+            }
+            variant="ghost"
+            scroll={false}
+          >
             Annuler
           </BtnLink>
         </div>
@@ -1742,6 +1846,25 @@ export function ProcessusForm({
 
       {showInfos ? (
         <FormSection title="Informations" defaultOpen>
+          {values?.id ? (
+            <Field
+              label="Code *"
+              htmlFor="code"
+              hint="Format PRC-0001 — généré automatiquement à la création"
+            >
+              <input
+                id="code"
+                name="code"
+                required
+                defaultValue={values.code ?? ""}
+                placeholder="PRC-0001"
+              />
+            </Field>
+          ) : (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Le code <code>PRC-xxxx</code> sera attribué automatiquement.
+            </p>
+          )}
           <Field label="Nom *" htmlFor="nom">
             <input
               id="nom"
@@ -1844,21 +1967,24 @@ export function ProcessusForm({
       ) : null}
 
       {draftActions ? (
-        <div className="form-actions">
-          <SubmitButton name="intent" value="brouillon" variant="ghost">
-            Enregistrer comme brouillon
-          </SubmitButton>
-          <SubmitButton name="intent" value="finaliser">
-            Finaliser
-          </SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
-            Annuler
-          </BtnLink>
-        </div>
+        <SectionSaveActions
+          baseHref={cancelHref}
+          sectionKey={section !== "ALL" ? section : undefined}
+          cancelHref={cancelHref}
+          finalizeLabel={submitLabel}
+        />
       ) : (
         <div className="form-actions">
           <SubmitButton>{submitLabel}</SubmitButton>
-          <BtnLink href={cancelHref} variant="ghost">
+          <BtnLink
+            href={
+              section !== "ALL"
+                ? sectionCancelHref(cancelHref, section)
+                : cancelHref
+            }
+            variant="ghost"
+            scroll={false}
+          >
             Annuler
           </BtnLink>
         </div>

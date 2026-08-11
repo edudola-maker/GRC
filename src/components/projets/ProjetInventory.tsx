@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ChipButton,
@@ -13,7 +14,6 @@ import {
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { toneFromStatut } from "@/components/ui/StatusBadge";
-import { formatDateDot } from "@/lib/labels";
 
 export type ProjetInventoryItem = {
   id: string;
@@ -47,10 +47,14 @@ export function ProjetInventory({
   items,
   responsables,
   initialQuick,
+  createHref,
+  createLabel,
 }: {
   items: ProjetInventoryItem[];
   responsables: { id: string; nom: string }[];
   initialQuick?: QuickFilter;
+  createHref?: string;
+  createLabel?: string;
 }) {
   const { query, deferredQuery, setQuery } = useInventorySearch();
   const [quick, setQuick] = useState<QuickFilter>(initialQuick ?? "actifs");
@@ -132,6 +136,13 @@ export function ProjetInventory({
       activeFilterChips={activeFilterChips}
       onResetFilters={resetAll}
       canResetFilters={canReset}
+      createAction={
+        createHref && createLabel ? (
+          <Link className="btn" href={createHref}>
+            {createLabel}
+          </Link>
+        ) : undefined
+      }
       quickFilters={
         <>
           <ChipButton active={quick === "tous"} onClick={() => setQuick("tous")}>
@@ -216,13 +227,8 @@ export function ProjetInventory({
         </InventoryEmpty>
       ) : (
         <InventoryList
-          columns={["Code", "Nom", "Priorité", "Statut"]}
-          secondaryColumns={[
-            "Responsable",
-            "Échéance",
-            "Avancement",
-            "Tags",
-          ]}
+          dense
+          columns={["Code", "Nom", "Responsable", "Statut"]}
         >
           {filtered.map((p) => (
             <li key={p.id}>
@@ -233,16 +239,8 @@ export function ProjetInventory({
                 primary={[
                   { value: p.code, emphasis: "code" },
                   { value: p.nom, emphasis: "title" },
-                  { value: p.prioriteLabel },
-                  { value: p.statutLabel, badgeTone: toneFromStatut(p.statut) },
-                ]}
-                secondary={[
                   { value: p.responsableNom },
-                  { value: formatDateDot(p.dateEcheance) },
-                  {
-                    value: `${p.avancement}% · ${p.nbTaches} tâche${p.nbTaches > 1 ? "s" : ""}`,
-                  },
-                  { value: p.tags || "—" },
+                  { value: p.statutLabel, badgeTone: toneFromStatut(p.statut) },
                 ]}
               />
             </li>

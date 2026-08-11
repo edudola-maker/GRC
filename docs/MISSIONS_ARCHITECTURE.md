@@ -78,3 +78,11 @@ Lib : `src/lib/mission-etapes.ts`.
 ## 7. Code Mission modifiable
 
 Livré : édition `MIS-nnnn`, unicité, historisation.
+
+## 8. Chaîne gouvernance (rappel)
+
+Les missions d’assurance s’insèrent dans la chaîne globale :
+
+**Unité → Attributions → Objectifs → Processus → Risques → CTL**
+
+Voir [`GOUVERNANCE.md`](./GOUVERNANCE.md) et [`UNITE_ATTRIBUTIONS.md`](./UNITE_ATTRIBUTIONS.md). Les attributions institutionnelles (`UniteAttribution`) ≠ missions d’assurance.

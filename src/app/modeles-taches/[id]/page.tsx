@@ -214,7 +214,7 @@ export default async function ModeleTacheDetailPage({
             <form action={updateModeleTache} className="entity-form">
               <input type="hidden" name="id" value={modele.id} />
               <input type="hidden" name="sectionKey" value="CHECKLIST" />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="CHECKLIST" />
             </form>
           </>
         }
@@ -250,7 +250,7 @@ export default async function ModeleTacheDetailPage({
                 name="sectionKey"
                 value="PROCESSUS_ASSOCIES"
               />
-              <SectionSaveActions cancelHref={baseHref} />
+              <SectionSaveActions baseHref={baseHref} sectionKey="PROCESSUS_ASSOCIES" />
             </form>
           </>
         }
