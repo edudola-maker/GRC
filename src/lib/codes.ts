@@ -5,7 +5,7 @@ const PREFIXES = {
   CONSEIL: "CNS",
   MISSION: "MIS",
   RECOMMANDATION: "REC",
-  RISQUE: "RSK",
+  RISQUE: "RIS",
   CONTROLE_SCI: "CTL",
   DOCUMENT: "DOC",
   PROCESSUS: "PRC",
@@ -34,6 +34,13 @@ export function assertCodeFormat(
     return `Format de code invalide (attendu : ${PREFIXES[type]}-0001).`;
   }
   const prefix = PREFIXES[type];
+  // Legacy RISQUE : RSK-xxxx encore accepté à l’édition.
+  if (type === "RISQUE") {
+    if (!c.startsWith("RIS-") && !c.startsWith("RSK-")) {
+      return "Le code doit commencer par RIS- (ou RSK- pour les codes existants).";
+    }
+    return null;
+  }
   if (!c.startsWith(`${prefix}-`)) {
     return `Le code doit commencer par ${prefix}-.`;
   }
@@ -60,6 +67,36 @@ export async function assertCodeUnique(
       },
     });
     if (existing) return "Une mission porte déjà ce code.";
+  }
+  if (type === "PROJET") {
+    const existing = await prisma.projet.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un projet porte déjà ce code.";
+  }
+  if (type === "RISQUE") {
+    const existing = await prisma.risque.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un risque porte déjà ce code.";
+  }
+  if (type === "PROCESSUS") {
+    const existing = await prisma.processus.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un processus porte déjà ce code.";
   }
   return null;
 }

@@ -3,7 +3,11 @@ import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import {
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 import { createRisque } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +18,20 @@ export default async function NouveauRisquePage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifsForCurrentUnite();
+  const user = await getCurrentUser();
+  const [users, processus] = await Promise.all([
+    listUtilisateursActifsForCurrentUnite(),
+    prisma.processus.findMany({
+      where: { uniteId: user.uniteId, archive: false },
+      orderBy: { nom: "asc" },
+      select: { id: true, code: true, nom: true },
+    }),
+  ]);
+
+  const processusOptions = processus.map((p) => ({
+    id: p.id,
+    label: `${p.code} — ${p.nom}`,
+  }));
 
   return (
     <>
@@ -31,6 +48,7 @@ export default async function NouveauRisquePage({
           users={users}
           cancelHref="/risques"
           submitLabel="Créer le risque"
+          processusOptions={processusOptions}
         />
       </div>
     </>

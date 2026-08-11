@@ -8,7 +8,7 @@ import {
   STATUT_RISQUE_OPTIONS,
   STRATEGIE_RISQUE_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import { assertCodeUnique, assertNomUnique, nextCode, normalizeCode } from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import {
   diffChamps,
@@ -108,6 +108,16 @@ export async function createRisque(formData: FormData) {
     redirectWithError(fallback, "Stratégie de traitement invalide.");
   }
 
+  const processusId = optStr(formData, "processusId");
+  if (processusId) {
+    const prc = await prisma.processus.findFirst({
+      where: { id: processusId, uniteId, archive: false },
+    });
+    if (!prc) {
+      redirectWithError(fallback, "Processus introuvable ou archivé.");
+    }
+  }
+
   const risque = await prisma.risque.create({
     data: {
       code: await nextCode("RISQUE", uniteId),
@@ -116,7 +126,8 @@ export async function createRisque(formData: FormData) {
       description: optStr(formData, "description"),
       taxinomie: optStr(formData, "taxinomie"),
       tags: serializeTags(optStr(formData, "tags")),
-      processus: optStr(formData, "processus"),
+      processus: null,
+      processusId,
       responsableId,
       categorie: categorie as "OPERATIONNEL",
       probabilite,
@@ -216,22 +227,55 @@ export async function updateRisque(formData: FormData) {
   const description = optStr(formData, "description");
   const taxinomie = optStr(formData, "taxinomie");
   const tags = serializeTags(optStr(formData, "tags"));
-  const processus = optStr(formData, "processus");
+  const processusId = optStr(formData, "processusId");
+  if (processusId) {
+    const prc = await prisma.processus.findFirst({
+      where: { id: processusId, uniteId, archive: false },
+    });
+    if (!prc) {
+      redirectWithError(editFallback, "Processus introuvable ou archivé.");
+    }
+  }
   const commentaires = optStr(formData, "commentaires");
   const justificationEvaluation = optStr(formData, "justificationEvaluation");
   const strategieVal = (strategie as "REDUIRE") ?? null;
 
-  const [avantResp, apresResp] = await Promise.all([
+  const codeRaw = optStr(formData, "code") ?? existing.code;
+  const code = normalizeCode(codeRaw);
+  const codeErr = await assertCodeUnique("RISQUE", code, uniteId, id);
+  if (codeErr) redirectWithError(editFallback, codeErr);
+
+  const [avantResp, apresResp, avantPrc, apresPrc] = await Promise.all([
     labelResponsable(existing.responsableId),
     labelResponsable(responsableId),
+    existing.processusId
+      ? prisma.processus.findUnique({
+          where: { id: existing.processusId },
+          select: { code: true, nom: true },
+        })
+      : Promise.resolve(null),
+    processusId
+      ? prisma.processus.findUnique({
+          where: { id: processusId },
+          select: { code: true, nom: true },
+        })
+      : Promise.resolve(null),
   ]);
 
+  const labelPrc = (p: { code: string; nom: string } | null) =>
+    p ? `${p.code} — ${p.nom}` : null;
+
   const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
     { champ: "nom", avant: existing.nom, apres: nom },
     { champ: "description", avant: existing.description, apres: description },
     { champ: "taxinomie", avant: existing.taxinomie, apres: taxinomie },
     { champ: "tags", avant: existing.tags, apres: tags },
-    { champ: "processus", avant: existing.processus, apres: processus },
+    {
+      champ: "processus",
+      avant: labelPrc(avantPrc) ?? existing.processus,
+      apres: labelPrc(apresPrc),
+    },
     { champ: "responsable", avant: avantResp, apres: apresResp },
     { champ: "categorie", avant: existing.categorie, apres: categorie },
     { champ: "probabilite", avant: existing.probabilite, apres: probabilite },
@@ -270,11 +314,13 @@ export async function updateRisque(formData: FormData) {
   await prisma.risque.update({
     where: { id },
     data: {
+      code,
       nom,
       description,
       taxinomie,
       tags,
-      processus,
+      processus: null,
+      processusId,
       responsableId,
       categorie: categorie as "OPERATIONNEL",
       probabilite,

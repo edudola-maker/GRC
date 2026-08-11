@@ -55,13 +55,15 @@ export default async function RisqueDetailPage({
       : null;
   const user = await getCurrentUser();
 
-  const [risque, users, historique, journal, reevaluations] = await Promise.all([
+  const [risque, users, historique, journal, reevaluations, processus] =
+    await Promise.all([
     prisma.risque.findUnique({
       where: { id },
       include: {
         unite: { select: { id: true, nom: true, code: true } },
         responsable: true,
         creePar: true,
+        processusRef: { select: { id: true, code: true, nom: true } },
         controles: {
           include: {
             controle: {
@@ -80,6 +82,11 @@ export default async function RisqueDetailPage({
       include: { auteur: true },
       orderBy: [{ dateReevaluation: "desc" }, { creeLe: "desc" }],
     }),
+    prisma.processus.findMany({
+      where: { uniteId: user.uniteId, archive: false },
+      orderBy: { nom: "asc" },
+      select: { id: true, code: true, nom: true },
+    }),
   ]);
 
   if (!risque) notFound();
@@ -88,6 +95,10 @@ export default async function RisqueDetailPage({
   const tags = parseTags(risque.tags);
   const baseHref = `/risques/${risque.id}`;
   const canEdit = !risque.archive;
+  const processusOptions = processus.map((p) => ({
+    id: p.id,
+    label: `${p.code} — ${p.nom}`,
+  }));
 
   return (
     <>
@@ -138,6 +149,7 @@ export default async function RisqueDetailPage({
             cancelHref={baseHref}
             sectionKey="INFOS_GENERALES"
             submitLabel="Enregistrer"
+            processusOptions={processusOptions}
           />
         }
       >
@@ -164,8 +176,20 @@ export default async function RisqueDetailPage({
             <dd>{CATEGORIE_RISQUE_LABELS[risque.categorie]}</dd>
           </div>
           <div>
-            <dt>Processus (libellé)</dt>
-            <dd>{risque.processus ?? "—"}</dd>
+            <dt>Processus lié</dt>
+            <dd>
+              {risque.processusRef ? (
+                <Link href={`/processus/${risque.processusRef.id}`}>
+                  {risque.processusRef.code} — {risque.processusRef.nom}
+                </Link>
+              ) : risque.processus ? (
+                <span className="muted" title="Libellé libre historique">
+                  {risque.processus}
+                </span>
+              ) : (
+                "—"
+              )}
+            </dd>
           </div>
           <div>
             <dt>Évaluation inhérente</dt>

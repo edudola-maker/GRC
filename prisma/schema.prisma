@@ -269,6 +269,25 @@ model Unite {
   liensObjets      LienObjet[]
   sectionsRedaction SectionRedaction[]
   risquesReevaluations RisqueReevaluation[]
+  /// Missions institutionnelles / attributions permanentes (≠ Mission d’assurance).
+  attributions         UniteAttribution[]
+}
+
+/// Attribution / mission institutionnelle d’une Unité (référentiel gouvernance).
+/// Distinct de l’objet Mission (audits / revues d’assurance).
+model UniteAttribution {
+  id          String   @id @default(cuid())
+  uniteId     String
+  titre       String
+  description String?
+  ordre       Int      @default(0)
+  actif       Boolean  @default(true)
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+
+  @@index([uniteId, ordre])
 }
 
 // ─── Utilisateur ────────────────────────────────────────────
@@ -364,6 +383,8 @@ model Projet {
   /// Réflexion / analyse documentée (≠ journal d’activité).
   reflexion     String?
   archive       Boolean      @default(false)
+  /// Version de contenu (historisation code / champs structurants).
+  contenuVersion Int         @default(1)
   creeParId     String
   modifieParId  String
   creeLe        DateTime     @default(now())
@@ -627,7 +648,10 @@ model Risque {
   description   String?
   taxinomie     String?
   tags          String?
+  /// @deprecated Libellé libre — préférer processusId (référentiel).
   processus     String?
+  /// Lien vers le référentiel Processus (source de vérité).
+  processusId   String?
   responsableId String
   categorie     CategorieRisque
   /// Risque inhérent (avant maîtrise)
@@ -656,11 +680,13 @@ model Risque {
   responsable Utilisateur      @relation("RisqueResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur      @relation("RisqueCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur      @relation("RisqueModifiePar", fields: [modifieParId], references: [id])
+  processusRef Processus?      @relation(fields: [processusId], references: [id], onDelete: SetNull)
   controles   RisqueControle[]
   reevaluations RisqueReevaluation[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, criticite])
+  @@index([processusId])
 }
 
 /// Acte de réévaluation d’un risque (même si les notes ne changent pas).
@@ -1130,6 +1156,7 @@ model Processus {
   enfants     Processus[] @relation("ProcessusHierarchie")
   etapes      ProcessusEtape[]
   modelesTache ModeleTacheProcessus[]
+  risques     Risque[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])

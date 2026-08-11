@@ -5,6 +5,9 @@ import { createLienObjet } from "@/app/liens/actions";
 import { BtnSubmit } from "@/components/ui";
 import { TYPE_OBJET_LABELS } from "@/lib/labels";
 
+/**
+ * Sélecteur transversal : Type → Élément (une seule box, friction minimale).
+ */
 export function AssocierObjetForm({
   retour,
   typeSource,
@@ -29,9 +32,9 @@ export function AssocierObjetForm({
       <input type="hidden" name="retour" value={retour} />
       <input type="hidden" name="typeSource" value={typeSource} />
       <input type="hidden" name="idSource" value={idSource} />
-      <div className="form-grid">
+      <div className="form-grid form-grid--2">
         <label className="field">
-          <span className="field__label">Type</span>
+          <span className="field__label">Type d’élément</span>
           <select
             name="typeCible"
             required
@@ -47,9 +50,9 @@ export function AssocierObjetForm({
         </label>
         <label className="field">
           <span className="field__label">Élément</span>
-          <select name="idCible" required defaultValue="">
+          <select key={typeCible} name="idCible" required defaultValue="">
             <option value="" disabled>
-              Choisir…
+              {options.length ? "Choisir…" : "Aucun élément disponible"}
             </option>
             {options.map((c) => (
               <option key={c.id} value={c.id}>
@@ -57,14 +60,6 @@ export function AssocierObjetForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="field">
-          <span className="field__label">Libellé (optionnel)</span>
-          <input
-            name="libelle"
-            type="text"
-            placeholder="Ex. Preuve, couverture…"
-          />
         </label>
       </div>
       <div className="form-actions">

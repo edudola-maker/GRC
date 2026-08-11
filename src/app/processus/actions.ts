@@ -6,7 +6,12 @@ import {
   NIVEAU_CONFIDENTIALITE_OPTIONS,
   STATUT_PROCESSUS_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  assertCodeUnique,
+  assertNomUnique,
+  nextCode,
+  normalizeCode,
+} from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -100,6 +105,16 @@ export async function updateProcessus(formData: FormData) {
     if (!STATUTS.has(statut as "ACTIF" | "SUSPENDU")) {
       redirectWithError(editFallback, "Statut invalide.");
     }
+    const codeRaw = str(formData, "code");
+    const code = normalizeCode(codeRaw);
+    const codeErr = await assertCodeUnique(
+      "PROCESSUS",
+      code,
+      existing.uniteId,
+      id,
+    );
+    if (codeErr) redirectWithError(editFallback, codeErr);
+
     const nomErr = await assertNomUnique(
       "PROCESSUS",
       nom,
@@ -112,6 +127,7 @@ export async function updateProcessus(formData: FormData) {
     await prisma.processus.update({
       where: { id },
       data: {
+        code,
         nom,
         description: optStr(formData, "description"),
         reference: optStr(formData, "reference"),

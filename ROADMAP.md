@@ -203,9 +203,11 @@ Fonctionnalité transversale : export Excel des inventaires (Projets, Conseils, 
 
 Référentiel volontairement simple : **Processus = quoi** ; **procédure = comment** (Confluence).
 
-Champs principaux : code PRC-xxxx, nom, description courte, unité, responsable, statut, lien Confluence, **étapes ordonnées** (ajouter / renommer / supprimer / réordonner — pas de BPMN), éléments associés.
+**Livré :** CRUD PRC-xxxx (code éditable), étapes ordonnées, modèles de tâches liés, éléments associés, LPD léger, **risques associés** (via `Risque.processusId`) avec contrôles CTL liés.
 
-Associations libres via `LienObjet` (y compris vers une **étape** précise, facultatif). Chaîne cible : **Unité → Processus → Risques → Contrôles SCI → Occurrences**.
+Champs principaux : code PRC-xxxx, nom, description courte, unité, responsable, statut, lien Confluence, **étapes ordonnées**, éléments associés.
+
+Associations libres via `LienObjet` (y compris vers une **étape** précise, facultatif). Chaîne cible : **Unité → Attributions → Objectifs → Processus → Risques → Contrôles SCI → Occurrences**. Voir [`docs/GOUVERNANCE.md`](./docs/GOUVERNANCE.md).
 
 ### 5quinquies-bis. Édition box-by-box & brouillons (transversal)
 
@@ -222,11 +224,26 @@ Suivi opérationnel : **Projet → Tâches** uniquement. La notion de Jalon a é
 Distinguer :
 
 - **Administration** (`/administration/*`) — paramétrage utilisateurs / unités / rôles (v1 livré) ;
-- **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx), pilotage synthétique (compteurs), **Objectifs** (OBJ-xxxx), équipe, processus, éléments associés — pas de listes d’activité (réservées aux modules / Dashboards).
+- **Fiche métier Unité** (`/unite`, unité courante) : identité (UNT-xxxx) en box structurelle compacte, pilotage synthétique, **Missions / attributions** (`UniteAttribution`), **Objectifs** (OBJ-xxxx), collaborateurs, processus, missions d’assurance, éléments associés — pas de listes d’activité (réservées aux modules / Dashboards).
+
+**UniteAttribution (livré) :** missions institutionnelles permanentes (titre, description, ordre, actif) — distinctes des missions d’assurance. Détail : [`docs/UNITE_ATTRIBUTIONS.md`](./docs/UNITE_ATTRIBUTIONS.md).
 
 **Objectifs d’unité** ≠ `ObjectifAnnuel` (individuel) ≠ `ObjectifModule` (KPI module). Liens libres via `LienObjet`. Pas d’OKR / scoring auto dans cette version. Détail et risque de doublon : [`docs/OBJECTIFS.md`](./docs/OBJECTIFS.md).
 
 Cette vue **agrège** les informations déjà présentes — pas de double saisie. CTAs vers les moteurs existants. Dashboard responsable pourra lire les Objectifs plus tard (agrégateur lecture seule).
+
+### 5sexies-bis. Conformité (roadmap — architecture avant build)
+
+Module de **conformité réglementaire / référentiel légal** — **pas d’implémentation tant que l’architecture n’est pas tranchée**.
+
+Périmètre envisagé (à confirmer) :
+
+- référentiel d’exigences légales / normatives ;
+- liens vers Processus, Risques, Contrôles SCI ;
+- revues / preuves de conformité ;
+- articulation éventuelle avec LPD (approche légère — voir §5ter-bis).
+
+**Règle :** documenter et décider le modèle de données avant tout CRUD. Voir aussi [`docs/GOUVERNANCE.md`](./docs/GOUVERNANCE.md).
 
 ### 5septies. Administration & permissions (v1)
 
@@ -240,7 +257,16 @@ Espace distinct du travail quotidien, visible uniquement pour le rôle **Adminis
 
 Permissions : deny-by-default pour Administration (`src/lib/permissions.ts`). Scope Unité conservé. Adjoint = propriété d’Unité, pas un rôle global. Rôles Mission (mandat, auditeur…) restent séparés.
 
-**Roadmap :** AD / Entra ID, SSO, groupes, multi-unités avancées, permissions fines, restrictions LPD, Éditeur key user (inventaire dans `docs/EDITEUR_PREPARATION.md`).
+**Inventaire utilisateurs (livré) :** recherche + filtres unité / rôle / actif via `UtilisateurInventory` (`InventoryBrowser`).
+
+**Préparation — ne pas construire maintenant :**
+
+| Chantier | Note |
+|----------|------|
+| **Éditeur / Key User** | Templates, sections, listes métier sans code — inventaire dans [`docs/EDITEUR_PREPARATION.md`](./docs/EDITEUR_PREPARATION.md) |
+| **Multi-unités** | Un utilisateur rattaché à plusieurs unités ; navigation / scope croisé — architecture TBD |
+| **RBAC fin** | Permissions par module / action au-delà des 3 rôles app — s’appuyer sur `permissions.ts`, pas de hardcode ad hoc |
+| AD / Entra ID / SSO / groupes | Authentification entreprise |
 
 Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_CONSOLIDATION.md).
 
