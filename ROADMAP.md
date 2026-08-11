@@ -249,8 +249,8 @@ Voir aussi le bilan de sprint : [`docs/SPRINT_CONSOLIDATION.md`](./docs/SPRINT_C
 Voir [`docs/MISSIONS_ARCHITECTURE.md`](./docs/MISSIONS_ARCHITECTURE.md).
 
 - Familles UX **Audits** / **Revues de processus** (un moteur, vues filtrées — amorcé `?famille=`).
-- Cockpit + **cinq pages d’étapes** (Planification → Substantif → Recommandations → Rapport → Suivi).
-- Progression explicable (états de rédaction + recos), pas un % arbitraire.
+- **Cockpit + cinq pages d’étapes** : **implémentés** (états métier Non commencé → … → Validé/Terminé ; métriques complémentaires ; % uniquement sur Suivi).
+- Contenu méthodologique des étapes volontairement souple (à préciser progressivement).
 - **Draft de rapport** généré depuis les étapes (roadmap — pas maintenant).
 - **PV / notes d’entretien** (`MissionNote`) + IA « mettre au propre » sans écraser les notes brutes (roadmap).
 

@@ -24,8 +24,16 @@ import {
   markSectionRedaction,
   parseSaveIntent,
 } from "@/lib/section-redaction";
+import { missionEtapeHref, MISSION_ETAPES, slugFromSectionKey } from "@/lib/mission-etapes";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
+
+function revalidateMission(missionId: string, extra: string[] = []) {
+  const etapePaths = MISSION_ETAPES.map(
+    (e) => `/missions/${missionId}/${e.slug}`,
+  );
+  revalidateApp([`/missions/${missionId}`, ...etapePaths, ...extra]);
+}
 
 const STATUTS_MISSION = new Set<string>(
   STATUT_MISSION_OPTIONS.map((o) => o.value),
@@ -167,7 +175,10 @@ export async function updateMission(formData: FormData) {
 
   const sectionKey = optStr(formData, "sectionKey") ?? "VUE_ENSEMBLE";
   const intent = parseSaveIntent(formData);
-  const editFallback = `/missions/${id}?edit=${sectionKey}`;
+  const etapeSlug = slugFromSectionKey(sectionKey);
+  const editFallback = etapeSlug
+    ? missionEtapeHref(id, etapeSlug, { edit: sectionKey })
+    : `/missions/${id}?edit=${sectionKey}`;
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(editFallback, "Le titre de la mission est obligatoire.");
@@ -297,7 +308,7 @@ export async function updateMission(formData: FormData) {
     bumpVersion: intent === "finaliser",
   });
 
-  revalidateApp([`/missions/${id}`]);
+  revalidateMission(id);
   redirectWithOk(
     intent === "brouillon" ? `${editFallback}#${sectionKey}` : `/missions/${id}`,
     intent === "brouillon" ? "brouillon" : "modifie",
@@ -317,7 +328,7 @@ export async function archiveMission(formData: FormData) {
     data: { archive: true, modifieParId: current.id },
   });
 
-  revalidateApp([`/missions/${id}`]);
+  revalidateMission(id);
   redirectWithOk(`/missions/${id}`, "archive");
 }
 
@@ -334,7 +345,7 @@ export async function unarchiveMission(formData: FormData) {
     data: { archive: false, modifieParId: current.id },
   });
 
-  revalidateApp([`/missions/${id}`]);
+  revalidateMission(id);
   redirectWithOk(`/missions/${id}`, "desarchive");
 }
 
@@ -365,7 +376,7 @@ export async function deleteMission(formData: FormData) {
     data: { archive: true, modifieParId: current.id },
   });
 
-  revalidateApp([`/missions/${id}`]);
+  revalidateMission(id);
   redirectWithOk(`/missions/${id}`, "archive");
 }
 
@@ -435,8 +446,13 @@ export async function createRecommandation(formData: FormData) {
     });
   }
 
-  revalidateApp([`/missions/${missionId}`]);
-  redirectWithOk(`/missions/${missionId}?edit=RECOMMANDATIONS`, "reco");
+  revalidateMission(missionId);
+  redirectWithOk(
+    missionEtapeHref(missionId, "recommandations", {
+      edit: "RECOMMANDATIONS",
+    }),
+    "reco",
+  );
 }
 
 export async function updateRecommandation(formData: FormData) {
@@ -484,8 +500,13 @@ export async function updateRecommandation(formData: FormData) {
     },
   });
 
-  revalidateApp([`/missions/${existing.missionId}`]);
-  redirectWithOk(`/missions/${existing.missionId}?edit=RECOMMANDATIONS`, "modifie");
+  revalidateMission(existing.missionId);
+  redirectWithOk(
+    missionEtapeHref(existing.missionId, "recommandations", {
+      edit: "RECOMMANDATIONS",
+    }),
+    "modifie",
+  );
 }
 
 export async function deleteRecommandation(formData: FormData) {
@@ -502,8 +523,13 @@ export async function deleteRecommandation(formData: FormData) {
     where: { id },
     data: { archive: true },
   });
-  revalidateApp([`/missions/${missionId}`]);
-  redirectWithOk(`/missions/${missionId}?edit=RECOMMANDATIONS`, "supprime");
+  revalidateMission(missionId);
+  redirectWithOk(
+    missionEtapeHref(missionId, "recommandations", {
+      edit: "RECOMMANDATIONS",
+    }),
+    "supprime",
+  );
 }
 
 export async function createTacheDepuisMission(formData: FormData) {
@@ -536,7 +562,7 @@ export async function createTacheDepuisMission(formData: FormData) {
     },
   });
 
-  revalidateApp([`/missions/${mission.id}`, `/taches/${tache.id}`]);
+  revalidateMission(mission.id, [`/taches/${tache.id}`]);
   redirectWithOk(`/taches/${tache.id}`, "tache");
 }
 
@@ -573,7 +599,7 @@ export async function createTacheDepuisReco(formData: FormData) {
     },
   });
 
-  revalidateApp([`/missions/${reco.missionId}`, `/taches/${tache.id}`]);
+  revalidateMission(reco.missionId, [`/taches/${tache.id}`]);
   redirectWithOk(`/taches/${tache.id}`, "tache");
 }
 
@@ -613,8 +639,11 @@ export async function linkDocument(formData: FormData) {
     data: { missionId, documentId },
   });
 
-  revalidateApp([`/missions/${missionId}`, `/documents/${documentId}`]);
-  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "lien");
+  revalidateMission(missionId, [`/documents/${documentId}`]);
+  redirectWithOk(
+    missionEtapeHref(missionId, "planification", { edit: "PLANIFICATION" }),
+    "lien",
+  );
 }
 
 export async function addMissionMembre(formData: FormData) {
@@ -666,8 +695,11 @@ export async function addMissionMembre(formData: FormData) {
     data: { modifieParId: current.id },
   });
 
-  revalidateApp([`/missions/${missionId}`]);
-  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "equipe");
+  revalidateMission(missionId);
+  redirectWithOk(
+    missionEtapeHref(missionId, "planification", { edit: "PLANIFICATION" }),
+    "equipe",
+  );
 }
 
 export async function removeMissionMembre(formData: FormData) {
@@ -691,8 +723,11 @@ export async function removeMissionMembre(formData: FormData) {
     data: { modifieParId: current.id },
   });
 
-  revalidateApp([`/missions/${missionId}`]);
-  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "equipe");
+  revalidateMission(missionId);
+  redirectWithOk(
+    missionEtapeHref(missionId, "planification", { edit: "PLANIFICATION" }),
+    "equipe",
+  );
 }
 
 export async function setMissionMembreRoles(formData: FormData) {
@@ -730,8 +765,11 @@ export async function setMissionMembreRoles(formData: FormData) {
     }),
   ]);
 
-  revalidateApp([`/missions/${missionId}`]);
-  redirectWithOk(`/missions/${missionId}?edit=PLANIFICATION`, "equipe");
+  revalidateMission(missionId);
+  redirectWithOk(
+    missionEtapeHref(missionId, "planification", { edit: "PLANIFICATION" }),
+    "equipe",
+  );
 }
 
 /** Alias de transition — préférer les noms Mission. */
