@@ -3800,3 +3800,94 @@ a {
   color: var(--ink-muted);
   text-align: center;
 }
+
+/* ─── RACI Processus ─────────────────────────────────────── */
+.raci-table-wrap {
+  overflow-x: auto;
+  margin: 0.5rem 0 1rem;
+}
+.raci-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.raci-table th,
+.raci-table td {
+  border: 1px solid var(--border, #d9d0c4);
+  padding: 0.45rem 0.55rem;
+  vertical-align: top;
+  text-align: left;
+}
+.raci-table th {
+  background: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.raci-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.raci-people li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.15rem 0;
+}
+.raci-rename,
+.raci-add-part,
+.raci-add-ligne,
+.inline-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+.raci-edit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+.inline-form {
+  display: inline;
+}
+.btn-link {
+  border: none;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  padding: 0 0.2rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+.btn-link:hover {
+  color: var(--brand-deep, #5c3d2e);
+}
+
+/* ─── Aide évaluation risques ────────────────────────────── */
+.risque-aide {
+  margin-bottom: 0.85rem;
+}
+.risque-aide__panel {
+  margin-top: 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border, #d9d0c4);
+  border-radius: 8px;
+  background: rgba(255, 252, 248, 0.7);
+}
+.risque-aide__title {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+.risque-aide__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.55rem 0.75rem;
+}
+.risque-aide__result {
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border, #d9d0c4);
+}

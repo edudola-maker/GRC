@@ -134,6 +134,30 @@ enum StatutProcessus {
   SUSPENDU
 }
 
+/// Type d’actif IT (MVP léger — pas une CMDB).
+enum TypeActifIT {
+  APPLICATION
+  SYSTEME
+  INFRASTRUCTURE
+  SERVICE
+  AUTRE
+}
+
+enum StatutActifIT {
+  ACTIF
+  EN_PROJET
+  OBSOLETE
+  ARCHIVE
+}
+
+/// Rôle RACI sur une ligne d’activité / étape de processus.
+enum RoleRaci {
+  R
+  A
+  C
+  I
+}
+
 enum TypeNoteTravail {
   TRAVAIL
   SEANCE
@@ -283,6 +307,7 @@ model Unite {
   liensObjets      LienObjet[]
   sectionsRedaction SectionRedaction[]
   risquesReevaluations RisqueReevaluation[]
+  actifsIT         ActifIT[]
   /// Missions institutionnelles / attributions permanentes (≠ Mission d’assurance).
   attributions         UniteAttribution[]
 }
@@ -337,6 +362,7 @@ model Utilisateur {
   objectifsResponsable    Objectif[]         @relation("ObjectifResponsable")
   objectifsCrees          Objectif[]         @relation("ObjectifCreePar")
   objectifsModifies       Objectif[]         @relation("ObjectifModifiePar")
+  actifsITResponsable     ActifIT[]          @relation("ActifITResponsable")
 
   projetsCrees            Projet[]           @relation("ProjetCreePar")
   projetsModifies         Projet[]           @relation("ProjetModifiePar")
@@ -354,6 +380,8 @@ model Utilisateur {
   missionsModifiees       Mission[]          @relation("MissionModifiePar")
   processusCrees          Processus[]        @relation("ProcessusCreePar")
   processusModifies       Processus[]        @relation("ProcessusModifiePar")
+  actifsITCrees           ActifIT[]          @relation("ActifITCreePar")
+  actifsITModifies        ActifIT[]          @relation("ActifITModifiePar")
   historiquesTache        HistoriqueTache[]
   historiquesModification HistoriqueModification[]
   objectifs               ObjectifAnnuel[]
@@ -370,6 +398,8 @@ model Utilisateur {
   modelesTacheResponsable ModeleTache[]        @relation("ModeleTacheResponsableDefaut")
   modelesTacheProcessus   ModeleTacheProcessus[] @relation("ModeleTacheProcessusLiePar")
   documentsProcessus      DocumentProcessus[]    @relation("DocumentProcessusLiePar")
+  processusActifsIT       ProcessusActifIT[]     @relation("ProcessusActifITLiePar")
+  raciParticipants        ProcessusRaciParticipant[]
   validationsPreparees    MissionValidationPoint[] @relation("ValidationPreparePar")
   validationsSoumises     MissionValidationPoint[] @relation("ValidationSoumisPar")
   visasMission            MissionValidationVisa[]
@@ -1198,6 +1228,8 @@ model Processus {
   modelesTache ModeleTacheProcessus[]
   risques     Risque[]
   documents   DocumentProcessus[]
+  actifsIT    ProcessusActifIT[]
+  raciLignes  ProcessusRaciLigne[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1212,8 +1244,94 @@ model ProcessusEtape {
   ordre       Int    @default(0)
 
   processus Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  raciLignes ProcessusRaciLigne[]
 
   @@index([processusId, ordre])
+}
+
+/// Ligne RACI d’un processus (activité / étape). Facultatif — un responsable principal peut suffire.
+model ProcessusRaciLigne {
+  id          String  @id @default(cuid())
+  processusId String
+  /// Étape liée si la ligne s’appuie sur le référentiel d’étapes.
+  etapeId     String?
+  /// Libellé d’activité (peut reprendre le libellé d’étape).
+  activite    String
+  ordre       Int     @default(0)
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  processus    Processus                  @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  etape        ProcessusEtape?            @relation(fields: [etapeId], references: [id], onDelete: SetNull)
+  participants ProcessusRaciParticipant[]
+
+  @@index([processusId, ordre])
+  @@index([etapeId])
+}
+
+/// Participant RACI — personne issue du référentiel Utilisateurs.
+/// Architecture souple : plus tard une fonction/rôle pourra porter la responsabilité
+/// (libelleFonction) sans imposer cette sophistication dès maintenant.
+model ProcessusRaciParticipant {
+  id              String   @id @default(cuid())
+  ligneId         String
+  role            RoleRaci
+  utilisateurId   String?
+  /// Réserve future : responsabilité portée par une fonction (pas une personne).
+  libelleFonction String?
+  creeLe          DateTime @default(now())
+
+  ligne       ProcessusRaciLigne @relation(fields: [ligneId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur?       @relation(fields: [utilisateurId], references: [id], onDelete: SetNull)
+
+  @@index([ligneId, role])
+  @@index([utilisateurId])
+}
+
+/// Référentiel transversal Actifs IT (MVP — identifier quels systèmes supportent quels processus).
+/// Préfixe AIT-xxxx (plus générique que APP — types APPLICATION / SYSTEME / …).
+model ActifIT {
+  id             String       @id @default(cuid())
+  uniteId        String
+  code           String
+  nom            String
+  type           TypeActifIT  @default(APPLICATION)
+  description    String?
+  responsableId  String?
+  statut         StatutActifIT @default(ACTIF)
+  fournisseur    String?
+  hebergement    String?
+  archive        Boolean      @default(false)
+  creeParId      String
+  modifieParId   String
+  creeLe         DateTime     @default(now())
+  modifieLe      DateTime     @updatedAt
+
+  unite       Unite          @relation(fields: [uniteId], references: [id])
+  responsable Utilisateur?   @relation("ActifITResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  creePar     Utilisateur    @relation("ActifITCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur    @relation("ActifITModifiePar", fields: [modifieParId], references: [id])
+  processus   ProcessusActifIT[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
+}
+
+/// Relation N–N Processus ↔ Actif IT.
+model ProcessusActifIT {
+  id          String   @id @default(cuid())
+  processusId String
+  actifITId   String
+  lieParId    String
+  lieLe       DateTime @default(now())
+
+  processus Processus   @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  actifIT   ActifIT     @relation(fields: [actifITId], references: [id], onDelete: Cascade)
+  liePar    Utilisateur @relation("ProcessusActifITLiePar", fields: [lieParId], references: [id])
+
+  @@unique([processusId, actifITId])
+  @@index([actifITId])
+  @@index([processusId])
 }
 
 // ─── Modèle de tâche ────────────────────────────────────────

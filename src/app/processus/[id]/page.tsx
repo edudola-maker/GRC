@@ -13,6 +13,8 @@ import {
 } from "@/components/module/EditableSection";
 import { ProcessusEtapesPanel } from "@/components/processus/ProcessusEtapesPanel";
 import { ProcessusModelesTachesPanel } from "@/components/processus/ProcessusModelesTachesPanel";
+import { ProcessusRaciPanel } from "@/components/processus/ProcessusRaciPanel";
+import { ProcessusActifsITPanel } from "@/components/processus/ProcessusActifsITPanel";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
 import { PageHeader } from "@/components/ui";
@@ -24,19 +26,27 @@ import {
 } from "../actions";
 import {
   NIVEAU_CONFIDENTIALITE_LABELS,
+  STATUT_ACTIF_IT_LABELS,
   STATUT_PROCESSUS_LABELS,
+  TYPE_ACTIF_IT_LABELS,
   formatDate,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { listSectionRedactions } from "@/lib/section-redaction";
-import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import {
+  formatUtilisateurNom,
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 const EDIT_SECTIONS = [
   "INFOS_GENERALES",
   "ETAPES",
+  "RACI",
+  "ACTIFS_IT",
   "ELEMENTS_ASSOCIES",
   "LPD",
 ] as const;
@@ -62,7 +72,7 @@ export default async function ProcessusDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [processus, users, redactions, risques, documentsLies] =
+  const [processus, users, redactions, risques, documentsLies, actifsDisponibles] =
     await Promise.all([
     prisma.processus.findUnique({
       where: { id },
@@ -72,6 +82,29 @@ export default async function ProcessusDetailPage({
         modifiePar: true,
         unite: true,
         etapes: { orderBy: { ordre: "asc" } },
+        raciLignes: {
+          include: {
+            participants: {
+              include: { utilisateur: true },
+            },
+          },
+          orderBy: { ordre: "asc" },
+        },
+        actifsIT: {
+          include: {
+            actifIT: {
+              select: {
+                id: true,
+                code: true,
+                nom: true,
+                type: true,
+                statut: true,
+                archive: true,
+              },
+            },
+          },
+          orderBy: { lieLe: "asc" },
+        },
         modelesTache: {
           include: {
             modeleTache: {
@@ -109,6 +142,11 @@ export default async function ProcessusDetailPage({
       },
       orderBy: { lieLe: "asc" },
     }),
+    prisma.actifIT.findMany({
+      where: { uniteId: user.uniteId, archive: false },
+      select: { id: true, code: true, nom: true },
+      orderBy: { nom: "asc" },
+    }),
   ]);
   if (!processus) notFound();
 
@@ -119,6 +157,39 @@ export default async function ProcessusDetailPage({
     processus.reference && /^https?:\/\//i.test(processus.reference)
       ? processus.reference
       : null;
+
+  const userOpts = users.map((u) => ({
+    id: u.id,
+    nom: formatUtilisateurNom(u),
+  }));
+  const liesActifIds = new Set(processus.actifsIT.map((l) => l.actifITId));
+  const actifsOpts = actifsDisponibles
+    .filter((a) => !liesActifIds.has(a.id))
+    .map((a) => ({ id: a.id, label: `${a.code} — ${a.nom}` }));
+  const actifsLies = processus.actifsIT
+    .filter((l) => !l.actifIT.archive)
+    .map((l) => ({
+      lienId: l.id,
+      id: l.actifIT.id,
+      code: l.actifIT.code,
+      nom: l.actifIT.nom,
+      typeLabel: TYPE_ACTIF_IT_LABELS[l.actifIT.type] ?? l.actifIT.type,
+      statutLabel: STATUT_ACTIF_IT_LABELS[l.actifIT.statut] ?? l.actifIT.statut,
+    }));
+  const raciLignes = processus.raciLignes.map((l) => ({
+    id: l.id,
+    activite: l.activite,
+    etapeId: l.etapeId,
+    ordre: l.ordre,
+    participants: l.participants.map((p) => ({
+      id: p.id,
+      role: p.role,
+      utilisateurId: p.utilisateurId,
+      utilisateurNom: p.utilisateur
+        ? formatUtilisateurNom(p.utilisateur)
+        : null,
+    })),
+  }));
 
   return (
     <>
@@ -170,7 +241,7 @@ export default async function ProcessusDetailPage({
         editChildren={
           <ProcessusForm
             action={updateProcessus}
-            users={users}
+            users={userOpts}
             values={processus}
             cancelHref={baseHref}
             submitLabel="Finaliser"
@@ -250,8 +321,41 @@ export default async function ProcessusDetailPage({
         />
       </EditableSection>
 
+      <EditableSection
+        title="Responsabilités (RACI)"
+        sectionKey="RACI"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen={false}
+        badge={`${raciLignes.length}`}
+        editChildren={
+          <ProcessusRaciPanel
+            processusId={processus.id}
+            lignes={raciLignes}
+            etapes={processus.etapes.map((e) => ({
+              id: e.id,
+              libelle: e.libelle,
+            }))}
+            users={userOpts}
+            editable
+          />
+        }
+      >
+        <ProcessusRaciPanel
+          processusId={processus.id}
+          lignes={raciLignes}
+          etapes={processus.etapes.map((e) => ({
+            id: e.id,
+            libelle: e.libelle,
+          }))}
+          users={userOpts}
+          editable={false}
+        />
+      </EditableSection>
+
       <CollapsibleSection
-        title="Risques associés"
+        title="Risques & Contrôles"
         defaultOpen
         badge={`${risques.length}`}
       >
@@ -312,6 +416,39 @@ export default async function ProcessusDetailPage({
             })}
           </ul>
         )}
+      </CollapsibleSection>
+
+      <EditableSection
+        title="Actifs IT"
+        sectionKey="ACTIFS_IT"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen={false}
+        badge={`${actifsLies.length}`}
+        editChildren={
+          <ProcessusActifsITPanel
+            processusId={processus.id}
+            lies={actifsLies}
+            disponibles={actifsOpts}
+            editable
+          />
+        }
+      >
+        <ProcessusActifsITPanel
+          processusId={processus.id}
+          lies={actifsLies}
+          disponibles={actifsOpts}
+          editable={false}
+        />
+      </EditableSection>
+
+      <CollapsibleSection title="Continuité des activités" defaultOpen={false}>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Analyse légère au niveau Processus — architecture proposée dans{" "}
+          <code>docs/ARCHITECTURE_CONTINUITE.md</code>. Implémentation après
+          validation (pas de moteur BCM autonome dans ce sprint).
+        </p>
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -406,7 +543,7 @@ export default async function ProcessusDetailPage({
         editChildren={
           <ProcessusForm
             action={updateProcessus}
-            users={users}
+            users={userOpts}
             values={processus}
             cancelHref={baseHref}
             submitLabel="Finaliser"

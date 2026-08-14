@@ -344,3 +344,257 @@ export async function deleteProcessus(formData: FormData) {
   revalidateApp();
   redirect("/processus?ok=supprime");
 }
+
+const RACI_ROLES = new Set(["R", "A", "C", "I"]);
+
+/** Ajoute une ligne RACI (activité libre ou depuis une étape). */
+export async function addProcessusRaciLigne(formData: FormData) {
+  const current = await getCurrentUser();
+  const processusId = str(formData, "processusId");
+  if (!processusId) redirectWithError("/processus", "Identifiant manquant.");
+  const href = `/processus/${processusId}?edit=RACI`;
+
+  const processus = await prisma.processus.findUnique({
+    where: { id: processusId },
+  });
+  if (!processus || processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Processus introuvable.");
+  }
+
+  const etapeId = optStr(formData, "etapeId");
+  let activite = str(formData, "activite");
+  if (etapeId) {
+    const etape = await prisma.processusEtape.findFirst({
+      where: { id: etapeId, processusId },
+    });
+    if (!etape) redirectWithError(href, "Étape introuvable.");
+    if (!activite) activite = etape.libelle;
+  }
+  if (!activite) {
+    redirectWithError(href, "Indiquez une activité ou choisissez une étape.");
+  }
+
+  const maxOrdre = await prisma.processusRaciLigne.aggregate({
+    where: { processusId },
+    _max: { ordre: true },
+  });
+  await prisma.processusRaciLigne.create({
+    data: {
+      processusId,
+      etapeId: etapeId ?? null,
+      activite,
+      ordre: (maxOrdre._max.ordre ?? -1) + 1,
+    },
+  });
+  revalidateProcessus(processusId);
+  redirectWithOk(href, "raci");
+}
+
+/** Initialise le RACI à partir des étapes existantes (une ligne par étape manquante). */
+export async function initProcessusRaciFromEtapes(formData: FormData) {
+  const current = await getCurrentUser();
+  const processusId = str(formData, "processusId");
+  if (!processusId) redirectWithError("/processus", "Identifiant manquant.");
+  const href = `/processus/${processusId}?edit=RACI`;
+
+  const processus = await prisma.processus.findUnique({
+    where: { id: processusId },
+    include: {
+      etapes: { orderBy: { ordre: "asc" } },
+      raciLignes: { select: { etapeId: true } },
+    },
+  });
+  if (!processus || processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Processus introuvable.");
+  }
+
+  const deja = new Set(
+    processus.raciLignes.map((l) => l.etapeId).filter(Boolean),
+  );
+  const aCreer = processus.etapes.filter((e) => !deja.has(e.id));
+  if (aCreer.length === 0) {
+    redirectWithOk(href, "raci_deja");
+  }
+
+  const maxOrdre = await prisma.processusRaciLigne.aggregate({
+    where: { processusId },
+    _max: { ordre: true },
+  });
+  let ordre = (maxOrdre._max.ordre ?? -1) + 1;
+  await prisma.processusRaciLigne.createMany({
+    data: aCreer.map((e) => ({
+      processusId,
+      etapeId: e.id,
+      activite: e.libelle,
+      ordre: ordre++,
+    })),
+  });
+  revalidateProcessus(processusId);
+  redirectWithOk(href, "raci");
+}
+
+export async function updateProcessusRaciLigne(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  const activite = str(formData, "activite");
+  const href = `/processus/${processusId}?edit=RACI`;
+  if (!id || !processusId || !activite) {
+    redirectWithError(href || "/processus", "Données RACI incomplètes.");
+  }
+
+  const ligne = await prisma.processusRaciLigne.findUnique({
+    where: { id },
+    include: { processus: true },
+  });
+  if (!ligne || ligne.processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Ligne RACI introuvable.");
+  }
+
+  await prisma.processusRaciLigne.update({
+    where: { id },
+    data: { activite },
+  });
+  revalidateProcessus(processusId);
+  redirectWithOk(href, "raci");
+}
+
+export async function deleteProcessusRaciLigne(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  const href = `/processus/${processusId}?edit=RACI`;
+  if (!id || !processusId) {
+    redirectWithError("/processus", "Identifiant manquant.");
+  }
+
+  const ligne = await prisma.processusRaciLigne.findUnique({
+    where: { id },
+    include: { processus: true },
+  });
+  if (!ligne || ligne.processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Ligne RACI introuvable.");
+  }
+
+  await prisma.processusRaciLigne.delete({ where: { id } });
+  revalidateProcessus(processusId);
+  redirectWithOk(href, "raci");
+}
+
+export async function addProcessusRaciParticipant(formData: FormData) {
+  const current = await getCurrentUser();
+  const ligneId = str(formData, "ligneId");
+  const processusId = str(formData, "processusId");
+  const role = str(formData, "role");
+  const utilisateurId = str(formData, "utilisateurId");
+  const href = `/processus/${processusId}?edit=RACI`;
+  if (!ligneId || !processusId || !RACI_ROLES.has(role) || !utilisateurId) {
+    redirectWithError(href || "/processus", "Participant RACI incomplet.");
+  }
+
+  const ligne = await prisma.processusRaciLigne.findUnique({
+    where: { id: ligneId },
+    include: { processus: true },
+  });
+  if (!ligne || ligne.processusId !== processusId || ligne.processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Ligne RACI introuvable.");
+  }
+
+  const user = await prisma.utilisateur.findFirst({
+    where: { id: utilisateurId, uniteId: current.uniteId, actif: true },
+  });
+  if (!user) redirectWithError(href, "Collaborateur introuvable.");
+
+  const exists = await prisma.processusRaciParticipant.findFirst({
+    where: { ligneId, role: role as "R", utilisateurId },
+  });
+  if (exists) redirectWithOk(href, "raci");
+
+  await prisma.processusRaciParticipant.create({
+    data: {
+      ligneId,
+      role: role as "R",
+      utilisateurId,
+    },
+  });
+  revalidateProcessus(processusId);
+  redirectWithOk(href, "raci");
+}
+
+export async function removeProcessusRaciParticipant(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  const href = `/processus/${processusId}?edit=RACI`;
+  if (!id || !processusId) {
+    redirectWithError("/processus", "Identifiant manquant.");
+  }
+
+  const part = await prisma.processusRaciParticipant.findUnique({
+    where: { id },
+    include: { ligne: { include: { processus: true } } },
+  });
+  if (
+    !part ||
+    part.ligne.processusId !== processusId ||
+    part.ligne.processus.uniteId !== current.uniteId
+  ) {
+    redirectWithError("/processus", "Participant introuvable.");
+  }
+
+  await prisma.processusRaciParticipant.delete({ where: { id } });
+  revalidateProcessus(processusId);
+  redirectWithOk(href, "raci");
+}
+
+export async function linkProcessusActifIT(formData: FormData) {
+  const current = await getCurrentUser();
+  const processusId = str(formData, "processusId");
+  const actifITId = str(formData, "actifITId");
+  const href = `/processus/${processusId}?edit=ACTIFS_IT`;
+  if (!processusId || !actifITId) {
+    redirectWithError(href || "/processus", "Identifiant manquant.");
+  }
+
+  const [processus, actif] = await Promise.all([
+    prisma.processus.findUnique({ where: { id: processusId } }),
+    prisma.actifIT.findFirst({
+      where: { id: actifITId, uniteId: current.uniteId, archive: false },
+    }),
+  ]);
+  if (!processus || processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Processus introuvable.");
+  }
+  if (!actif) redirectWithError(href, "Actif IT introuvable ou archivé.");
+
+  await prisma.processusActifIT.upsert({
+    where: { processusId_actifITId: { processusId, actifITId } },
+    create: { processusId, actifITId, lieParId: current.id },
+    update: {},
+  });
+  revalidateApp([`/processus/${processusId}`, `/actifs-it/${actifITId}`]);
+  redirectWithOk(href, "actif");
+}
+
+export async function unlinkProcessusActifIT(formData: FormData) {
+  const current = await getCurrentUser();
+  const id = str(formData, "id");
+  const processusId = str(formData, "processusId");
+  const href = `/processus/${processusId}?edit=ACTIFS_IT`;
+  if (!id || !processusId) {
+    redirectWithError("/processus", "Identifiant manquant.");
+  }
+
+  const lien = await prisma.processusActifIT.findUnique({
+    where: { id },
+    include: { processus: true },
+  });
+  if (!lien || lien.processusId !== processusId || lien.processus.uniteId !== current.uniteId) {
+    redirectWithError("/processus", "Lien introuvable.");
+  }
+
+  await prisma.processusActifIT.delete({ where: { id } });
+  revalidateApp([`/processus/${processusId}`, `/actifs-it/${lien.actifITId}`]);
+  redirectWithOk(href, "actif");
+}
+

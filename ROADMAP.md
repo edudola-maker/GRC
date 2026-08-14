@@ -79,6 +79,8 @@ Conséquence UI :
 | Conseils | MVP | Objet métier |
 | Risques | MVP | Registre + matrice 5×5 |
 | Documents | MVP | Inventaire + revues planifiées |
+| Actifs IT | MVP | Référentiel léger AIT + liens Processus |
+| Continuité des activités | Roadmap | Vue consolidée (données sur Processus) — voir `docs/ARCHITECTURE_CONTINUITE.md` |
 | Équipe | Absorbé | Section de `/unite` (redirect `/equipe`) |
 | Missions d’assurance | MVP | Routes `/missions` (redirect `/audits`) |
 | Protection des données | Roadmap | Pilotage LPD + consolidation (voir §5ter-bis / `docs/LPD.md`) |
@@ -302,6 +304,24 @@ Architecture et décisions : [`docs/VERSIONING.md`](./docs/VERSIONING.md).
 **Pilote Risques (livré) :** modèle `HistoriqueModification`, helper `enregistrerModifications`, `Risque.contenuVersion`, UI Historique + Journal.  
 Pas de snapshot JSON ni de purge auto en Phase 1 ; conservation paramétrable plus tard (Protection des données).  
 Étapes suivantes : autres modules, puis invalidation des visas (`versionVisee` < `contenuVersion`).
+
+---
+
+## Continuité des activités & Actifs IT (Roadmap suite)
+
+Livré : RACI Processus, référentiel Actifs IT (AIT), aide évaluation risques déterministe.  
+Architecture Continuité : `docs/ARCHITECTURE_CONTINUITE.md` — **à valider avant implémentation**.
+
+**Roadmap uniquement :**
+
+- Vue consolidée Continuité des activités (nav Gouvernance)
+- `ProcessusContinuité` + dépendances Processus↔Processus
+- Scénarios de crise, exercices BCM, plans détaillés, Disaster Recovery
+- Dépendances fournisseurs / personnes critiques avancées
+- Information Security avancée sur Actifs IT (CIA, données traitées…)
+- Cartographie technique / CMDB
+- IA pour l’évaluation des risques + abstraction `AIProvider` (LOCAL | EXTERNAL_API | DISABLED)
+- Rapports BCM / analyses avancées de résilience
 
 ### 5nonies. Touche humaine / fun (roadmap légère)
 

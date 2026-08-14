@@ -277,6 +277,7 @@ async function main() {
       { uniteId, prefixe: "REC", dernier: 1 },
       { uniteId, prefixe: "OBJ", dernier: 3 },
       { uniteId, prefixe: "UNT", dernier: 2 },
+      { uniteId, prefixe: "AIT", dernier: 2 },
     ],
   });
 
@@ -616,6 +617,82 @@ async function main() {
       },
     },
   });
+
+  const actifIam = await prisma.actifIT.create({
+    data: {
+      uniteId,
+      code: "AIT-0001",
+      nom: "Annuaire / IAM",
+      type: "SYSTEME",
+      description: "Gestion des identités et des accès.",
+      responsableId: bernard.id,
+      statut: "ACTIF",
+      hebergement: "On-premise",
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+  const actifErp = await prisma.actifIT.create({
+    data: {
+      uniteId,
+      code: "AIT-0002",
+      nom: "ERP métier",
+      type: "APPLICATION",
+      description: "Application cœur de métier.",
+      responsableId: alice.id,
+      statut: "ACTIF",
+      fournisseur: "Éditeur exemple",
+      hebergement: "SaaS",
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  await prisma.processusActifIT.createMany({
+    data: [
+      {
+        processusId: processusAcces.id,
+        actifITId: actifIam.id,
+        lieParId: bernard.id,
+      },
+      {
+        processusId: processusAcces.id,
+        actifITId: actifErp.id,
+        lieParId: bernard.id,
+      },
+    ],
+  });
+
+  // RACI démo sur le processus accès (facultatif)
+  const etapesAcces = await prisma.processusEtape.findMany({
+    where: { processusId: processusAcces.id },
+    orderBy: { ordre: "asc" },
+  });
+  if (etapesAcces[0] && etapesAcces[1]) {
+    const ligneDemande = await prisma.processusRaciLigne.create({
+      data: {
+        processusId: processusAcces.id,
+        etapeId: etapesAcces[0].id,
+        activite: etapesAcces[0].libelle,
+        ordre: 0,
+      },
+    });
+    const ligneValid = await prisma.processusRaciLigne.create({
+      data: {
+        processusId: processusAcces.id,
+        etapeId: etapesAcces[1].id,
+        activite: etapesAcces[1].libelle,
+        ordre: 1,
+      },
+    });
+    await prisma.processusRaciParticipant.createMany({
+      data: [
+        { ligneId: ligneDemande.id, role: "R", utilisateurId: bernard.id },
+        { ligneId: ligneDemande.id, role: "A", utilisateurId: alice.id },
+        { ligneId: ligneValid.id, role: "A", utilisateurId: alice.id },
+        { ligneId: ligneValid.id, role: "C", utilisateurId: bernard.id },
+      ],
+    });
+  }
 
   const modeleEntree = await prisma.modeleTache.create({
     data: {

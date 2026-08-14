@@ -1,6 +1,9 @@
+"use client";
+
 import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
 import { FormSection } from "@/components/module/FormSection";
+import { RisqueEvaluationAide } from "@/components/risques/RisqueEvaluationAide";
 import { ECHELLE_RISQUE } from "@/lib/catalog";
 import { toDateInputValue } from "@/lib/form";
 import { documenterReevaluationRisque } from "@/app/risques/actions";
@@ -11,6 +14,7 @@ type Values = {
   impact: number;
   probabiliteResiduelle: number | null;
   impactResiduel: number | null;
+  justificationEvaluation?: string | null;
 };
 
 function Field({
@@ -45,8 +49,25 @@ export function RisqueReevaluationForm({
       <FormSection title="Acte de réévaluation" defaultOpen>
         <p className="form-section__desc">
           Documente la revue même si les notes restent inchangées. Un
-          changement de notes alimente aussi l’Historique.
+          changement de notes alimente aussi l’Historique. L’aide propose —
+          vous décidez.
         </p>
+
+        {values.justificationEvaluation ? (
+          <div className="detail-note" style={{ marginBottom: "0.75rem" }}>
+            <strong>Justification précédente</strong>
+            <pre
+              style={{
+                whiteSpace: "pre-wrap",
+                margin: "0.35rem 0 0",
+                fontFamily: "inherit",
+                fontSize: "0.9em",
+              }}
+            >
+              {values.justificationEvaluation}
+            </pre>
+          </div>
+        ) : null}
 
         <Field label="Date de réévaluation *" htmlFor="dateReevaluation">
           <input
@@ -57,6 +78,8 @@ export function RisqueReevaluationForm({
             defaultValue={toDateInputValue(new Date())}
           />
         </Field>
+
+        <RisqueEvaluationAide justificationFieldId="justificationEvaluation" />
 
         <div className="form-grid">
           <Field label="Probabilité inhérente (1–5) *" htmlFor="probabilite">
@@ -126,11 +149,24 @@ export function RisqueReevaluationForm({
           </Field>
         </div>
 
-        <Field label="Réflexion / commentaire *" htmlFor="commentaire">
+        <Field
+          label="Justification de l’évaluation (conservée pour les prochaines revues)"
+          htmlFor="justificationEvaluation"
+        >
+          <textarea
+            id="justificationEvaluation"
+            name="justificationEvaluation"
+            rows={4}
+            defaultValue={values.justificationEvaluation ?? ""}
+            placeholder="Pourquoi ces notes ? (aide à l’évaluation ou saisie libre)"
+          />
+        </Field>
+
+        <Field label="Réflexion / commentaire de cette revue *" htmlFor="commentaire">
           <textarea
             id="commentaire"
             name="commentaire"
-            rows={4}
+            rows={3}
             required
             placeholder="Pourquoi le niveau est maintenu ou modifié…"
           />
