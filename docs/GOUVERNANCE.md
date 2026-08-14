@@ -1,55 +1,47 @@
-# Gouvernance — chaîne Unité → Contrôles
+# Gouvernance — Unité → Processus → analyses
 
-Vision de la chaîne de gouvernance opérationnelle dans GRC Pilotage.
+Vision : le **Processus** devient le centre de gravité de la gouvernance, sans silos GRC.
 
 ```
 Unité (UNT)
   ├─ Attributions / missions institutionnelles (UniteAttribution)
   ├─ Objectifs stratégiques (OBJ)
-  ├─ Collaborateurs (Utilisateur, Admin)
+  ├─ Collaborateurs (Utilisateur)
   └─ Processus (PRC)
-        ├─ Documents (DOC)  ← DocumentProcessus (N–N métier)
-        └─ Risques (RSK)  ← Risque.processusId
-              └─ Contrôles SCI (CTL)  ← RisqueControle
-                    └─ Occurrences (Tâches)
+        ├─ RACI (facultatif) — ProcessusRaciLigne / Participant
+        ├─ Actifs IT (AIT) ← ProcessusActifIT (N–N)
+        ├─ Documents (DOC) ← DocumentProcessus (N–N)
+        ├─ Risques (RSK) ← Risque.processusId
+        │     └─ Contrôles SCI (CTL) ← RisqueControle
+        └─ Continuité des activités (architecture — pas encore en code)
 ```
 
-Missions d’assurance (`Mission` MIS-xxxx) sont **parallèles** : elles examinent processus / risques / contrôles, elles ne remplacent pas les attributions institutionnelles.
+Vues transversales (consolidation, pas double saisie) : Risques, Contrôles, Actifs IT, Documents, Continuité (Roadmap).
 
 ## Livré
 
 | Maillon | Statut |
 |---------|--------|
-| Fiche Unité présentation | Livré (`/unite`) |
-| `UniteAttribution` CRUD | Livré |
-| Objectifs d’unité | Livré |
-| Processus + étapes + code PRC éditable | Livré |
-| Risque ↔ Processus (`processusId`) | Livré |
-| Document ↔ Processus (`DocumentProcessus`) | Livré — cas d’usage procédures |
-| Risques / documents associés sur fiche Processus | Livré |
-| CTL liés via Risque (pas de lien CTL→Processus direct) | Livré |
-| LPD léger (champs secondaires) | Socle — approche légère maintenue |
+| Fiche Unité / Attributions / Objectifs | Livré |
+| Processus + étapes + code PRC | Livré |
+| RACI Processus (facultatif, Utilisateurs) | Livré |
+| Actifs IT (AIT) + N–N Processus | Livré |
+| Risque ↔ Processus | Livré |
+| Aide à l’évaluation (déterministe) + justification | Livré |
+| Intégration réévaluation | Livré |
+| Document ↔ Processus | Livré |
+| Continuité (modèle + vue) | Architecture à valider — `ARCHITECTURE_CONTINUITE.md` |
 
-## Principes de liaison
+## Principes
 
-Ajouter un lien direct **seulement** s’il correspond à un vrai besoin métier :
-
-| Lien | Statut | Raison |
-|------|--------|--------|
-| Processus → Risque | Oui | Analyse des risques de processus |
-| Document → Processus | Oui | Procédures naturellement multi-processus |
-| Contrôle SCI → Processus | Non | Déjà obtenu via Processus → Risque → CTL |
-
-## Roadmap (pas maintenant)
-
-- **Conformité** : référentiel légal / exigences / liens / revues — **architecture TBD avant build**.
-- **Éditeur key user**, **multi-unités**, **RBAC fin** — préparation documentée dans `ROADMAP.md` / `EDITEUR_PREPARATION.md`.
-- Module LPD transversal de pilotage — voir `LPD.md` (rester léger).
-- Rattachements `UniteAttribution` → Processus / Objectifs : **pas maintenant** (attributions autonomes).
+- Une donnée → une source de vérité → plusieurs vues.
+- Simple au premier regard, riche à l’approfondissement (sections repliables).
+- Ne pas créer de silo Information Security / BCM autonome maintenant.
 
 ## Documents liés
 
+- [`ARCHITECTURE_CONTINUITE.md`](./ARCHITECTURE_CONTINUITE.md)
 - [`UNITE_ATTRIBUTIONS.md`](./UNITE_ATTRIBUTIONS.md)
 - [`OBJECTIFS.md`](./OBJECTIFS.md)
 - [`LPD.md`](./LPD.md)
-- [`MISSIONS_ARCHITECTURE.md`](./MISSIONS_ARCHITECTURE.md)
+- [`RISQUE_REEVALUATION.md`](./RISQUE_REEVALUATION.md)

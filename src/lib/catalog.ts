@@ -132,6 +132,28 @@ export const STATUT_PROCESSUS_OPTIONS = [
   { value: "SUSPENDU", label: "Suspendu" },
 ] as const;
 
+export const TYPE_ACTIF_IT_OPTIONS = [
+  { value: "APPLICATION", label: "Application" },
+  { value: "SYSTEME", label: "Système" },
+  { value: "INFRASTRUCTURE", label: "Infrastructure" },
+  { value: "SERVICE", label: "Service" },
+  { value: "AUTRE", label: "Autre" },
+] as const;
+
+export const STATUT_ACTIF_IT_OPTIONS = [
+  { value: "ACTIF", label: "Actif" },
+  { value: "EN_PROJET", label: "En projet" },
+  { value: "OBSOLETE", label: "Obsolète" },
+  { value: "ARCHIVE", label: "Archivé" },
+] as const;
+
+export const ROLE_RACI_OPTIONS = [
+  { value: "R", label: "R — Responsible" },
+  { value: "A", label: "A — Accountable" },
+  { value: "C", label: "C — Consulted" },
+  { value: "I", label: "I — Informed" },
+] as const;
+
 export const STATUT_OBJECTIF_OPTIONS = [
   { value: "EN_COURS", label: "En cours" },
   { value: "ATTEINT", label: "Atteint" },
@@ -330,11 +352,28 @@ export const MODULE_HELP = {
       },
       {
         heading: "Chaîne cible",
-        body: "Unité → Processus → Risques → Contrôles SCI → Occurrences/Tâches. Un objet peut être lié au processus ou à une étape précise.",
+        body: "Unité → Processus → (RACI, Risques & Contrôles, Actifs IT, Continuité) → vues transversales. Un objet peut être lié au processus ou à une étape précise.",
       },
       {
         heading: "Hiérarchie (plus tard)",
         body: "Un champ parent prépare Macro-processus → Processus → Sous-processus, sans complexifier la première version.",
+      },
+    ],
+  },
+  actifsIT: {
+    title: "Comprendre le référentiel Actifs IT",
+    sections: [
+      {
+        heading: "À quoi ça sert ?",
+        body: "Identifier quels systèmes / applications supportent quels processus. Vue inverse : si un actif est indisponible, quels processus sont impactés ?",
+      },
+      {
+        heading: "Que saisir ?",
+        body: "Code AIT-xxxx, nom, type, description, responsable, statut. Optionnel : fournisseur, hébergement. Pas une CMDB complète.",
+      },
+      {
+        heading: "Liens",
+        body: "Relation N–N avec les Processus. Les risques et la continuité s’appuient ensuite sur ces dépendances — sans ressaisie.",
       },
     ],
   },

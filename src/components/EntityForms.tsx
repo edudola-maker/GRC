@@ -23,6 +23,7 @@ import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
 import { FormSection } from "@/components/module/FormSection";
 import { SectionSaveActions } from "@/components/module/EditableSection";
+import { RisqueEvaluationAide } from "@/components/risques/RisqueEvaluationAide";
 import { sectionCancelHref } from "@/lib/section-nav";
 
 type UserOpt = { id: string; nom: string };
@@ -1212,6 +1213,7 @@ export function RisqueForm({
       </FormSection>
 
       <FormSection title="Évaluation">
+        <RisqueEvaluationAide />
         <div className="form-grid">
           <Field label="Probabilité inhérente (1–5)" htmlFor="probabilite">
             <select

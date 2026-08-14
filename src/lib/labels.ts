@@ -155,6 +155,28 @@ export const STATUT_PROCESSUS_LABELS: Record<string, string> = {
   SUSPENDU: "Suspendu",
 };
 
+export const TYPE_ACTIF_IT_LABELS: Record<string, string> = {
+  APPLICATION: "Application",
+  SYSTEME: "Système",
+  INFRASTRUCTURE: "Infrastructure",
+  SERVICE: "Service",
+  AUTRE: "Autre",
+};
+
+export const STATUT_ACTIF_IT_LABELS: Record<string, string> = {
+  ACTIF: "Actif",
+  EN_PROJET: "En projet",
+  OBSOLETE: "Obsolète",
+  ARCHIVE: "Archivé",
+};
+
+export const ROLE_RACI_LABELS: Record<string, string> = {
+  R: "Responsible",
+  A: "Accountable",
+  C: "Consulted",
+  I: "Informed",
+};
+
 export const STATUT_RECO_LABELS: Record<string, string> = {
   OUVERTE: "Ouverte",
   EN_COURS: "En cours",

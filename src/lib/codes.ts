@@ -12,6 +12,8 @@ const PREFIXES = {
   MODELE_TACHE: "MDL",
   OBJECTIF: "OBJ",
   UNITE: "UNT",
+  /// Actif IT — préfixe générique AIT (pas APP) pour couvrir applications / systèmes / services.
+  ACTIF_IT: "AIT",
 } as const;
 
 export type PrefixeCode = keyof typeof PREFIXES;
@@ -90,6 +92,16 @@ export async function assertCodeUnique(
       },
     });
     if (existing) return "Un processus porte déjà ce code.";
+  }
+  if (type === "ACTIF_IT") {
+    const existing = await prisma.actifIT.findFirst({
+      where: {
+        uniteId,
+        code: c,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un actif IT porte déjà ce code.";
   }
   return null;
 }
@@ -233,6 +245,17 @@ export async function assertNomUnique(
       },
     });
     if (existing) return "Une unité active porte déjà ce nom.";
+  }
+  if (type === "ACTIF_IT") {
+    const existing = await prisma.actifIT.findFirst({
+      where: {
+        uniteId,
+        nom: n,
+        archive: false,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    if (existing) return "Un actif IT actif porte déjà ce nom.";
   }
   return null;
 }

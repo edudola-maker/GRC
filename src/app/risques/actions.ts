@@ -580,6 +580,10 @@ export async function documenterReevaluationRisque(formData: FormData) {
     );
   }
 
+  const justificationEvaluation =
+    optStr(formData, "justificationEvaluation") ??
+    existing.justificationEvaluation;
+
   const rawPRes = str(formData, "probabiliteResiduelle");
   const rawIRes = str(formData, "impactResiduel");
   let probabiliteResiduelle: number | null = null;
@@ -662,6 +666,7 @@ export async function documenterReevaluationRisque(formData: FormData) {
           probabiliteResiduelle,
           impactResiduel,
           criticiteResiduelle,
+          justificationEvaluation,
           modifieParId: current.id,
           contenuVersion: nextVersion,
         },
@@ -669,7 +674,10 @@ export async function documenterReevaluationRisque(formData: FormData) {
     } else {
       await tx.risque.update({
         where: { id },
-        data: { modifieParId: current.id },
+        data: {
+          justificationEvaluation,
+          modifieParId: current.id,
+        },
       });
     }
   });
