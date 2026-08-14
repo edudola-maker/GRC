@@ -147,6 +147,18 @@ export const STATUT_ACTIF_IT_OPTIONS = [
   { value: "ARCHIVE", label: "Archivé" },
 ] as const;
 
+export const CRITICITE_CONTINUITE_OPTIONS = [
+  { value: "FAIBLE", label: "Faible" },
+  { value: "MODEREE", label: "Modérée" },
+  { value: "ELEVEE", label: "Élevée" },
+  { value: "CRITIQUE", label: "Critique" },
+] as const;
+
+export const UNITE_DUREE_CONTINUITE_OPTIONS = [
+  { value: "HEURES", label: "heures" },
+  { value: "JOURS", label: "jours" },
+] as const;
+
 export const ROLE_RACI_OPTIONS = [
   { value: "R", label: "R — Responsible" },
   { value: "A", label: "A — Accountable" },

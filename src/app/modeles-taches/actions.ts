@@ -3,7 +3,10 @@
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import { CATEGORIE_TACHE_OPTIONS } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  allocateCreateCode,
+  assertNomUnique, nextCode
+} from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -41,9 +44,18 @@ export async function createModeleTache(formData: FormData) {
       ? (categorieRaw as "AUTRE")
       : null;
 
-  const modele = await prisma.modeleTache.create({
+const allocated = await allocateCreateCode(
+    "MODELE_TACHE",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/modeles-taches/nouveau", allocated.error);
+  }
+
+    const modele = await prisma.modeleTache.create({
     data: {
-      code: await nextCode("MODELE_TACHE", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       description: optStr(formData, "description"),

@@ -6,7 +6,10 @@ import {
   PRIORITE_OPTIONS,
   STATUT_OBJECTIF_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  allocateCreateCode,
+  assertNomUnique, nextCode
+} from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -50,9 +53,18 @@ export async function createObjectif(formData: FormData) {
   });
   if (!resp) redirectWithError(fallback, "Responsable introuvable.");
 
-  const objectif = await prisma.objectif.create({
+const allocated = await allocateCreateCode(
+    "OBJECTIF",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/objectifs/nouveau", allocated.error);
+  }
+
+    const objectif = await prisma.objectif.create({
     data: {
-      code: await nextCode("OBJECTIF", uniteId),
+      code: allocated.code,
       uniteId,
       intitule,
       description: optStr(formData, "description"),

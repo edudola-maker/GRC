@@ -3,7 +3,9 @@ import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { peekNextCode } from "@/lib/codes";
+import { getCurrentUser,
+  listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { createProcessus } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +16,11 @@ export default async function NouveauProcessusPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifsForCurrentUnite();
+  const user = await getCurrentUser();
+  const [users, suggestedCode] = await Promise.all([
+    listUtilisateursActifsForCurrentUnite(),
+    peekNextCode("PROCESSUS", user.uniteId),
+  ]);
 
   return (
     <>
@@ -26,6 +32,7 @@ export default async function NouveauProcessusPage({
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
         <ProcessusForm
+          suggestedCode={suggestedCode}
           action={createProcessus}
           users={users}
           cancelHref="/processus"

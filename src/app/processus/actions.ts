@@ -7,10 +7,11 @@ import {
   STATUT_PROCESSUS_OPTIONS,
 } from "@/lib/catalog";
 import {
+  allocateCreateCode,
   assertCodeUnique,
   assertNomUnique,
   nextCode,
-  normalizeCode,
+  normalizeCode
 } from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
@@ -61,9 +62,18 @@ export async function createProcessus(formData: FormData) {
 
   const responsableId = str(formData, "responsableId") || current.id;
   const lpd = parseLpd(formData);
-  const processus = await prisma.processus.create({
+const allocated = await allocateCreateCode(
+    "PROCESSUS",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/processus/nouveau", allocated.error);
+  }
+
+    const processus = await prisma.processus.create({
     data: {
-      code: await nextCode("PROCESSUS", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       description: optStr(formData, "description"),

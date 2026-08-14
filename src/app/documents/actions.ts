@@ -8,7 +8,10 @@ import {
   STATUT_DOCUMENT_OPTIONS,
   TYPE_DOCUMENT_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  allocateCreateCode,
+  assertNomUnique, nextCode
+} from "@/lib/codes";
 import { nextRevueDate } from "@/lib/dates";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { addDays, startOfToday } from "@/lib/labels";
@@ -92,9 +95,18 @@ export async function createDocument(formData: FormData) {
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const lpd = parseLpd(formData);
-  const document = await prisma.document.create({
+const allocated = await allocateCreateCode(
+    "DOCUMENT",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/documents/nouveau", allocated.error);
+  }
+
+    const document = await prisma.document.create({
     data: {
-      code: await nextCode("DOCUMENT", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       typeDocument: typeDocument as "AUTRE",

@@ -3,7 +3,12 @@ import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { peekNextCode } from "@/lib/codes";
+import {
+  formatUtilisateurNom,
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 import { createProjet } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +19,15 @@ export default async function NouveauProjetPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifsForCurrentUnite();
+  const user = await getCurrentUser();
+  const [usersRaw, suggestedCode] = await Promise.all([
+    listUtilisateursActifsForCurrentUnite(),
+    peekNextCode("PROJET", user.uniteId),
+  ]);
+  const users = usersRaw.map((u) => ({
+    id: u.id,
+    nom: formatUtilisateurNom(u),
+  }));
 
   return (
     <>
@@ -30,6 +43,7 @@ export default async function NouveauProjetPage({
           users={users}
           cancelHref="/projets"
           submitLabel="Créer le projet"
+          suggestedCode={suggestedCode}
         />
       </div>
     </>

@@ -8,7 +8,10 @@ import {
   STATUT_RISQUE_OPTIONS,
   STRATEGIE_RISQUE_OPTIONS,
 } from "@/lib/catalog";
-import { assertCodeUnique, assertNomUnique, nextCode, normalizeCode } from "@/lib/codes";
+import {
+  allocateCreateCode,
+  assertCodeUnique, assertNomUnique, nextCode, normalizeCode
+} from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import {
   diffChamps,
@@ -118,9 +121,18 @@ export async function createRisque(formData: FormData) {
     }
   }
 
-  const risque = await prisma.risque.create({
+const allocated = await allocateCreateCode(
+    "RISQUE",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/risques/nouveau", allocated.error);
+  }
+
+    const risque = await prisma.risque.create({
     data: {
-      code: await nextCode("RISQUE", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       description: optStr(formData, "description"),

@@ -47,32 +47,32 @@ export function ActifITForm({
   values,
   cancelHref,
   submitLabel,
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   values?: Values;
   cancelHref: string;
   submitLabel: string;
+  suggestedCode?: string;
 }) {
   return (
     <form action={action} className="entity-form">
       {values?.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
       <div className="form-grid">
-        {values?.id ? (
-          <Field
-            label="Code *"
-            htmlFor="code"
-            hint="Format AIT-0001 — préfixe générique Actif IT"
-          >
-            <input
-              id="code"
-              name="code"
-              required
-              defaultValue={values.code ?? ""}
-            />
-          </Field>
-        ) : null}
+        <Field
+          label="Code *"
+          htmlFor="code"
+          hint="Proposé automatiquement — modifiable (AIT-0001)"
+        >
+          <input
+            id="code"
+            name="code"
+            required
+            defaultValue={values?.code ?? suggestedCode ?? ""}
+          />
+        </Field>
         <Field label="Nom *" htmlFor="nom">
           <input
             id="nom"

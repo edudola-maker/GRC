@@ -69,6 +69,7 @@ type TacheValues = {
 
 type ConseilValues = {
   id?: string;
+  code?: string;
   objet?: string;
   description?: string | null;
   taxinomie?: string | null;
@@ -88,6 +89,7 @@ type ConseilValues = {
 
 type ControleValues = {
   id?: string;
+  code?: string;
   nom?: string;
   description?: string | null;
   taxinomie?: string | null;
@@ -127,6 +129,7 @@ type RisqueValues = {
 
 type DocumentValues = {
   id?: string;
+  code?: string;
   nom?: string;
   typeDocument?: string;
   taxinomie?: string | null;
@@ -212,6 +215,8 @@ export function ProjetForm({
   submitLabel,
   section = "ALL",
   draftActions = false,
+  suggestedCode,
+  membreIds = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -226,6 +231,10 @@ export function ProjetForm({
     | "REFLEXION"
     | "TAGS";
   draftActions?: boolean;
+  /** Prochain code proposé à la création (modifiable). */
+  suggestedCode?: string;
+  /** Membres équipe (hors responsable) — édition Pilotage. */
+  membreIds?: string[];
 }) {
   const showInfos = section === "ALL" || section === "INFOS_GENERALES";
   const showPilotage = section === "ALL" || section === "PILOTAGE";
@@ -241,25 +250,19 @@ export function ProjetForm({
 
       {showInfos ? (
         <FormSection title="Informations générales" defaultOpen>
-          {values?.id ? (
-            <Field
-              label="Code *"
-              htmlFor="code"
-              hint="Format PRO-0001 — généré automatiquement à la création"
-            >
-              <input
-                id="code"
-                name="code"
-                required
-                defaultValue={values.code ?? ""}
-                placeholder="PRO-0001"
-              />
-            </Field>
-          ) : (
-            <p className="muted" style={{ marginTop: 0 }}>
-              Le code <code>PRO-xxxx</code> sera attribué automatiquement.
-            </p>
-          )}
+          <Field
+            label="Code *"
+            htmlFor="code"
+            hint="Proposés automatiquement — modifiable. Les relations utilisent l’ID interne."
+          >
+            <input
+              id="code"
+              name="code"
+              required
+              defaultValue={values?.code ?? suggestedCode ?? ""}
+              placeholder="PRO-0001"
+            />
+          </Field>
           <Field label="Nom *" htmlFor="nom">
             <input
               id="nom"
@@ -359,6 +362,31 @@ export function ProjetForm({
               defaultValue={values?.commentaires ?? ""}
             />
           </Field>
+          {values?.id ? (
+            <fieldset className="field" style={{ border: 0, padding: 0 }}>
+              <legend className="field__label">Équipe (collaborateurs)</legend>
+              <p className="field__hint" style={{ marginTop: 0 }}>
+                Sélection depuis le référentiel Utilisateurs — pas de texte libre.
+              </p>
+              <ul className="check-list">
+                {users
+                  .filter((u) => u.id !== (values.responsableId ?? users[0]?.id))
+                  .map((u) => (
+                    <li key={u.id}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="membreIds"
+                          value={u.id}
+                          defaultChecked={membreIds.includes(u.id)}
+                        />
+                        {u.nom}
+                      </label>
+                    </li>
+                  ))}
+              </ul>
+            </fieldset>
+          ) : null}
         </FormSection>
       ) : null}
 
@@ -747,6 +775,7 @@ export function ConseilForm({
   submitLabel,
   showCreerTache,
   sectionKey,
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -755,6 +784,7 @@ export function ConseilForm({
   submitLabel: string;
   showCreerTache?: boolean;
   sectionKey?: string;
+  suggestedCode?: string;
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -767,6 +797,19 @@ export function ConseilForm({
       ) : null}
 
       <FormSection title="Description">
+        <Field
+          label="Code *"
+          htmlFor="code"
+          hint="Proposé automatiquement — modifiable"
+        >
+          <input
+            id="code"
+            name="code"
+            required
+            defaultValue={values?.code ?? suggestedCode ?? ""}
+            placeholder="CNS-0001"
+          />
+        </Field>
         <Field label="Objet *" htmlFor="objet">
           <input
             id="objet"
@@ -934,6 +977,7 @@ export function ControleSCIForm({
   cancelHref,
   submitLabel,
   sectionKey,
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -941,6 +985,7 @@ export function ControleSCIForm({
   cancelHref: string;
   submitLabel: string;
   sectionKey?: string;
+  suggestedCode?: string;
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -953,7 +998,20 @@ export function ControleSCIForm({
       ) : null}
 
       <FormSection title="Description">
-        <Field label="Nom *" htmlFor="nom">
+                <Field
+          label="Code *"
+          htmlFor="code"
+          hint="Proposé automatiquement — modifiable"
+        >
+          <input
+            id="code"
+            name="code"
+            required
+            defaultValue={values?.code ?? suggestedCode ?? ""}
+            placeholder="CTL-0001"
+          />
+        </Field>
+<Field label="Nom *" htmlFor="nom">
           <input
             id="nom"
             name="nom"
@@ -1118,6 +1176,7 @@ export function RisqueForm({
   submitLabel,
   sectionKey,
   processusOptions = [],
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1126,6 +1185,7 @@ export function RisqueForm({
   submitLabel: string;
   sectionKey?: string;
   processusOptions?: { id: string; label: string }[];
+  suggestedCode?: string;
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -1138,25 +1198,19 @@ export function RisqueForm({
       ) : null}
 
       <FormSection title="Description">
-        {values?.id ? (
-          <Field
-            label="Code *"
-            htmlFor="code"
-            hint="Format RSK-0001 — généré automatiquement à la création"
-          >
-            <input
-              id="code"
-              name="code"
-              required
-              defaultValue={values.code ?? ""}
-              placeholder="RSK-0001"
-            />
-          </Field>
-        ) : (
-          <p className="muted" style={{ marginTop: 0 }}>
-            Le code <code>RSK-xxxx</code> sera attribué automatiquement.
-          </p>
-        )}
+        <Field
+          label="Code *"
+          htmlFor="code"
+          hint="Proposé automatiquement — modifiable"
+        >
+          <input
+            id="code"
+            name="code"
+            required
+            defaultValue={values?.code ?? suggestedCode ?? ""}
+            placeholder="RSK-0001"
+          />
+        </Field>
         <Field label="Nom *" htmlFor="nom">
           <input
             id="nom"
@@ -1374,6 +1428,7 @@ export function DocumentForm({
   cancelHref,
   submitLabel,
   sectionKey,
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1381,6 +1436,7 @@ export function DocumentForm({
   cancelHref: string;
   submitLabel: string;
   sectionKey?: string;
+  suggestedCode?: string;
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -1393,7 +1449,20 @@ export function DocumentForm({
       ) : null}
 
       <FormSection title="Description">
-        <Field label="Nom *" htmlFor="nom">
+                <Field
+          label="Code *"
+          htmlFor="code"
+          hint="Proposé automatiquement — modifiable"
+        >
+          <input
+            id="code"
+            name="code"
+            required
+            defaultValue={values?.code ?? suggestedCode ?? ""}
+            placeholder="DOC-0001"
+          />
+        </Field>
+<Field label="Nom *" htmlFor="nom">
           <input
             id="nom"
             name="nom"
@@ -1580,6 +1649,7 @@ export function MissionForm({
   descriptifs,
   draftActions = false,
   sectionKey,
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1591,6 +1661,7 @@ export function MissionForm({
   descriptifs?: MissionDescriptifOpt[];
   draftActions?: boolean;
   sectionKey?: string;
+  suggestedCode?: string;
 }) {
   const defaultTypeId = values?.typeId ?? types[0]?.id ?? "";
   const templatesForType = (templates ?? []).filter(
@@ -1608,19 +1679,21 @@ export function MissionForm({
       ) : null}
 
       <FormSection title="Description">
-        {values?.id ? (
-          <Field label="Code *" htmlFor="code">
-            <input
-              id="code"
-              name="code"
-              required
-              defaultValue={values.code ?? ""}
-              placeholder="MIS-0001"
-              pattern="[A-Za-z]{2,5}-[0-9]{1,6}"
-              title="Format MIS-0001"
-            />
-          </Field>
-        ) : null}
+        <Field
+          label="Code *"
+          htmlFor="code"
+          hint="Proposé automatiquement — modifiable"
+        >
+          <input
+            id="code"
+            name="code"
+            required
+            defaultValue={values?.code ?? suggestedCode ?? ""}
+            placeholder="MIS-0001"
+            pattern="[A-Za-z]{2,5}-[0-9]{1,6}"
+            title="Format MIS-0001"
+          />
+        </Field>
         <Field label="Titre *" htmlFor="titre">
           <input
             id="titre"
@@ -1839,6 +1912,7 @@ export function ProcessusForm({
   submitLabel,
   section = "ALL",
   draftActions = false,
+  suggestedCode,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1848,6 +1922,7 @@ export function ProcessusForm({
   /** ALL = création ; sinon une box d’édition. */
   section?: "ALL" | "INFOS_GENERALES" | "LPD";
   draftActions?: boolean;
+  suggestedCode?: string;
 }) {
   const showInfos = section === "ALL" || section === "INFOS_GENERALES";
   const showLpd = section === "ALL" || section === "LPD";
@@ -1861,25 +1936,19 @@ export function ProcessusForm({
 
       {showInfos ? (
         <FormSection title="Informations" defaultOpen>
-          {values?.id ? (
-            <Field
-              label="Code *"
-              htmlFor="code"
-              hint="Format PRC-0001 — généré automatiquement à la création"
-            >
-              <input
-                id="code"
-                name="code"
-                required
-                defaultValue={values.code ?? ""}
-                placeholder="PRC-0001"
-              />
-            </Field>
-          ) : (
-            <p className="muted" style={{ marginTop: 0 }}>
-              Le code <code>PRC-xxxx</code> sera attribué automatiquement.
-            </p>
-          )}
+          <Field
+            label="Code *"
+            htmlFor="code"
+            hint="Proposé automatiquement — modifiable"
+          >
+            <input
+              id="code"
+              name="code"
+              required
+              defaultValue={values?.code ?? suggestedCode ?? ""}
+              placeholder="PRC-0001"
+            />
+          </Field>
           <Field label="Nom *" htmlFor="nom">
             <input
               id="nom"

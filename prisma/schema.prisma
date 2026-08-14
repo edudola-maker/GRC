@@ -158,6 +158,20 @@ enum RoleRaci {
   I
 }
 
+/// Criticité de continuité (≠ matrice risque 5×5).
+enum CriticiteContinuité {
+  FAIBLE
+  MODEREE
+  ELEVEE
+  CRITIQUE
+}
+
+/// Unité de durée BCM légère (MTPD / RTO / RPO).
+enum UniteDureeContinuité {
+  HEURES
+  JOURS
+}
+
 enum TypeNoteTravail {
   TRAVAIL
   SEANCE
@@ -400,6 +414,7 @@ model Utilisateur {
   documentsProcessus      DocumentProcessus[]    @relation("DocumentProcessusLiePar")
   processusActifsIT       ProcessusActifIT[]     @relation("ProcessusActifITLiePar")
   raciParticipants        ProcessusRaciParticipant[]
+  continuiteModifiees     ProcessusContinuité[] @relation("ProcessusContinuitéModifiePar")
   validationsPreparees    MissionValidationPoint[] @relation("ValidationPreparePar")
   validationsSoumises     MissionValidationPoint[] @relation("ValidationSoumisPar")
   visasMission            MissionValidationVisa[]
@@ -1230,6 +1245,9 @@ model Processus {
   documents   DocumentProcessus[]
   actifsIT    ProcessusActifIT[]
   raciLignes  ProcessusRaciLigne[]
+  continuite  ProcessusContinuité?
+  dependDe    ProcessusDependance[] @relation("ProcessusDependant")
+  dependants  ProcessusDependance[] @relation("ProcessusPrerequis")
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1332,6 +1350,49 @@ model ProcessusActifIT {
   @@unique([processusId, actifITId])
   @@index([actifITId])
   @@index([processusId])
+}
+
+/// Analyse de continuité au niveau Processus (1–1 optionnel — pas de silo BCM).
+model ProcessusContinuité {
+  id                       String                 @id @default(cuid())
+  processusId              String                 @unique
+  criticite                CriticiteContinuité?
+  consequencesInterruption String?
+  mtpdValeur               Int?
+  mtpdUnite                UniteDureeContinuité?
+  rtoValeur                Int?
+  rtoUnite                 UniteDureeContinuité?
+  /// Facultatif — pertinent surtout si données / systèmes.
+  rpoValeur                Int?
+  rpoUnite                 UniteDureeContinuité?
+  periodesCritiques        String?
+  /// Mode dégradé / solution alternative + mesures (fusion UX).
+  modeDegradeMesures       String?
+  commentaire              String?
+  dateDerniereRevue        DateTime?
+  dateProchaineRevue       DateTime?
+  modifieParId             String
+  creeLe                   DateTime               @default(now())
+  modifieLe                DateTime               @updatedAt
+
+  processus  Processus   @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  modifiePar Utilisateur @relation("ProcessusContinuitéModifiePar", fields: [modifieParId], references: [id])
+}
+
+/// Dépendance Processus → Processus (liste, pas de graphe).
+/// processusId dépend de dependDeId (amont).
+model ProcessusDependance {
+  id           String   @id @default(cuid())
+  processusId  String
+  dependDeId   String
+  commentaire  String?
+  creeLe       DateTime @default(now())
+
+  processus Processus @relation("ProcessusDependant", fields: [processusId], references: [id], onDelete: Cascade)
+  dependDe  Processus @relation("ProcessusPrerequis", fields: [dependDeId], references: [id], onDelete: Cascade)
+
+  @@unique([processusId, dependDeId])
+  @@index([dependDeId])
 }
 
 // ─── Modèle de tâche ────────────────────────────────────────

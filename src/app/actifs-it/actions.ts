@@ -6,10 +6,11 @@ import {
   TYPE_ACTIF_IT_OPTIONS,
 } from "@/lib/catalog";
 import {
+  allocateCreateCode,
   assertCodeUnique,
   assertNomUnique,
   nextCode,
-  normalizeCode,
+  normalizeCode
 } from "@/lib/codes";
 import { optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
@@ -50,9 +51,18 @@ export async function createActifIT(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
-  const actif = await prisma.actifIT.create({
+const allocated = await allocateCreateCode(
+    "ACTIF_IT",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/actifs-it/nouveau", allocated.error);
+  }
+
+    const actif = await prisma.actifIT.create({
     data: {
-      code: await nextCode("ACTIF_IT", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       type: type as "APPLICATION",
