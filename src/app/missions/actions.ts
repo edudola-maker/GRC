@@ -7,10 +7,7 @@ import {
   STATUT_RECO_OPTIONS,
 } from "@/lib/catalog";
 import {
-  assertCodeUnique,
-  assertNomUnique,
-  nextCode,
-  normalizeCode,
+  allocateCreateCode, assertCodeUnique, assertNomUnique, nextCode, normalizeCode
 } from "@/lib/codes";
 import {
   diffChamps,
@@ -127,9 +124,18 @@ export async function createMission(formData: FormData) {
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const lpd = parseLpd(formData);
+  const allocated = await allocateCreateCode(
+    "MISSION",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/missions/nouveau", allocated.error);
+  }
+
   const mission = await prisma.mission.create({
     data: {
-      code: await nextCode("MISSION", uniteId),
+      code: allocated.code,
       uniteId,
       titre,
       typeId,

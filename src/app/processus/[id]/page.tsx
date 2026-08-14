@@ -15,6 +15,7 @@ import { ProcessusEtapesPanel } from "@/components/processus/ProcessusEtapesPane
 import { ProcessusModelesTachesPanel } from "@/components/processus/ProcessusModelesTachesPanel";
 import { ProcessusRaciPanel } from "@/components/processus/ProcessusRaciPanel";
 import { ProcessusActifsITPanel } from "@/components/processus/ProcessusActifsITPanel";
+import { ProcessusContinuitéPanel } from "@/components/processus/ProcessusContinuitéPanel";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
 import { PageHeader } from "@/components/ui";
@@ -47,6 +48,7 @@ const EDIT_SECTIONS = [
   "ETAPES",
   "RACI",
   "ACTIFS_IT",
+  "CONTINUITE",
   "ELEMENTS_ASSOCIES",
   "LPD",
 ] as const;
@@ -104,6 +106,17 @@ export default async function ProcessusDetailPage({
             },
           },
           orderBy: { lieLe: "asc" },
+        },
+        continuite: true,
+        dependDe: {
+          include: {
+            dependDe: { select: { id: true, code: true, nom: true } },
+          },
+        },
+        dependants: {
+          include: {
+            processus: { select: { id: true, code: true, nom: true } },
+          },
         },
         modelesTache: {
           include: {
@@ -190,6 +203,46 @@ export default async function ProcessusDetailPage({
         : null,
     })),
   }));
+  const dependDe = processus.dependDe.map((d) => ({
+    lienId: d.id,
+    id: d.dependDe.id,
+    code: d.dependDe.code,
+    nom: d.dependDe.nom,
+  }));
+  const dependants = processus.dependants.map((d) => ({
+    lienId: d.id,
+    id: d.processus.id,
+    code: d.processus.code,
+    nom: d.processus.nom,
+  }));
+  const dependIds = new Set([
+    processus.id,
+    ...dependDe.map((d) => d.id),
+  ]);
+  const processusDepOpts = (
+    await prisma.processus.findMany({
+      where: { uniteId: user.uniteId, archive: false, id: { notIn: [...dependIds] } },
+      select: { id: true, code: true, nom: true },
+      orderBy: { nom: "asc" },
+    })
+  ).map((p) => ({ id: p.id, label: `${p.code} — ${p.nom}` }));
+  const continuiteValues = processus.continuite
+    ? {
+        criticite: processus.continuite.criticite,
+        consequencesInterruption: processus.continuite.consequencesInterruption,
+        mtpdValeur: processus.continuite.mtpdValeur,
+        mtpdUnite: processus.continuite.mtpdUnite,
+        rtoValeur: processus.continuite.rtoValeur,
+        rtoUnite: processus.continuite.rtoUnite,
+        rpoValeur: processus.continuite.rpoValeur,
+        rpoUnite: processus.continuite.rpoUnite,
+        periodesCritiques: processus.continuite.periodesCritiques,
+        modeDegradeMesures: processus.continuite.modeDegradeMesures,
+        commentaire: processus.continuite.commentaire,
+        dateDerniereRevue: processus.continuite.dateDerniereRevue,
+        dateProchaineRevue: processus.continuite.dateProchaineRevue,
+      }
+    : null;
 
   return (
     <>
@@ -443,13 +496,44 @@ export default async function ProcessusDetailPage({
         />
       </EditableSection>
 
-      <CollapsibleSection title="Continuité des activités" defaultOpen={false}>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Analyse légère au niveau Processus — architecture proposée dans{" "}
-          <code>docs/ARCHITECTURE_CONTINUITE.md</code>. Implémentation après
-          validation (pas de moteur BCM autonome dans ce sprint).
-        </p>
-      </CollapsibleSection>
+      <EditableSection
+        title="Continuité des activités"
+        sectionKey="CONTINUITE"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        defaultOpen={false}
+        badge={continuiteValues?.criticite ?? undefined}
+        editChildren={
+          <ProcessusContinuitéPanel
+            processusId={processus.id}
+            values={continuiteValues}
+            actifsLies={actifsLies.map((a) => ({
+              id: a.id,
+              code: a.code,
+              nom: a.nom,
+            }))}
+            dependDe={dependDe}
+            dependants={dependants}
+            processusOptions={processusDepOpts}
+            editable
+          />
+        }
+      >
+        <ProcessusContinuitéPanel
+          processusId={processus.id}
+          values={continuiteValues}
+          actifsLies={actifsLies.map((a) => ({
+            id: a.id,
+            code: a.code,
+            nom: a.nom,
+          }))}
+          dependDe={dependDe}
+          dependants={dependants}
+          processusOptions={processusDepOpts}
+          editable={false}
+        />
+      </EditableSection>
 
       <CollapsibleSection
         title="Documents liés"
@@ -533,7 +617,7 @@ export default async function ProcessusDetailPage({
       </EditableSection>
 
       <EditableSection
-        title="Protection des données & tags"
+        title="Protection des données"
         sectionKey="LPD"
         baseHref={baseHref}
         edit={edit}

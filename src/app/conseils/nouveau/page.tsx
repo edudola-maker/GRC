@@ -3,8 +3,13 @@ import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { CONSEIL_DELAI_CIBLE_JOURS, MODULE_HELP } from "@/lib/catalog";
+import { peekNextCode } from "@/lib/codes";
 import { addBusinessDays } from "@/lib/dates";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import {
+  formatUtilisateurNom,
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 import { createConseil } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +20,15 @@ export default async function NouveauConseilPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifsForCurrentUnite();
+  const user = await getCurrentUser();
+  const [usersRaw, suggestedCode] = await Promise.all([
+    listUtilisateursActifsForCurrentUnite(),
+    peekNextCode("CONSEIL", user.uniteId),
+  ]);
+  const users = usersRaw.map((u) => ({
+    id: u.id,
+    nom: formatUtilisateurNom(u),
+  }));
   const today = new Date();
   const echeance = addBusinessDays(today, CONSEIL_DELAI_CIBLE_JOURS);
 
@@ -35,6 +48,7 @@ export default async function NouveauConseilPage({
           cancelHref="/conseils"
           submitLabel="Créer le conseil"
           showCreerTache
+          suggestedCode={suggestedCode}
         />
       </div>
     </>

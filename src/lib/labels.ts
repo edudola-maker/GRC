@@ -170,6 +170,18 @@ export const STATUT_ACTIF_IT_LABELS: Record<string, string> = {
   ARCHIVE: "Archivé",
 };
 
+export const CRITICITE_CONTINUITE_LABELS: Record<string, string> = {
+  FAIBLE: "Faible",
+  MODEREE: "Modérée",
+  ELEVEE: "Élevée",
+  CRITIQUE: "Critique",
+};
+
+export const UNITE_DUREE_CONTINUITE_LABELS: Record<string, string> = {
+  HEURES: "heures",
+  JOURS: "jours",
+};
+
 export const ROLE_RACI_LABELS: Record<string, string> = {
   R: "Responsible",
   A: "Accountable",

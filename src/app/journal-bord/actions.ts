@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
-import { optDate, optStr, str } from "@/lib/form";
+import { optStr, str } from "@/lib/form";
 import { JOURNAL_BORD_PARENTS } from "@/lib/journal-bord";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -34,7 +34,8 @@ export async function createJournalBordEntree(formData: FormData) {
   }
   if (!texte) redirectWithError(retour, "Le texte est obligatoire.");
 
-  const date = optDate(formData, "date") ?? new Date();
+  // Date/heure = moment d’enregistrement (pas de saisie manuelle).
+  const date = new Date();
 
   await prisma.journalBordEntree.create({
     data: {
@@ -48,9 +49,11 @@ export async function createJournalBordEntree(formData: FormData) {
     },
   });
 
-  const href = sectionSavedHref(parentHref(typeObjet, objetId), "JOURNAL_BORD");
+  const href = retour.includes("#")
+    ? retour
+    : sectionSavedHref(parentHref(typeObjet, objetId), "JOURNAL_BORD");
   revalidateApp([parentHref(typeObjet, objetId)]);
-  redirectWithOk(href, "journal");
+  redirectWithOk(href.split("#")[0]!, "journal");
 }
 
 export async function deleteJournalBordEntree(formData: FormData) {

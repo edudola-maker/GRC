@@ -8,7 +8,7 @@ import {
   MissionEquipePanel,
   type MissionEquipeMembre,
 } from "@/components/missions/MissionEquipePanel";
-import { NotesPanel } from "@/components/notes/NotesPanel";
+import { JournalTravailPanel } from "@/components/travail/JournalTravailPanel";
 import { QuickTacheForm } from "@/components/taches/QuickTacheForm";
 import { BtnLink } from "@/components/ui";
 import { linkDocument } from "@/app/missions/actions";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { withRetour } from "@/lib/navigation-retour";
+import type { JournalBordItem } from "@/lib/journal-bord";
 import type { NoteListeItem } from "@/lib/notes";
 import { formatUtilisateurNom } from "@/lib/session";
 
@@ -109,6 +110,7 @@ export function MissionPlanificationPanel({
   risquesMission,
   documentation,
   notes,
+  journalBord = [],
   risquesGrc,
 }: {
   missionId: string;
@@ -127,6 +129,7 @@ export function MissionPlanificationPanel({
   risquesMission: RisqueMissionRow[];
   documentation: DocDemandeRow[];
   notes: NoteListeItem[];
+  journalBord?: JournalBordItem[];
   risquesGrc: { id: string; code: string; nom: string }[];
 }) {
   const checklist = checklistItems.filter(
@@ -358,13 +361,12 @@ export function MissionPlanificationPanel({
         )}
       </CollapsibleSection>
 
-      <NotesPanel
+      <JournalTravailPanel
         typeObjet="MISSION"
         objetId={missionId}
+        entrees={journalBord}
         notes={notes}
-        users={userOpts}
         canEdit={editing && canEdit}
-        etapeMission="PLANIFICATION"
         baseHref={baseHref}
       />
 

@@ -3,7 +3,9 @@
 import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  allocateCreateCode, assertNomUnique, nextCode
+} from "@/lib/codes";
 import { addBusinessDays } from "@/lib/dates";
 import { optDate, optStr, str } from "@/lib/form";
 import { ajouterJournal } from "@/lib/journal";
@@ -48,9 +50,18 @@ export async function createConseil(formData: FormData) {
     optDate(formData, "dateEcheance") ??
     addBusinessDays(dateReception, delaiCible);
 
+  const allocated = await allocateCreateCode(
+    "CONSEIL",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/conseils/nouveau", allocated.error);
+  }
+
   const conseil = await prisma.conseil.create({
     data: {
-      code: await nextCode("CONSEIL", uniteId),
+      code: allocated.code,
       uniteId,
       objet,
       description: optStr(formData, "description"),

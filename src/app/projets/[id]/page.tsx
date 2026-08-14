@@ -39,10 +39,10 @@ import {
 import { listSectionRedactions } from "@/lib/section-redaction";
 import { getActivationByTacheIds } from "@/lib/tache-dependances";
 import { parseTags } from "@/lib/tags";
-import { NotesPanel } from "@/components/notes/NotesPanel";
-import { JournalBordPanel } from "@/components/journal/JournalBordPanel";
+import { JournalTravailPanel } from "@/components/travail/JournalTravailPanel";
 import { listerNotes } from "@/lib/notes";
 import { listerJournalBord } from "@/lib/journal-bord";
+import { deleteTache } from "@/app/taches/actions";
 import { formatUtilisateurNom } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +50,6 @@ export const dynamic = "force-dynamic";
 const EDIT_SECTIONS = [
   "INFOS_GENERALES",
   "PILOTAGE",
-  "EQUIPE",
   "ELEMENTS_ASSOCIES",
   "REFLEXION",
   "TAGS",
@@ -234,7 +233,7 @@ export default async function ProjetDetailPage({
       </EditableSection>
 
       <EditableSection
-        title="Pilotage & dates"
+        title="Pilotage"
         sectionKey="PILOTAGE"
         baseHref={baseHref}
         edit={edit}
@@ -250,6 +249,7 @@ export default async function ProjetDetailPage({
             submitLabel="Finaliser"
             section="PILOTAGE"
             draftActions
+            membreIds={[...membreIds]}
           />
         }
       >
@@ -257,6 +257,14 @@ export default async function ProjetDetailPage({
           <div>
             <dt>Responsable</dt>
             <dd>{projet.responsable.nom}</dd>
+          </div>
+          <div>
+            <dt>Équipe</dt>
+            <dd>
+              {projet.membres.length
+                ? projet.membres.map((m) => m.utilisateur.nom).join(", ")
+                : "Aucun membre additionnel"}
+            </dd>
           </div>
           <div>
             <dt>Statut</dt>
@@ -282,47 +290,6 @@ export default async function ProjetDetailPage({
         {projet.commentaires ? (
           <p className="detail-note">{projet.commentaires}</p>
         ) : null}
-      </EditableSection>
-
-      <EditableSection
-        title="Équipe projet"
-        sectionKey="EQUIPE"
-        baseHref={baseHref}
-        edit={edit}
-        canEdit={canEdit}
-        redaction={redactions.get("EQUIPE")}
-        defaultOpen={false}
-        editChildren={
-          <form action={updateProjet} className="entity-form">
-            <input type="hidden" name="id" value={projet.id} />
-            <input type="hidden" name="sectionKey" value="EQUIPE" />
-            <ul className="check-list">
-              {users
-                .filter((u) => u.id !== projet.responsableId)
-                .map((u) => (
-                  <li key={u.id}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        name="membreIds"
-                        value={u.id}
-                        defaultChecked={membreIds.has(u.id)}
-                      />
-                      {u.nom}
-                    </label>
-                  </li>
-                ))}
-            </ul>
-            <SectionSaveActions baseHref={baseHref} sectionKey="EQUIPE" />
-          </form>
-        }
-      >
-        <p className="muted" style={{ marginTop: 0 }}>
-          Responsable : {projet.responsable.nom}
-          {projet.membres.length
-            ? ` · Membres : ${projet.membres.map((m) => m.utilisateur.nom).join(", ")}`
-            : " · Aucun membre additionnel."}
-        </p>
       </EditableSection>
 
       <CollapsibleSection
@@ -357,6 +324,7 @@ export default async function ProjetDetailPage({
               <span>Statut</span>
               <span>Prérequis</span>
               <span>Commentaire</span>
+              <span className="sr-only">Actions</span>
             </div>
             <ul className="projet-taches-table__list">
               {projet.taches.map((t) => {
@@ -415,6 +383,18 @@ export default async function ProjetDetailPage({
                           ? t.commentaires.trim().slice(0, 80)
                           : "—"}
                       </span>
+                      {canEdit ? (
+                        <ConfirmActionButton
+                          action={deleteTache}
+                          id={t.id}
+                          label="🗑"
+                          confirmMessage="Supprimer cette tâche ?"
+                          variant="ghost"
+                          fields={{ retour: `${baseHref}#` }}
+                        />
+                      ) : (
+                        <span />
+                      )}
                     </div>
                   </li>
                 );
@@ -517,22 +497,11 @@ export default async function ProjetDetailPage({
         </p>
       </EditableSection>
 
-      <NotesPanel
-        typeObjet="PROJET"
-        objetId={projet.id}
-        notes={notes}
-        users={users.map((u) => ({
-          id: u.id,
-          nom: formatUtilisateurNom(u),
-        }))}
-        canEdit={canEdit}
-        baseHref={baseHref}
-      />
-
-      <JournalBordPanel
+      <JournalTravailPanel
         typeObjet="PROJET"
         objetId={projet.id}
         entrees={journalBord}
+        notes={notes}
         canEdit={canEdit}
         baseHref={baseHref}
       />

@@ -7,9 +7,9 @@ import {
   STATUT_PROJET_OPTIONS,
 } from "@/lib/catalog";
 import {
+  allocateCreateCode,
   assertCodeUnique,
   assertNomUnique,
-  nextCode,
   normalizeCode,
 } from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
@@ -71,9 +71,18 @@ export async function createProjet(formData: FormData) {
     Math.max(0, optInt(formData, "avancement") ?? 0),
   );
 
+  const allocated = await allocateCreateCode(
+    "PROJET",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/projets/nouveau", allocated.error);
+  }
+
   const projet = await prisma.projet.create({
     data: {
-      code: await nextCode("PROJET", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       description: optStr(formData, "description"),
@@ -160,33 +169,58 @@ export async function updateProjet(formData: FormData) {
         versionObjet: nextVersion,
       });
     }
-  } else if (sectionKey === "PILOTAGE") {
-    const statut = str(formData, "statut") || "IDEE";
-    const priorite = str(formData, "priorite") || "MOYENNE";
-    if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
-      redirectWithError(editFallback, "Statut ou priorité invalide.");
+  } else if (sectionKey === "PILOTAGE" || sectionKey === "EQUIPE") {
+    const statut = str(formData, "statut") || existing.statut;
+    const priorite = str(formData, "priorite") || existing.priorite;
+    if (sectionKey === "PILOTAGE") {
+      if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
+        redirectWithError(editFallback, "Statut ou priorité invalide.");
+      }
+      const responsableId = str(formData, "responsableId") || current.id;
+      if (!(await assertResponsable(responsableId))) {
+        redirectWithError(editFallback, "Responsable introuvable.");
+      }
+      const avancement = Math.min(
+        100,
+        Math.max(0, optInt(formData, "avancement") ?? 0),
+      );
+      await prisma.projet.update({
+        where: { id },
+        data: {
+          responsableId,
+          dateDebut: optDate(formData, "dateDebut"),
+          dateEcheance: optDate(formData, "dateEcheance"),
+          statut: statut as "IDEE",
+          priorite: priorite as "MOYENNE",
+          avancement,
+          commentaires: optStr(formData, "commentaires"),
+          modifieParId: current.id,
+        },
+      });
     }
-    const responsableId = str(formData, "responsableId") || current.id;
-    if (!(await assertResponsable(responsableId))) {
-      redirectWithError(editFallback, "Responsable introuvable.");
+    // Équipe : toujours traitée depuis Pilotage (et EQUIPE legacy)
+    const membreIds = formData
+      .getAll("membreIds")
+      .filter((v): v is string => typeof v === "string" && v.length > 0);
+    if (sectionKey === "PILOTAGE" || formData.has("membreIds")) {
+      await prisma.$transaction([
+        prisma.projetMembre.deleteMany({ where: { projetId: id } }),
+        ...(membreIds.length > 0
+          ? [
+              prisma.projetMembre.createMany({
+                data: membreIds.map((utilisateurId) => ({
+                  projetId: id,
+                  utilisateurId,
+                })),
+              }),
+            ]
+          : []),
+        prisma.projet.update({
+          where: { id },
+          data: { modifieParId: current.id },
+        }),
+      ]);
     }
-    const avancement = Math.min(
-      100,
-      Math.max(0, optInt(formData, "avancement") ?? 0),
-    );
-    await prisma.projet.update({
-      where: { id },
-      data: {
-        responsableId,
-        dateDebut: optDate(formData, "dateDebut"),
-        dateEcheance: optDate(formData, "dateEcheance"),
-        statut: statut as "IDEE",
-        priorite: priorite as "MOYENNE",
-        avancement,
-        commentaires: optStr(formData, "commentaires"),
-        modifieParId: current.id,
-      },
-    });
   } else if (sectionKey === "REFLEXION") {
     await prisma.projet.update({
       where: { id },
@@ -203,27 +237,6 @@ export async function updateProjet(formData: FormData) {
         modifieParId: current.id,
       },
     });
-  } else if (sectionKey === "EQUIPE") {
-    const membreIds = formData
-      .getAll("membreIds")
-      .filter((v): v is string => typeof v === "string" && v.length > 0);
-    await prisma.$transaction([
-      prisma.projetMembre.deleteMany({ where: { projetId: id } }),
-      ...(membreIds.length > 0
-        ? [
-            prisma.projetMembre.createMany({
-              data: membreIds.map((utilisateurId) => ({
-                projetId: id,
-                utilisateurId,
-              })),
-            }),
-          ]
-        : []),
-      prisma.projet.update({
-        where: { id },
-        data: { modifieParId: current.id },
-      }),
-    ]);
   } else if (sectionKey === "ELEMENTS_ASSOCIES") {
     await prisma.projet.update({
       where: { id },

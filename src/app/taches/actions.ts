@@ -427,9 +427,14 @@ export async function deleteTache(formData: FormData) {
   const existing = await prisma.tache.findUnique({ where: { id } });
   if (!existing) redirectWithError("/taches", "Tâche introuvable.");
 
+  const retour = optStr(formData, "retour");
+
   await prisma.tache.delete({ where: { id } });
 
   revalidateTacheViews(undefined, existing);
+  if (retour) {
+    redirectWithOk(retour, "supprime");
+  }
   redirect("/taches?ok=supprime");
 }
 

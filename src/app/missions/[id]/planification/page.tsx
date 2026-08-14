@@ -5,6 +5,7 @@ import { MissionPageChrome } from "@/components/missions/MissionPageChrome";
 import { MissionPlanificationPanel } from "@/components/missions/MissionPlanificationPanel";
 import { requireMissionDetail } from "@/lib/mission-data";
 import { listerNotes } from "@/lib/notes";
+import { listerJournalBord } from "@/lib/journal-bord";
 import { formatSectionEtatLabel } from "@/lib/section-redaction";
 import { prisma } from "@/lib/prisma";
 import {
@@ -27,7 +28,8 @@ export default async function MissionPlanificationPage({
   await getCurrentUser();
   const { mission, redactions, etapes, equipe } = await requireMissionDetail(id);
 
-  const [users, roles, documentsDispo, notes, risquesGrc] = await Promise.all([
+  const [users, roles, documentsDispo, notes, journalBord, risquesGrc] =
+    await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     prisma.missionRole.findMany({
       where: { actif: true },
@@ -39,6 +41,7 @@ export default async function MissionPlanificationPage({
       select: { id: true, nom: true },
     }),
     listerNotes("MISSION", id, { etapeMission: "PLANIFICATION" }),
+    listerJournalBord("MISSION", id),
     prisma.risque.findMany({
       where: { uniteId: mission.uniteId, archive: false },
       orderBy: { code: "asc" },
@@ -111,6 +114,7 @@ export default async function MissionPlanificationPage({
           risquesMission={mission.risquesMission}
           documentation={mission.documentationDemandee}
           notes={notes}
+          journalBord={journalBord}
           risquesGrc={risquesGrc}
         />
       </CollapsibleSection>

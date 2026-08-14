@@ -7,7 +7,10 @@ import {
   STATUT_CONTROLE_OPTIONS,
   TYPE_CONTROLE_OPTIONS,
 } from "@/lib/catalog";
-import { assertNomUnique, nextCode } from "@/lib/codes";
+import {
+  allocateCreateCode,
+  assertNomUnique, nextCode
+} from "@/lib/codes";
 import { nextControleDate } from "@/lib/dates";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
@@ -60,9 +63,18 @@ export async function createControleSCI(formData: FormData) {
     optDate(formData, "dateProchaineEcheance") ??
     nextControleDate(new Date(), frequence);
 
-  const controle = await prisma.controleSCI.create({
+const allocated = await allocateCreateCode(
+    "CONTROLE_SCI",
+    uniteId,
+    optStr(formData, "code"),
+  );
+  if (!allocated.ok) {
+    redirectWithError("/controles-sci/nouveau", allocated.error);
+  }
+
+    const controle = await prisma.controleSCI.create({
     data: {
-      code: await nextCode("CONTROLE_SCI", uniteId),
+      code: allocated.code,
       uniteId,
       nom,
       description: optStr(formData, "description"),

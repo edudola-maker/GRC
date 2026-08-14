@@ -39,9 +39,8 @@ import { listerJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite, formatUtilisateurNom } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
-import { NotesPanel } from "@/components/notes/NotesPanel";
-import { JournalBordPanel } from "@/components/journal/JournalBordPanel";
 import { QuickTacheForm } from "@/components/taches/QuickTacheForm";
+import { JournalTravailPanel } from "@/components/travail/JournalTravailPanel";
 import { listerNotes } from "@/lib/notes";
 import { listerJournalBord } from "@/lib/journal-bord";
 import { JournalTimeline } from "@/components/historique/JournalTimeline";
@@ -350,22 +349,11 @@ export default async function ConseilDetailPage({
         </p>
       </CollapsibleSection>
 
-      <NotesPanel
-        typeObjet="CONSEIL"
-        objetId={conseil.id}
-        notes={notes}
-        users={users.map((u) => ({
-          id: u.id,
-          nom: formatUtilisateurNom(u),
-        }))}
-        canEdit={canEdit}
-        baseHref={baseHref}
-      />
-
-      <JournalBordPanel
+      <JournalTravailPanel
         typeObjet="CONSEIL"
         objetId={conseil.id}
         entrees={journalBord}
+        notes={notes}
         canEdit={canEdit}
         baseHref={baseHref}
       />
