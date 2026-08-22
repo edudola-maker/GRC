@@ -11,7 +11,7 @@ import {
   HBarChart,
   TimeBuckets,
 } from "@/components/dashboard/RespCharts";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, BtnLink } from "@/components/ui";
 import { getActionsUnite } from "@/lib/actions-view";
 import { getDashboardResponsable } from "@/lib/dashboard-responsable";
 import {
@@ -242,6 +242,11 @@ export default async function DashboardResponsablePage({
           />
         }
         badge="Pilotage"
+        actions={
+          <BtnLink href="/rapports/responsable" variant="ghost">
+            Rapport PDF
+          </BtnLink>
+        }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 

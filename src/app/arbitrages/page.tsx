@@ -28,9 +28,14 @@ export default async function ArbitragesPage({
       <PageHeader
         title="Arbitrages"
         actions={
-          <BtnLink href="/arbitrages/nouveau" variant="ghost">
-            + Arbitrage
-          </BtnLink>
+          <>
+            <BtnLink href="/api/exports/arbitrages" variant="ghost">
+              Exporter Excel
+            </BtnLink>
+            <BtnLink href="/arbitrages/nouveau" variant="ghost">
+              + Arbitrage
+            </BtnLink>
+          </>
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />

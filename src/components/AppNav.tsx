@@ -65,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/decisions", label: "Décisions", icon: "check" },
       { href: "/controles-sci", label: "Contrôles SCI", icon: "check" },
       { href: "/documents", label: "Documents", icon: "document" },
+      { href: "/rapports", label: "Rapports", icon: "list" },
     ],
   },
   {
