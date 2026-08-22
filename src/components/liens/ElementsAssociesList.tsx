@@ -33,10 +33,26 @@ export function ElementsAssociesList({
   }, [items]);
 
   const [filter, setFilter] = useState<string>("");
+  const [q, setQ] = useState("");
 
-  const filtered = filter
-    ? items.filter((i) => i.type === filter)
-    : items;
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return items.filter((i) => {
+      if (filter && i.type !== filter) return false;
+      if (!needle) return true;
+      return (
+        i.code.toLowerCase().includes(needle) ||
+        i.titre.toLowerCase().includes(needle) ||
+        (TYPE_OBJET_LABELS[i.type] ?? i.type).toLowerCase().includes(needle)
+      );
+    });
+  }, [items, filter, q]);
+
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const i of items) m.set(i.type, (m.get(i.type) ?? 0) + 1);
+    return m;
+  }, [items]);
 
   if (items.length === 0) {
     return <p className="empty">Aucun élément associé pour le moment.</p>;
@@ -44,6 +60,17 @@ export function ElementsAssociesList({
 
   return (
     <div className="elements-associes__browser">
+      <div className="filter-bar" style={{ marginBottom: "0.75rem", gap: "0.5rem", flexWrap: "wrap" }}>
+        <input
+          type="search"
+          className="input"
+          placeholder="Rechercher (code, nom…)"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          style={{ minWidth: "12rem", flex: "1 1 12rem" }}
+          aria-label="Rechercher dans les éléments associés"
+        />
+      </div>
       {types.length > 1 ? (
         <div className="filter-bar" style={{ marginBottom: "0.75rem" }}>
           <button
@@ -51,7 +78,7 @@ export function ElementsAssociesList({
             className={`chip${!filter ? " is-active" : ""}`}
             onClick={() => setFilter("")}
           >
-            Tous
+            Tous ({items.length})
           </button>
           {types.map((t) => (
             <button
@@ -60,7 +87,7 @@ export function ElementsAssociesList({
               className={`chip${filter === t ? " is-active" : ""}`}
               onClick={() => setFilter(t)}
             >
-              {TYPE_OBJET_LABELS[t] ?? t}
+              {TYPE_OBJET_LABELS[t] ?? t} ({counts.get(t) ?? 0})
             </button>
           ))}
         </div>

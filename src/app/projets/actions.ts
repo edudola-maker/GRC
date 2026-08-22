@@ -46,24 +46,30 @@ async function assertResponsable(id: string) {
 
 export async function createProjet(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
+  const fallback = "/projets/nouveau";
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
   const nom = str(formData, "nom");
   if (!nom) {
-    redirectWithError("/projets/nouveau", "Le nom du projet est obligatoire.");
+    redirectWithError(fallback, "Le nom du projet est obligatoire.");
   }
 
   const statut = str(formData, "statut") || "IDEE";
   const priorite = str(formData, "priorite") || "MOYENNE";
   if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
-    redirectWithError("/projets/nouveau", "Statut ou priorité invalide.");
+    redirectWithError(fallback, "Statut ou priorité invalide.");
   }
 
   const nomErr = await assertNomUnique("PROJET", nom, uniteId);
-  if (nomErr) redirectWithError("/projets/nouveau", nomErr);
+  if (nomErr) redirectWithError(fallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
-    redirectWithError("/projets/nouveau", "Responsable introuvable.");
+    redirectWithError(fallback, "Responsable introuvable.");
   }
 
   const avancement = Math.min(
@@ -77,7 +83,7 @@ export async function createProjet(formData: FormData) {
     optStr(formData, "code"),
   );
   if (!allocated.ok) {
-    redirectWithError("/projets/nouveau", allocated.error);
+    redirectWithError(fallback, allocated.error);
   }
 
   const projet = await prisma.projet.create({
@@ -108,7 +114,6 @@ export async function createProjet(formData: FormData) {
 
 export async function updateProjet(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) {
     redirectWithError("/projets", "Identifiant projet manquant.");
@@ -129,6 +134,13 @@ export async function updateProjet(formData: FormData) {
     if (!nom) {
       redirectWithError(editFallback, "Le nom du projet est obligatoire.");
     }
+
+    const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+    const unite = await prisma.unite.findFirst({
+      where: { id: uniteId, actif: true },
+    });
+    if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
+
     const nomErr = await assertNomUnique("PROJET", nom, uniteId, id);
     if (nomErr) redirectWithError(editFallback, nomErr);
 
@@ -142,6 +154,7 @@ export async function updateProjet(formData: FormData) {
       { champ: "code", avant: existing.code, apres: code },
       { champ: "nom", avant: existing.nom, apres: nom },
       { champ: "description", avant: existing.description, apres: description },
+      { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
     ]);
     const bump = changes.length > 0;
     const nextVersion = bump
@@ -154,6 +167,7 @@ export async function updateProjet(formData: FormData) {
         code,
         nom,
         description,
+        uniteId,
         modifieParId: current.id,
         ...(bump ? { contenuVersion: nextVersion } : {}),
       },
@@ -163,7 +177,7 @@ export async function updateProjet(formData: FormData) {
       await enregistrerModifications({
         typeObjet: "PROJET",
         objetId: id,
-        uniteId: existing.uniteId,
+        uniteId,
         modifieParId: current.id,
         changes,
         versionObjet: nextVersion,

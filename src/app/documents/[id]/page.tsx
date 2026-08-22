@@ -33,6 +33,7 @@ import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, listUtilisateursActifsForCurrentUnite } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function DocumentDetailPage({
       ? sp.edit
       : null;
   const user = await getCurrentUser();
-  const [document, users, processusActifs] = await Promise.all([
+  const [document, users, processusActifs, unites] = await Promise.all([
     prisma.document.findUnique({
       where: { id },
       include: {
@@ -77,6 +78,7 @@ export default async function DocumentDetailPage({
       orderBy: { nom: "asc" },
       select: { id: true, code: true, nom: true },
     }),
+    listUnitesActives(),
   ]);
   if (!document) notFound();
 
@@ -148,6 +150,7 @@ export default async function DocumentDetailPage({
           <DocumentForm
             action={updateDocument}
             users={users}
+            unites={unites}
             values={document}
             cancelHref={baseHref}
             sectionKey="INFOS_GENERALES"

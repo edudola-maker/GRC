@@ -70,6 +70,13 @@ export async function updateUnite(formData: FormData) {
         actif: str(formData, "actif") !== "0",
       },
     });
+  } else if (sectionKey === "PRESENTATION") {
+    await prisma.unite.update({
+      where: { id },
+      data: {
+        presentation: optStr(formData, "presentation"),
+      },
+    });
   } else if (
     sectionKey === "OBJECTIFS" ||
     sectionKey === "EQUIPE" ||

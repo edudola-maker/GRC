@@ -56,6 +56,13 @@ async function main() {
   await prisma.modeleTacheProcessus.deleteMany();
   await prisma.modeleTacheEtape.deleteMany();
   await prisma.modeleTache.deleteMany();
+  await prisma.processusRaciParticipant.deleteMany().catch(() => undefined);
+  await prisma.processusRaciLigne.deleteMany().catch(() => undefined);
+  await prisma.processusActifIT.deleteMany().catch(() => undefined);
+  await prisma.processusContinuité.deleteMany().catch(() => undefined);
+  await prisma.processusDependance.deleteMany().catch(() => undefined);
+  await prisma.processusUniteApplicable.deleteMany().catch(() => undefined);
+  await prisma.documentProcessus.deleteMany().catch(() => undefined);
   await prisma.processusEtape.deleteMany();
   await prisma.projetMembre.deleteMany();
   await prisma.conseil.deleteMany();
@@ -67,6 +74,15 @@ async function main() {
   await prisma.referentielValeur.deleteMany();
   await prisma.projet.deleteMany();
   await prisma.processus.deleteMany();
+  await prisma.macroprocessusUniteApplicable.deleteMany().catch(() => undefined);
+  await prisma.macroprocessus.deleteMany().catch(() => undefined);
+  await prisma.actifIT.deleteMany().catch(() => undefined);
+  await prisma.uniteAttribution.deleteMany().catch(() => undefined);
+  await prisma.journalBordEntree.deleteMany().catch(() => undefined);
+  await prisma.noteParticipant.deleteMany().catch(() => undefined);
+  await prisma.noteTravail.deleteMany().catch(() => undefined);
+  await prisma.historiqueModification.deleteMany().catch(() => undefined);
+  await prisma.risqueReevaluation.deleteMany().catch(() => undefined);
   await prisma.sequenceCode.deleteMany();
   // Lever les FK Unite → Utilisateur avant suppression des utilisateurs.
   await prisma.unite.updateMany({
@@ -82,6 +98,8 @@ async function main() {
       nom: "Unité GRC",
       description:
         "Unité de gouvernance, risques et conformité — pilote les processus SCI, les missions d’assurance et le suivi des risques.",
+      presentation:
+        "L’unité GRC existe pour sécuriser le pilotage de l’organisation : elle structure les processus, évalue les risques, anime le SCI et conduit les missions d’assurance.\n\nSes activités principales couvrent la cartographie des processus, le référentiel des actifs, le suivi des contrôles et l’accompagnement des métiers.\n\nElle travaille pour les directions métier (clients internes) et rend compte à la gouvernance.",
       actif: true,
     },
   });
@@ -277,7 +295,9 @@ async function main() {
       { uniteId, prefixe: "REC", dernier: 1 },
       { uniteId, prefixe: "OBJ", dernier: 3 },
       { uniteId, prefixe: "UNT", dernier: 2 },
-      { uniteId, prefixe: "AIT", dernier: 2 },
+      { uniteId, prefixe: "AIT", dernier: 4 },
+      { uniteId, prefixe: "PRC", dernier: 8 },
+      { uniteId, prefixe: "MAC", dernier: 3 },
     ],
   });
 
@@ -618,6 +638,105 @@ async function main() {
     },
   });
 
+  const macroAudit = await prisma.macroprocessus.create({
+    data: {
+      uniteId,
+      code: "MAC-0001",
+      nom: "Audit",
+      description: "Famille des activités d’audit et de revue d’assurance.",
+      responsableId: alice.id,
+      ordre: 1,
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  const macroEnquete = await prisma.macroprocessus.create({
+    data: {
+      uniteId,
+      code: "MAC-0002",
+      nom: "Enquête",
+      description: "Famille des enquêtes (PC / RI).",
+      responsableId: alice.id,
+      ordre: 2,
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  const macroGouvernance = await prisma.macroprocessus.create({
+    data: {
+      uniteId,
+      code: "MAC-0003",
+      nom: "Gouvernance SI",
+      description: "Processus transverses de gouvernance des systèmes d’information.",
+      responsableId: bernard.id,
+      ordre: 3,
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+
+  await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0005",
+      nom: "Revue de processus",
+      description: "Revue périodique d’un processus métier.",
+      responsableId: alice.id,
+      statut: "ACTIF",
+      macroprocessusId: macroAudit.id,
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0006",
+      nom: "Conseil",
+      description: "Activité de conseil structurée.",
+      responsableId: alice.id,
+      statut: "ACTIF",
+      macroprocessusId: macroAudit.id,
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0007",
+      nom: "Enquête PC",
+      description: "Enquête de type PC.",
+      responsableId: bernard.id,
+      statut: "ACTIF",
+      macroprocessusId: macroEnquete.id,
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+  await prisma.processus.create({
+    data: {
+      uniteId,
+      code: "PRC-0008",
+      nom: "Enquête RI",
+      description: "Enquête de type RI.",
+      responsableId: bernard.id,
+      statut: "ACTIF",
+      macroprocessusId: macroEnquete.id,
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
+    },
+  });
+
+  await prisma.processus.update({
+    where: { id: processusAudit.id },
+    data: { macroprocessusId: macroAudit.id },
+  });
+  await prisma.processus.update({
+    where: { id: processusAcces.id },
+    data: { macroprocessusId: macroGouvernance.id },
+  });
+
   const actifIam = await prisma.actifIT.create({
     data: {
       uniteId,
@@ -645,6 +764,35 @@ async function main() {
       hebergement: "SaaS",
       creeParId: alice.id,
       modifieParId: alice.id,
+    },
+  });
+  await prisma.actifIT.create({
+    data: {
+      uniteId,
+      code: "AIT-0003",
+      nom: "Compétence critique — instruction RI",
+      type: "COMPETENCE_CRITIQUE",
+      description: "Savoir-faire rare pour les enquêtes RI (pas une personne nominative).",
+      responsableId: alice.id,
+      statut: "ACTIF",
+      criticite: 4,
+      creeParId: alice.id,
+      modifieParId: alice.id,
+    },
+  });
+  await prisma.actifIT.create({
+    data: {
+      uniteId,
+      code: "AIT-0004",
+      nom: "Hébergeur documents",
+      type: "PRESTATAIRE",
+      description: "Tiers assurant l’hébergement documentaire.",
+      responsableId: bernard.id,
+      statut: "ACTIF",
+      serviceFourni: "Hébergement et archivage documentaire",
+      criticite: 3,
+      creeParId: bernard.id,
+      modifieParId: bernard.id,
     },
   });
   await prisma.processusActifIT.createMany({

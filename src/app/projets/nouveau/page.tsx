@@ -9,6 +9,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 import { createProjet } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -20,9 +21,10 @@ export default async function NouveauProjetPage({
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [usersRaw, suggestedCode] = await Promise.all([
+  const [usersRaw, suggestedCode, unites] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     peekNextCode("PROJET", user.uniteId),
+    listUnitesActives(),
   ]);
   const users = usersRaw.map((u) => ({
     id: u.id,
@@ -41,6 +43,8 @@ export default async function NouveauProjetPage({
         <ProjetForm
           action={createProjet}
           users={users}
+          unites={unites}
+          values={{ uniteId: user.uniteId }}
           cancelHref="/projets"
           submitLabel="Créer le projet"
           suggestedCode={suggestedCode}

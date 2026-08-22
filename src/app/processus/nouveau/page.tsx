@@ -4,8 +4,12 @@ import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
 import { peekNextCode } from "@/lib/codes";
-import { getCurrentUser,
-  listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
+import { prisma } from "@/lib/prisma";
+import {
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 import { createProcessus } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +21,21 @@ export default async function NouveauProcessusPage({
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [users, suggestedCode] = await Promise.all([
+  const [users, suggestedCode, unites, macros] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     peekNextCode("PROCESSUS", user.uniteId),
+    listUnitesActives(),
+    prisma.macroprocessus.findMany({
+      where: {
+        OR: [
+          { uniteId: user.uniteId },
+          { unitesApplicables: { some: { uniteId: user.uniteId } } },
+        ],
+        archive: false,
+      },
+      select: { id: true, code: true, nom: true },
+      orderBy: [{ ordre: "asc" }, { nom: "asc" }],
+    }),
   ]);
 
   return (
@@ -35,6 +51,9 @@ export default async function NouveauProcessusPage({
           suggestedCode={suggestedCode}
           action={createProcessus}
           users={users}
+          unites={unites}
+          macros={macros}
+          values={{ uniteId: user.uniteId }}
           cancelHref="/processus"
           submitLabel="Créer le processus"
         />

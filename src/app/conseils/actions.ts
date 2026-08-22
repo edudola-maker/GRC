@@ -4,10 +4,18 @@ import { redirect } from "next/navigation";
 import { redirectWithError, redirectWithOk } from "@/lib/action-helpers";
 import { STATUT_CONSEIL_OPTIONS } from "@/lib/catalog";
 import {
-  allocateCreateCode, assertNomUnique, nextCode
+  allocateCreateCode,
+  assertCodeUnique,
+  assertNomUnique,
+  nextCode,
+  normalizeCode,
 } from "@/lib/codes";
 import { addBusinessDays } from "@/lib/dates";
 import { optDate, optStr, str } from "@/lib/form";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { ajouterJournal } from "@/lib/journal";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -22,10 +30,23 @@ async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
 }
 
+async function nextHistVersion(objetId: string) {
+  const last = await prisma.historiqueModification.aggregate({
+    where: { typeObjet: "CONSEIL", objetId },
+    _max: { versionObjet: true },
+  });
+  return (last._max.versionObjet ?? 0) + 1;
+}
+
 export async function createConseil(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/conseils/nouveau";
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
   const objet = str(formData, "objet");
   if (!objet) {
     redirectWithError(fallback, "L'objet du conseil est obligatoire.");
@@ -56,7 +77,7 @@ export async function createConseil(formData: FormData) {
     optStr(formData, "code"),
   );
   if (!allocated.ok) {
-    redirectWithError("/conseils/nouveau", allocated.error);
+    redirectWithError(fallback, allocated.error);
   }
 
   const conseil = await prisma.conseil.create({
@@ -118,7 +139,6 @@ export async function createConseil(formData: FormData) {
 
 export async function updateConseil(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) redirectWithError("/conseils", "Identifiant conseil manquant.");
 
@@ -139,8 +159,19 @@ export async function updateConseil(formData: FormData) {
     redirectWithError(editFallback, "Statut invalide.");
   }
 
+  const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
+
   const nomErr = await assertNomUnique("CONSEIL", objet, uniteId, id);
   if (nomErr) redirectWithError(editFallback, nomErr);
+
+  const codeRaw = optStr(formData, "code") ?? existing.code;
+  const code = normalizeCode(codeRaw);
+  const codeErr = await assertCodeUnique("CONSEIL", code, uniteId, id);
+  if (codeErr) redirectWithError(editFallback, codeErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
@@ -165,11 +196,26 @@ export async function updateConseil(formData: FormData) {
     dateCloture = new Date();
   }
 
+  const description = optStr(formData, "description");
+  const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
+    { champ: "objet", avant: existing.objet, apres: objet },
+    { champ: "description", avant: existing.description, apres: description },
+    { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
+    { champ: "statut", avant: existing.statut, apres: statut },
+    {
+      champ: "responsableId",
+      avant: existing.responsableId,
+      apres: responsableId,
+    },
+  ]);
+
   await prisma.conseil.update({
     where: { id },
     data: {
+      code,
       objet,
-      description: optStr(formData, "description"),
+      description,
       taxinomie: optStr(formData, "taxinomie"),
       tags: serializeTags(optStr(formData, "tags")),
       demandeur: optStr(formData, "demandeur"),
@@ -183,9 +229,21 @@ export async function updateConseil(formData: FormData) {
       commentaires: optStr(formData, "commentaires"),
       raisonnement: optStr(formData, "raisonnement"),
       reponseConclusion: optStr(formData, "reponseConclusion"),
+      uniteId,
       modifieParId: current.id,
     },
   });
+
+  if (changes.length > 0) {
+    await enregistrerModifications({
+      typeObjet: "CONSEIL",
+      objetId: id,
+      uniteId,
+      modifieParId: current.id,
+      changes,
+      versionObjet: await nextHistVersion(id),
+    });
+  }
 
   if (statut !== existing.statut) {
     await ajouterJournal({

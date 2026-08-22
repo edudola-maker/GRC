@@ -14,6 +14,8 @@ export type ObjectifValues = {
   id?: string;
   intitule?: string;
   description?: string | null;
+  cible?: string | null;
+  progression?: number | null;
   annee?: number;
   responsableId?: string;
   statut?: string;
@@ -85,6 +87,18 @@ export function ObjectifForm({
             defaultValue={values?.description ?? ""}
           />
         </Field>
+        <Field
+          label="Cible"
+          htmlFor="cible"
+          hint="Résultat attendu sur la période (ex. 8 audits en 2027)."
+        >
+          <input
+            id="cible"
+            name="cible"
+            defaultValue={values?.cible ?? ""}
+            placeholder="Ex. 8 audits réalisés"
+          />
+        </Field>
         <div className="form-grid">
           <Field label="Année / période *" htmlFor="annee">
             <input
@@ -95,6 +109,20 @@ export function ObjectifForm({
               min={2000}
               max={2100}
               defaultValue={anneeDefaut}
+            />
+          </Field>
+          <Field
+            label="Progression %"
+            htmlFor="progression"
+            hint="0–100 — état d’avancement de l’objectif (≠ mission permanente)."
+          >
+            <input
+              id="progression"
+              name="progression"
+              type="number"
+              min={0}
+              max={100}
+              defaultValue={values?.progression ?? 0}
             />
           </Field>
           <Field label="Échéance" htmlFor="dateEcheance">

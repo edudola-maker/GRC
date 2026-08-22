@@ -10,10 +10,16 @@ import {
 } from "@/lib/catalog";
 import {
   allocateCreateCode,
-  assertNomUnique, nextCode
+  assertCodeUnique,
+  assertNomUnique,
+  normalizeCode,
 } from "@/lib/codes";
 import { nextRevueDate } from "@/lib/dates";
 import { optDate, optInt, optStr, str } from "@/lib/form";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { addDays, startOfToday } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
@@ -45,6 +51,14 @@ async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
 }
 
+async function nextHistVersion(objetId: string) {
+  const last = await prisma.historiqueModification.aggregate({
+    where: { typeObjet: "DOCUMENT", objetId },
+    _max: { versionObjet: true },
+  });
+  return (last._max.versionObjet ?? 0) + 1;
+}
+
 function resolveProchaineRevue(
   formData: FormData,
   dateDerniereRevue: Date | null,
@@ -61,8 +75,13 @@ function resolveProchaineRevue(
 
 export async function createDocument(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/documents/nouveau";
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
   const nom = str(formData, "nom");
   if (!nom) {
     redirectWithError(fallback, "Le nom du document est obligatoire.");
@@ -95,16 +114,16 @@ export async function createDocument(formData: FormData) {
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const lpd = parseLpd(formData);
-const allocated = await allocateCreateCode(
+  const allocated = await allocateCreateCode(
     "DOCUMENT",
     uniteId,
     optStr(formData, "code"),
   );
   if (!allocated.ok) {
-    redirectWithError("/documents/nouveau", allocated.error);
+    redirectWithError(fallback, allocated.error);
   }
 
-    const document = await prisma.document.create({
+  const document = await prisma.document.create({
     data: {
       code: allocated.code,
       uniteId,
@@ -163,6 +182,20 @@ export async function updateDocument(formData: FormData) {
     redirectWithError(editFallback, "Fréquence de revue invalide.");
   }
 
+  const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
+
+  const nomErr = await assertNomUnique("DOCUMENT", nom, uniteId, id);
+  if (nomErr) redirectWithError(editFallback, nomErr);
+
+  const codeRaw = optStr(formData, "code") ?? existing.code;
+  const code = normalizeCode(codeRaw);
+  const codeErr = await assertCodeUnique("DOCUMENT", code, uniteId, id);
+  if (codeErr) redirectWithError(editFallback, codeErr);
+
   const responsableId = optStr(formData, "responsableId");
   if (responsableId && !(await assertResponsable(responsableId))) {
     redirectWithError(editFallback, "Responsable introuvable.");
@@ -176,14 +209,33 @@ export async function updateDocument(formData: FormData) {
   );
 
   const lpd = parseLpd(formData);
+  const description = optStr(formData, "description");
+  const reference = optStr(formData, "reference");
+  const version = optStr(formData, "version");
+
+  const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
+    { champ: "nom", avant: existing.nom, apres: nom },
+    { champ: "description", avant: existing.description, apres: description },
+    { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
+    { champ: "typeDocument", avant: existing.typeDocument, apres: typeDocument },
+    { champ: "statut", avant: existing.statut, apres: statut },
+    {
+      champ: "responsableId",
+      avant: existing.responsableId,
+      apres: responsableId,
+    },
+  ]);
+
   await prisma.document.update({
     where: { id },
     data: {
+      code,
       nom,
       typeDocument: typeDocument as "AUTRE",
       taxinomie: optStr(formData, "taxinomie"),
       tags: serializeTags(optStr(formData, "tags")),
-      version: optStr(formData, "version"),
+      version,
       responsableId,
       dateApprobation: optDate(formData, "dateApprobation"),
       dateDerniereRevue,
@@ -193,13 +245,25 @@ export async function updateDocument(formData: FormData) {
         optInt(formData, "fenetreDeclenchementJours") ??
         existing.fenetreDeclenchementJours,
       statut: statut as "BROUILLON",
-      description: optStr(formData, "description"),
-      reference: optStr(formData, "reference"),
+      description,
+      reference,
       contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
       niveauConfidentialite: lpd.niveauConfidentialite,
+      uniteId,
       modifieParId: current.id,
     },
   });
+
+  if (changes.length > 0) {
+    await enregistrerModifications({
+      typeObjet: "DOCUMENT",
+      objetId: id,
+      uniteId,
+      modifieParId: current.id,
+      changes,
+      versionObjet: await nextHistVersion(id),
+    });
+  }
 
   revalidateApp([`/documents/${id}`, `/documents/${id}?edit=INFOS_GENERALES`]);
   redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");

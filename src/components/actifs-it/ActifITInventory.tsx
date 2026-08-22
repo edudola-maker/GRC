@@ -41,7 +41,7 @@ export function ActifITInventory({
   items,
   responsables,
   createHref = "/actifs-it/nouveau",
-  createLabel = "Nouvel actif IT",
+  createLabel = "Nouvel actif",
 }: {
   items: ActifITInventoryItem[];
   responsables: { id: string; nom: string }[];
@@ -110,7 +110,7 @@ export function ActifITInventory({
 
   return (
     <InventoryBrowser
-      searchPlaceholder="Rechercher un actif IT (code, nom…)"
+      searchPlaceholder="Rechercher un actif (code, nom…)"
       searchValue={query}
       onSearchChange={setQuery}
       advancedOpen={advancedOpen}
@@ -166,7 +166,7 @@ export function ActifITInventory({
     >
       {filtered.length === 0 ? (
         <InventoryEmpty>
-          Aucun actif IT ne correspond à votre recherche.
+          Aucun actif ne correspond à votre recherche.
         </InventoryEmpty>
       ) : (
         <InventoryList

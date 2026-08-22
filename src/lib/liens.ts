@@ -34,6 +34,8 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
       return `/taches/${id}`;
     case "PROCESSUS":
       return `/processus/${id}`;
+    case "MACROPROCESSUS":
+      return `/macroprocessus/${id}`;
     case "PROCESSUS_ETAPE":
       return `/processus`; // affiné après résolution
     case "UNITE":
@@ -42,6 +44,8 @@ function hrefFor(type: TypeObjetMetier, id: string): string {
       return `/objectifs/${id}`;
     case "MODELE_TACHE":
       return `/modeles-taches/${id}`;
+    case "ACTIF_IT":
+      return `/actifs-it/${id}`;
     default:
       return "/";
   }
@@ -204,6 +208,36 @@ async function resolveObjet(
     }
     case "MODELE_TACHE": {
       const o = await prisma.modeleTache.findFirst({
+        where: { id, uniteId },
+        select: { id: true, code: true, nom: true },
+      });
+      return o
+        ? {
+            type,
+            id: o.id,
+            code: o.code,
+            titre: o.nom,
+            href: hrefFor(type, o.id),
+          }
+        : null;
+    }
+    case "MACROPROCESSUS": {
+      const o = await prisma.macroprocessus.findFirst({
+        where: { id, uniteId },
+        select: { id: true, code: true, nom: true },
+      });
+      return o
+        ? {
+            type,
+            id: o.id,
+            code: o.code,
+            titre: o.nom,
+            href: hrefFor(type, o.id),
+          }
+        : null;
+    }
+    case "ACTIF_IT": {
+      const o = await prisma.actifIT.findFirst({
         where: { id, uniteId },
         select: { id: true, code: true, nom: true },
       });
@@ -388,6 +422,28 @@ export async function listCandidatsLien(
     case "MODELE_TACHE": {
       const rows = await prisma.modeleTache.findMany({
         where: { uniteId, actif: true },
+        select: { id: true, code: true, nom: true },
+        orderBy: { nom: "asc" },
+        take: 200,
+      });
+      return rows
+        .filter((r) => r.id !== excludeId)
+        .map((r) => ({ id: r.id, label: `${r.code} — ${r.nom}` }));
+    }
+    case "MACROPROCESSUS": {
+      const rows = await prisma.macroprocessus.findMany({
+        where: { uniteId, archive: false },
+        select: { id: true, code: true, nom: true },
+        orderBy: { nom: "asc" },
+        take: 200,
+      });
+      return rows
+        .filter((r) => r.id !== excludeId)
+        .map((r) => ({ id: r.id, label: `${r.code} — ${r.nom}` }));
+    }
+    case "ACTIF_IT": {
+      const rows = await prisma.actifIT.findMany({
+        where: { uniteId, archive: false },
         select: { id: true, code: true, nom: true },
         orderBy: { nom: "asc" },
         take: 200,

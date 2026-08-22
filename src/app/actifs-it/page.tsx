@@ -78,10 +78,14 @@ export default async function ActifsITPage({
   return (
     <>
       <PageHeader
-        title="Actifs IT"
+        title="Actifs"
         help={<ModuleHelp {...MODULE_HELP.actifsIT} />}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <p className="muted" style={{ marginTop: 0, maxWidth: "42rem" }}>
+        Référentiel généralisé : IT, physique, humain, prestataire. Préfixe
+        AIT- conservé. Information / données = inventaire séparé (roadmap).
+      </p>
       <KpiZone
         items={[
           { label: "Actifs", value: actifsCount, href: "#inventaire" },

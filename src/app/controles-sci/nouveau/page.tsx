@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 import { createControleSCI } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +19,10 @@ export default async function NouveauControleSCIPage({
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [usersRaw, suggestedCode] = await Promise.all([
+  const [usersRaw, suggestedCode, unites] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     peekNextCode("CONTROLE_SCI", user.uniteId),
+    listUnitesActives(),
   ]);
   const users = usersRaw.map((u) => ({
     id: u.id,
@@ -36,6 +38,8 @@ export default async function NouveauControleSCIPage({
         <ControleSCIForm
           action={createControleSCI}
           users={users}
+          unites={unites}
+          values={{ uniteId: user.uniteId }}
           cancelHref="/controles-sci"
           submitLabel="Créer le contrôle"
           suggestedCode={suggestedCode}

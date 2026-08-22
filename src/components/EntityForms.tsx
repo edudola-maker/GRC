@@ -23,6 +23,11 @@ import { SubmitButton } from "@/components/FormControls";
 import { BtnLink } from "@/components/ui";
 import { FormSection } from "@/components/module/FormSection";
 import { SectionSaveActions } from "@/components/module/EditableSection";
+import {
+  UniteResponsableFields,
+  UniteSelectField,
+  type UniteOpt,
+} from "@/components/referentiel/UniteResponsableFields";
 import { RisqueEvaluationAide } from "@/components/risques/RisqueEvaluationAide";
 import { sectionCancelHref } from "@/lib/section-nav";
 
@@ -45,6 +50,7 @@ type ProjetValues = {
   avancement?: number;
   commentaires?: string | null;
   reflexion?: string | null;
+  uniteId?: string;
 };
 
 type TacheValues = {
@@ -85,6 +91,7 @@ type ConseilValues = {
   commentaires?: string | null;
   raisonnement?: string | null;
   reponseConclusion?: string | null;
+  uniteId?: string;
 };
 
 type ControleValues = {
@@ -104,6 +111,7 @@ type ControleValues = {
   dateProchaineEcheance?: Date | string | null;
   statut?: string;
   commentaires?: string | null;
+  uniteId?: string;
 };
 
 type RisqueValues = {
@@ -125,6 +133,7 @@ type RisqueValues = {
   statut?: string;
   commentaires?: string | null;
   justificationEvaluation?: string | null;
+  uniteId?: string;
 };
 
 type DocumentValues = {
@@ -146,6 +155,7 @@ type DocumentValues = {
   reference?: string | null;
   contientDonneesPersonnelles?: boolean;
   niveauConfidentialite?: string;
+  uniteId?: string;
 };
 
 type MissionValues = {
@@ -166,6 +176,7 @@ type MissionValues = {
   analyseTravaux?: string | null;
   contientDonneesPersonnelles?: boolean;
   niveauConfidentialite?: string;
+  uniteId?: string;
 };
 
 type MissionTypeOpt = { id: string; libelle: string };
@@ -183,9 +194,14 @@ type ProcessusValues = {
   criticite?: number | null;
   reference?: string | null;
   parentId?: string | null;
+  macroprocessusId?: string | null;
+  uniteId?: string;
+  applicableUniteIds?: string[];
   contientDonneesPersonnelles?: boolean;
   niveauConfidentialite?: string;
 };
+
+type MacroOpt = { id: string; code: string; nom: string };
 
 function Field({
   label,
@@ -217,6 +233,7 @@ export function ProjetForm({
   draftActions = false,
   suggestedCode,
   membreIds = [],
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -235,6 +252,7 @@ export function ProjetForm({
   suggestedCode?: string;
   /** Membres équipe (hors responsable) — édition Pilotage. */
   membreIds?: string[];
+  unites?: UniteOpt[];
 }) {
   const showInfos = section === "ALL" || section === "INFOS_GENERALES";
   const showPilotage = section === "ALL" || section === "PILOTAGE";
@@ -281,6 +299,12 @@ export function ProjetForm({
               placeholder="Description plus complète du projet"
             />
           </Field>
+          {unites.length > 0 ? (
+            <UniteSelectField
+              unites={unites}
+              uniteId={values?.uniteId}
+            />
+          ) : null}
         </FormSection>
       ) : null}
 
@@ -776,6 +800,7 @@ export function ConseilForm({
   showCreerTache,
   sectionKey,
   suggestedCode,
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -785,6 +810,7 @@ export function ConseilForm({
   showCreerTache?: boolean;
   sectionKey?: string;
   suggestedCode?: string;
+  unites?: UniteOpt[];
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -848,6 +874,12 @@ export function ConseilForm({
       </FormSection>
 
       <FormSection title="Pilotage">
+        {unites.length > 0 ? (
+          <UniteSelectField
+            unites={unites}
+            uniteId={values?.uniteId}
+          />
+        ) : null}
         <div className="form-grid">
           <Field label="Responsable" htmlFor="responsableId">
             <select
@@ -978,6 +1010,7 @@ export function ControleSCIForm({
   submitLabel,
   sectionKey,
   suggestedCode,
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -986,6 +1019,7 @@ export function ControleSCIForm({
   submitLabel: string;
   sectionKey?: string;
   suggestedCode?: string;
+  unites?: UniteOpt[];
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -1057,6 +1091,12 @@ export function ControleSCIForm({
       </FormSection>
 
       <FormSection title="Pilotage">
+        {unites.length > 0 ? (
+          <UniteSelectField
+            unites={unites}
+            uniteId={values?.uniteId}
+          />
+        ) : null}
         <div className="form-grid">
           <Field label="Responsable" htmlFor="responsableId">
             <select
@@ -1177,6 +1217,7 @@ export function RisqueForm({
   sectionKey,
   processusOptions = [],
   suggestedCode,
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1186,6 +1227,7 @@ export function RisqueForm({
   sectionKey?: string;
   processusOptions?: { id: string; label: string }[];
   suggestedCode?: string;
+  unites?: UniteOpt[];
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -1365,6 +1407,12 @@ export function RisqueForm({
       </FormSection>
 
       <FormSection title="Pilotage">
+        {unites.length > 0 ? (
+          <UniteSelectField
+            unites={unites}
+            uniteId={values?.uniteId}
+          />
+        ) : null}
         <div className="form-grid">
           <Field label="Responsable" htmlFor="responsableId">
             <select
@@ -1429,6 +1477,7 @@ export function DocumentForm({
   submitLabel,
   sectionKey,
   suggestedCode,
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1437,6 +1486,7 @@ export function DocumentForm({
   submitLabel: string;
   sectionKey?: string;
   suggestedCode?: string;
+  unites?: UniteOpt[];
 }) {
   const resolvedCancel = sectionKey
     ? sectionCancelHref(cancelHref, sectionKey)
@@ -1519,6 +1569,12 @@ export function DocumentForm({
       </FormSection>
 
       <FormSection title="Pilotage">
+        {unites.length > 0 ? (
+          <UniteSelectField
+            unites={unites}
+            uniteId={values?.uniteId}
+          />
+        ) : null}
         <div className="form-grid">
           <Field label="Responsable" htmlFor="responsableId">
             <select
@@ -1650,6 +1706,7 @@ export function MissionForm({
   draftActions = false,
   sectionKey,
   suggestedCode,
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1662,6 +1719,7 @@ export function MissionForm({
   draftActions?: boolean;
   sectionKey?: string;
   suggestedCode?: string;
+  unites?: UniteOpt[];
 }) {
   const defaultTypeId = values?.typeId ?? types[0]?.id ?? "";
   const templatesForType = (templates ?? []).filter(
@@ -1776,6 +1834,12 @@ export function MissionForm({
       </FormSection>
 
       <FormSection title="Pilotage">
+        {unites.length > 0 ? (
+          <UniteSelectField
+            unites={unites}
+            uniteId={values?.uniteId}
+          />
+        ) : null}
         <div className="form-grid">
           <Field label="Responsable" htmlFor="responsableId">
             <select
@@ -1913,6 +1977,8 @@ export function ProcessusForm({
   section = "ALL",
   draftActions = false,
   suggestedCode,
+  macros = [],
+  unites = [],
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -1923,6 +1989,8 @@ export function ProcessusForm({
   section?: "ALL" | "INFOS_GENERALES" | "LPD";
   draftActions?: boolean;
   suggestedCode?: string;
+  macros?: MacroOpt[];
+  unites?: UniteOpt[];
 }) {
   const showInfos = section === "ALL" || section === "INFOS_GENERALES";
   const showLpd = section === "ALL" || section === "LPD";
@@ -1971,6 +2039,24 @@ export function ProcessusForm({
             />
           </Field>
           <Field
+            label="Macroprocessus"
+            htmlFor="macroprocessusId"
+            hint="Famille d’activités (appartenance). ≠ dépendance de continuité."
+          >
+            <select
+              id="macroprocessusId"
+              name="macroprocessusId"
+              defaultValue={values?.macroprocessusId ?? ""}
+            >
+              <option value="">— Aucun —</option>
+              {macros.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.code} — {m.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
             label="Lien Confluence"
             htmlFor="reference"
             hint="Procédure détaillée (comment on le fait)."
@@ -2011,6 +2097,13 @@ export function ProcessusForm({
               </select>
             </Field>
           </div>
+          {unites.length > 0 ? (
+            <UniteResponsableFields
+              unites={unites}
+              uniteId={values?.uniteId}
+              applicableUniteIds={values?.applicableUniteIds}
+            />
+          ) : null}
         </FormSection>
       ) : null}
 
