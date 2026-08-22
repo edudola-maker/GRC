@@ -270,6 +270,33 @@ export const PERIMETRE_ACCES_LABELS: Record<string, string> = {
   ORGANISATION: "Organisation entière",
 };
 
+export const STATUT_CONFORMITE_LABELS: Record<string, string> = {
+  CONFORME: "Conforme",
+  PARTIELLEMENT_CONFORME: "Partiellement conforme",
+  NON_CONFORME: "Non conforme",
+  A_EVALUER: "À évaluer",
+};
+
+export const STATUT_ARBITRAGE_LABELS: Record<string, string> = {
+  EN_VIGUEUR: "En vigueur",
+  REMPLACE: "Remplacé",
+  ABROGE: "Abrogé",
+};
+
+export const STATUT_DECISION_LABELS: Record<string, string> = {
+  PROPOSEE: "Proposées",
+  ADOPTEE: "Adoptée",
+  REMPLACEE: "Remplacée",
+  ABROGEE: "Abrogée",
+};
+
+export const FREQUENCE_REVUE_QUALITE_LABELS: Record<string, string> = {
+  TRIMESTRIELLE: "Trimestrielle",
+  SEMESTRIELLE: "Semestrielle",
+  ANNUELLE: "Annuelle",
+  BIANNUELLE: "Tous les 2 ans",
+};
+
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;

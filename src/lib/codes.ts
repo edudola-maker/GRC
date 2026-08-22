@@ -17,6 +17,9 @@ const PREFIXES = {
   ACTIF_IT: "AIT",
   /// Fonctions organisationnelles.
   FONCTION: "FCT",
+  EXIGENCE: "EXI",
+  ARBITRAGE: "ARB",
+  DECISION: "DEC",
 } as const;
 
 export type PrefixeCode = keyof typeof PREFIXES;
@@ -117,6 +120,24 @@ async function findCodeCollision(
           where: { uniteId, code: c, ...notId },
         }),
       );
+    case "EXIGENCE":
+      return Boolean(
+        await prisma.exigence.findFirst({
+          where: { uniteId, code: c, ...notId },
+        }),
+      );
+    case "ARBITRAGE":
+      return Boolean(
+        await prisma.arbitrage.findFirst({
+          where: { uniteId, code: c, ...notId },
+        }),
+      );
+    case "DECISION":
+      return Boolean(
+        await prisma.decision.findFirst({
+          where: { uniteId, code: c, ...notId },
+        }),
+      );
     case "MODELE_TACHE":
       return Boolean(
         await prisma.modeleTache.findFirst({
@@ -157,6 +178,9 @@ const UNIQUE_MESSAGES: Partial<Record<PrefixeCode, string>> = {
   DOCUMENT: "Un document porte déjà ce code.",
   ACTIF_IT: "Un actif porte déjà ce code.",
   FONCTION: "Une fonction porte déjà ce code.",
+  EXIGENCE: "Une exigence porte déjà ce code.",
+  ARBITRAGE: "Un arbitrage porte déjà ce code.",
+  DECISION: "Une décision porte déjà ce code.",
   MODELE_TACHE: "Un modèle de tâche porte déjà ce code.",
   RECOMMANDATION: "Une recommandation porte déjà ce code.",
   OBJECTIF: "Un objectif porte déjà ce code.",
