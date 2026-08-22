@@ -4,10 +4,22 @@ import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import {
   clampBandForWindow,
   planningWindow,
+  resolveProjetPlan,
+  resolveTachePlan,
+  toIsoDay,
   type PlanningBand,
   type PlanningKind,
 } from "@/lib/planning";
 import { formatUtilisateurNom } from "@/lib/session";
+
+export type {
+  PlanningEquipeHorizon,
+} from "@/lib/planning-equipe-horizon";
+export {
+  parsePlanningEquipeHorizon,
+  stepForEquipeHorizon,
+  weeksForEquipeHorizon,
+} from "@/lib/planning-equipe-horizon";
 
 export type PlanningEquipeBand = PlanningBand & {
   /** Durée approximative en jours (inclusifs). */
@@ -21,26 +33,37 @@ export type PlanningEquipeRow = {
   chargeDays: number;
 };
 
-function durationDays(start: Date, end: Date): number {
+export type PlanningEquipeFilters = {
+  collaborateurId?: string;
+  kinds?: Set<PlanningKind>;
+};
+
+function durationDays(start: Date, end: Date, charge?: number | null): number {
+  if (charge != null && charge > 0) return Math.round(charge * 10) / 10;
   const ms = end.getTime() - start.getTime();
   return Math.max(0.5, Math.round((ms / 86_400_000 + 1) * 2) / 2);
 }
 
 /**
- * Planning équipe : mêmes familles que le calendrier collaborateur,
- * regroupées par responsable / assigné.
+ * Planning équipe : planification (éditable) + charge par collaborateur.
  */
 export async function getPlanningEquipe(
   uniteId: string,
-  options?: { weeks?: number; weekOffset?: number },
+  options?: {
+    weeks?: number;
+    weekOffset?: number;
+    filters?: PlanningEquipeFilters;
+  },
 ): Promise<{
   window: ReturnType<typeof planningWindow>;
   rows: PlanningEquipeRow[];
 }> {
   const weeks = options?.weeks ?? 5;
   const weekOffset = options?.weekOffset ?? 0;
+  const filters = options?.filters;
   const window = planningWindow(weeks, weekOffset);
   const { start: winStart, end: winEnd } = window;
+  const kindFilter = filters?.kinds;
 
   const [projets, missions, conseils, documents, controles, actions, users] =
     await Promise.all([
@@ -49,12 +72,16 @@ export async function getPlanningEquipe(
           uniteId,
           archive: false,
           statut: { notIn: ["CLOTURE", "ABANDONNE", "IDEE"] },
+          ...(filters?.collaborateurId
+            ? { responsableId: filters.collaborateurId }
+            : {}),
         },
         select: {
           id: true,
           code: true,
           nom: true,
           dateDebut: true,
+          dateFinPlanifiee: true,
           dateEcheance: true,
           responsableId: true,
         },
@@ -64,6 +91,9 @@ export async function getPlanningEquipe(
           uniteId,
           archive: false,
           statut: { notIn: ["ANNULE"] },
+          ...(filters?.collaborateurId
+            ? { responsableId: filters.collaborateurId }
+            : {}),
         },
         select: {
           id: true,
@@ -79,6 +109,9 @@ export async function getPlanningEquipe(
           uniteId,
           archive: false,
           statut: { notIn: ["CLOTURE", "ANNULE"] },
+          ...(filters?.collaborateurId
+            ? { responsableId: filters.collaborateurId }
+            : {}),
         },
         select: {
           id: true,
@@ -95,6 +128,9 @@ export async function getPlanningEquipe(
           archive: false,
           prochaineRevue: { not: null },
           statut: { notIn: ["OBSOLETE", "ARCHIVE"] },
+          ...(filters?.collaborateurId
+            ? { responsableId: filters.collaborateurId }
+            : {}),
         },
         select: {
           id: true,
@@ -111,6 +147,9 @@ export async function getPlanningEquipe(
           archive: false,
           statut: "ACTIF",
           dateProchaineEcheance: { not: null },
+          ...(filters?.collaborateurId
+            ? { responsableId: filters.collaborateurId }
+            : {}),
         },
         select: {
           id: true,
@@ -125,21 +164,32 @@ export async function getPlanningEquipe(
         where: {
           uniteId,
           statut: { notIn: [...TACHE_STATUTS_CLOS] },
-          priorite: { in: ["HAUTE", "CRITIQUE"] },
-          dateEcheance: { not: null },
+          OR: [
+            { dateDebut: { not: null } },
+            {
+              priorite: { in: ["HAUTE", "CRITIQUE"] },
+              dateEcheance: { not: null },
+            },
+          ],
           projetId: null,
           missionId: null,
+          ...(filters?.collaborateurId
+            ? { responsableId: filters.collaborateurId }
+            : {}),
         },
         select: {
           id: true,
           titre: true,
+          dateDebut: true,
+          dateFinPlanifiee: true,
           dateEcheance: true,
+          chargeJours: true,
           conseilId: true,
           controleSCIId: true,
           documentId: true,
           responsableId: true,
         },
-        take: 80,
+        take: 120,
       }),
       prisma.utilisateur.findMany({
         where: { uniteId, actif: true },
@@ -159,21 +209,29 @@ export async function getPlanningEquipe(
     band: Omit<PlanningBand, "start" | "end"> & { start: Date; end: Date },
   ) => {
     if (!userId) return;
+    if (kindFilter && !kindFilter.has(band.kind)) return;
     pending.push({ userId, band });
   };
 
   for (const p of projets) {
-    const s = p.dateDebut ?? p.dateEcheance;
-    const e = p.dateEcheance ?? p.dateDebut;
-    if (!s || !e) continue;
+    const plan = resolveProjetPlan(p);
+    if (!plan) continue;
     queue(p.responsableId, {
       id: `projet-${p.id}`,
       kind: "PROJET" as PlanningKind,
       title: `${p.code} — ${p.nom}`,
       href: `/projets/${p.id}`,
-      start: new Date(s),
-      end: new Date(e),
+      start: plan.start,
+      end: plan.end,
       source: "Projet",
+      entityType: "PROJET",
+      entityId: p.id,
+      editable: true,
+      echeanceIso: p.dateEcheance
+        ? toIsoDay(new Date(p.dateEcheance))
+        : undefined,
+      planStartIso: toIsoDay(plan.start),
+      planEndIso: toIsoDay(plan.end),
     });
   }
 
@@ -181,14 +239,21 @@ export async function getPlanningEquipe(
     const s = a.dateDebut ?? a.dateFin;
     const e = a.dateFin ?? a.dateDebut;
     if (!s || !e) continue;
+    const start = new Date(s);
+    const end = new Date(e);
     queue(a.responsableId, {
       id: `mission-${a.id}`,
       kind: "MISSION" as PlanningKind,
       title: `${a.code} — ${a.titre}`,
       href: `/missions/${a.id}`,
-      start: new Date(s),
-      end: new Date(e),
+      start,
+      end,
       source: "Mission",
+      entityType: "MISSION",
+      entityId: a.id,
+      editable: true,
+      planStartIso: toIsoDay(start),
+      planEndIso: toIsoDay(end),
     });
   }
 
@@ -203,6 +268,10 @@ export async function getPlanningEquipe(
       start,
       end,
       source: "Conseil",
+      editable: false,
+      echeanceIso: c.dateEcheance
+        ? toIsoDay(new Date(c.dateEcheance))
+        : undefined,
     });
   }
 
@@ -218,6 +287,8 @@ export async function getPlanningEquipe(
       start,
       end,
       source: "Revue documentaire",
+      editable: false,
+      echeanceIso: toIsoDay(end),
     });
   }
 
@@ -233,22 +304,32 @@ export async function getPlanningEquipe(
       start,
       end,
       source: "Contrôle SCI",
+      editable: false,
+      echeanceIso: toIsoDay(end),
     });
   }
 
   for (const t of actions) {
-    if (!t.dateEcheance) continue;
     if (t.conseilId || t.controleSCIId || t.documentId) continue;
-    const day = new Date(t.dateEcheance);
-    day.setHours(0, 0, 0, 0);
+    const plan = resolveTachePlan(t);
+    if (!plan) continue;
     queue(t.responsableId, {
       id: `action-${t.id}`,
       kind: "TACHE",
       title: t.titre,
       href: `/taches/${t.id}`,
-      start: day,
-      end: day,
+      start: plan.start,
+      end: plan.end,
       source: "Action",
+      entityType: "TACHE",
+      entityId: t.id,
+      editable: true,
+      chargeJours: t.chargeJours,
+      echeanceIso: t.dateEcheance
+        ? toIsoDay(new Date(t.dateEcheance))
+        : undefined,
+      planStartIso: toIsoDay(plan.start),
+      planEndIso: toIsoDay(plan.end),
     });
   }
 
@@ -260,12 +341,14 @@ export async function getPlanningEquipe(
     if (end < start) end.setTime(start.getTime());
     const clamped = clampBandForWindow(start, end, winStart, winEnd);
     if (!clamped) continue;
-    const days = durationDays(clamped.start, clamped.end);
+    const days = durationDays(clamped.start, clamped.end, band.chargeJours);
     const list = byUser.get(userId) ?? [];
     list.push({
       ...band,
       start: clamped.start,
       end: clamped.end,
+      planStartIso: band.planStartIso ?? toIsoDay(start),
+      planEndIso: band.planEndIso ?? toIsoDay(end),
       durationDays: days,
     });
     byUser.set(userId, list);

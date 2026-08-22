@@ -461,6 +461,8 @@ model Projet {
   tags          String?
   responsableId String
   dateDebut     DateTime?
+  /// Fin de la plage planifiée (≠ dateEcheance = deadline métier).
+  dateFinPlanifiee DateTime?
   dateEcheance  DateTime?
   statut        StatutProjet @default(IDEE)
   priorite      Priorite     @default(MOYENNE)
@@ -602,8 +604,10 @@ model Tache {
   /// Référence informative au modèle d’origine (pas de sync rétroactive).
   modeleTacheId  String?
   dateCreation   DateTime       @default(now())
-  /// Début planifié (projets — plage début/fin).
+  /// Début de la plage planifiée (quand on prévoit de travailler).
   dateDebut      DateTime?
+  /// Fin de la plage planifiée (≠ dateEcheance = deadline).
+  dateFinPlanifiee DateTime?
   dateEcheance   DateTime?
   /// Charge estimée en jours ouvrés (ex. 0.5, 1, 2, 5) — pilotage futur.
   chargeJours    Float?

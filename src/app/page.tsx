@@ -122,7 +122,7 @@ export default async function DashboardCollaborateurPage({
               },
               {
                 heading: "Planification",
-                body: "Vue Semaine / 4 semaines / Mois des grandes plages (projets, missions, tâches). ⚑ = échéance · ▸ = plage planifiée dans la bande jour.",
+                body: "Vue Semaine / 4 semaines / Mois. Glisser une barre replanifie le travail sans modifier l’échéance. Mobile : liste / tap.",
               },
               {
                 heading: "Charge",
@@ -145,11 +145,26 @@ export default async function DashboardCollaborateurPage({
         <div className="planning-desktop-only">
           <PlanningCalendar
             columns={planning.window.columns}
-            bands={planning.bands}
-            winStart={planning.window.start}
+            bands={planning.bands.map((b) => ({
+              id: b.id,
+              kind: b.kind,
+              title: b.title,
+              href: b.href,
+              source: b.source,
+              entityType: b.entityType,
+              entityId: b.entityId,
+              editable: b.editable,
+              echeanceIso: b.echeanceIso,
+              chargeJours: b.chargeJours,
+              planStartIso: b.planStartIso,
+              planEndIso: b.planEndIso,
+              startIso: b.start.toISOString(),
+              endIso: b.end.toISOString(),
+            }))}
+            winStartIso={planning.window.start.toISOString()}
             weeks={planning.window.weeks}
             weekOffset={planning.window.weekOffset}
-            activeFilters={activeFilters}
+            activeFilters={[...activeFilters]}
             vue={vue}
             horizon={horizon}
             step={weeks}
@@ -166,7 +181,8 @@ export default async function DashboardCollaborateurPage({
         </div>
         <div className="planning-mobile-only">
           <p className="muted" style={{ marginTop: 0 }}>
-            Vue adaptée téléphone — liste de la semaine.
+            Vue téléphone — agenda / liste (tap pour ouvrir). Pas de
+            glisser-déposer.
           </p>
           <SemaineCompacte days={weekDays} />
           <ul className="planning-mobile-list">
@@ -174,7 +190,13 @@ export default async function DashboardCollaborateurPage({
               <li key={b.id}>
                 <Link href={b.href}>
                   <strong>{b.title}</strong>
-                  <span className="muted"> · {b.kind.toLowerCase()}</span>
+                  <span className="muted">
+                    {" "}
+                    · {formatDate(b.start)}
+                    {b.end.getTime() !== b.start.getTime()
+                      ? ` → ${formatDate(b.end)}`
+                      : ""}
+                  </span>
                 </Link>
               </li>
             ))}

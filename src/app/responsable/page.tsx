@@ -28,9 +28,16 @@ import {
   formatDate,
 } from "@/lib/labels";
 import { getObjectifsModuleAggreges } from "@/lib/objectifs-module";
-import { getPlanningEquipe } from "@/lib/planning-equipe";
+import { PLANNING_KINDS, type PlanningKind } from "@/lib/planning";
+import {
+  getPlanningEquipe,
+  parsePlanningEquipeHorizon,
+  stepForEquipeHorizon,
+  weeksForEquipeHorizon,
+} from "@/lib/planning-equipe";
 import { RAG_LABELS, ragEcheance, type RagStatut } from "@/lib/rag";
 import {
+  formatUtilisateurNom,
   getCurrentUser,
   isResponsable,
   listUtilisateursActifsForCurrentUnite,
@@ -85,12 +92,31 @@ export default async function DashboardResponsablePage({
     priorite?: string;
     echeance?: string;
     rag?: string;
+    /** Planning équipe — horizon */
+    ph?: string;
+    plan?: string;
+    pcollab?: string;
+    pk?: string;
   }>;
 }) {
   const user = await getCurrentUser();
   if (!isResponsable(user)) notFound();
 
   const sp = await searchParams;
+  const planHorizon = parsePlanningEquipeHorizon(sp.ph);
+  const planWeeks = weeksForEquipeHorizon(planHorizon);
+  const planStep = stepForEquipeHorizon(planHorizon);
+  const planOffset = Number.parseInt(sp.plan ?? "0", 10) || 0;
+  const planKindsRaw = (sp.pk ?? "")
+    .split(",")
+    .map((p) => p.trim().toUpperCase())
+    .filter((p): p is PlanningKind =>
+      PLANNING_KINDS.includes(p as PlanningKind),
+    );
+  const planKinds =
+    planKindsRaw.length > 0
+      ? new Set(planKindsRaw)
+      : new Set(PLANNING_KINDS);
   const ragFilter =
     sp.rag === "vert" || sp.rag === "jaune" || sp.rag === "rouge"
       ? sp.rag
@@ -138,7 +164,14 @@ export default async function DashboardResponsablePage({
         cible: true,
       },
     }),
-    getPlanningEquipe(user.uniteId, { weeks: 5, weekOffset: 0 }),
+    getPlanningEquipe(user.uniteId, {
+      weeks: planWeeks,
+      weekOffset: planOffset,
+      filters: {
+        collaborateurId: sp.pcollab || undefined,
+        kinds: planKinds,
+      },
+    }),
     prisma.unite.findUnique({
       where: { id: user.uniteId },
       select: { nom: true, code: true },
@@ -360,15 +393,63 @@ export default async function DashboardResponsablePage({
 
       <CollapsibleSection title="Planification équipe" defaultOpen>
         <p className="muted" style={{ marginTop: 0, marginBottom: "0.65rem" }}>
-          {unite?.nom ?? "Unité"} — 5 prochaines semaines · charge approx. en
-          jours
+          {unite?.nom ?? "Unité"} — replanification visuelle · charge en jours ·
+          échéance distincte
         </p>
-        <PlanningEquipeGantt
-          columns={planningEquipe.window.columns}
-          rows={planningEquipe.rows}
-          winStart={planningEquipe.window.start}
-          weeks={planningEquipe.window.weeks}
-        />
+        <div className="planning-desktop-only">
+          <PlanningEquipeGantt
+            columns={planningEquipe.window.columns}
+            rows={planningEquipe.rows.map((r) => ({
+              user: r.user,
+              chargeDays: r.chargeDays,
+              bands: r.bands.map((b) => ({
+                id: b.id,
+                kind: b.kind,
+                title: b.title,
+                href: b.href,
+                source: b.source,
+                entityType: b.entityType,
+                entityId: b.entityId,
+                editable: b.editable,
+                echeanceIso: b.echeanceIso,
+                chargeJours: b.chargeJours,
+                planStartIso: b.planStartIso,
+                planEndIso: b.planEndIso,
+                durationDays: b.durationDays,
+                startIso: b.start.toISOString(),
+                endIso: b.end.toISOString(),
+              })),
+            }))}
+            winStartIso={planningEquipe.window.start.toISOString()}
+            weeks={planningEquipe.window.weeks}
+            weekOffset={planOffset}
+            horizon={planHorizon}
+            step={planStep}
+            collaborateurs={users.map((u) => ({
+              id: u.id,
+              nom: formatUtilisateurNom(u),
+            }))}
+            filterCollaborateur={sp.pcollab}
+            filterKinds={[...planKinds]}
+          />
+        </div>
+        <div className="planning-mobile-only">
+          <p className="muted">
+            Vue téléphone — liste chronologique (tap pour ouvrir).
+          </p>
+          <ul className="planning-mobile-list">
+            {planningEquipe.rows.flatMap((r) =>
+              r.bands.slice(0, 4).map((b) => (
+                <li key={`${r.user.id}-${b.id}`}>
+                  <Link href={b.href}>
+                    <strong>{r.user.nom}</strong>
+                    <span className="muted"> · {b.title}</span>
+                  </Link>
+                </li>
+              )),
+            )}
+          </ul>
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection

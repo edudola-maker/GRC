@@ -1,20 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import { addDays, startOfToday } from "@/lib/labels";
 import { TACHE_STATUTS_CLOS } from "@/lib/catalog";
+import {
+  PLANNING_KIND_LABELS,
+  PLANNING_KINDS,
+  toIsoDay,
+  type PlanifiableEntity,
+  type PlanningHorizon,
+  type PlanningKind,
+} from "@/lib/planning-geometry";
 
-/** Familles visibles dans le calendrier (vue synthétique). */
-export type PlanningKind = "PROJET" | "MISSION" | "TACHE";
-
-export const PLANNING_KINDS: PlanningKind[] = ["PROJET", "MISSION", "TACHE"];
-
-/** Horizon de la vue planification collaborateur. */
-export type PlanningHorizon = "semaine" | "4sem" | "mois";
-
-export const PLANNING_HORIZONS: PlanningHorizon[] = [
-  "semaine",
-  "4sem",
-  "mois",
-];
+export type {
+  PlanifiableEntity,
+  PlanningHorizon,
+  PlanningKind,
+} from "@/lib/planning-geometry";
+export {
+  PLANNING_HORIZONS,
+  PLANNING_KIND_LABELS,
+  PLANNING_KINDS,
+  bandDayStyle,
+  bandStyle,
+  toIsoDay,
+} from "@/lib/planning-geometry";
 
 export function parsePlanningHorizon(
   raw: string | undefined,
@@ -44,12 +52,18 @@ export type PlanningBand = {
   end: Date;
   /** Origine métier (conseil, SCI…) — info secondaire */
   source?: string;
-};
-
-export const PLANNING_KIND_LABELS: Record<PlanningKind, string> = {
-  PROJET: "Projet",
-  MISSION: "Mission",
-  TACHE: "Tâche",
+  /** Entité persistée pour drag / resize (si éditable). */
+  entityType?: PlanifiableEntity;
+  entityId?: string;
+  /** Plage planifiée brute (ISO jour) avant clamp fenêtre. */
+  planStartIso?: string;
+  planEndIso?: string;
+  /** true = drag/resize met à jour la planification uniquement. */
+  editable?: boolean;
+  /** Échéance métier affichée (jamais modifiée par le calendrier). */
+  echeanceIso?: string;
+  /** Charge estimée (jours) — densite visuelle. */
+  chargeJours?: number | null;
 };
 
 export const DEFAULT_PLANNING_WEEKS = 20;
@@ -148,20 +162,50 @@ export function clampBandForWindow(
   };
 }
 
-export function bandStyle(
-  bandStart: Date,
-  bandEnd: Date,
-  winStart: Date,
-  weeks: number,
-): { gridColumn: string } {
-  const msWeek = 7 * 24 * 60 * 60 * 1000;
-  let startIdx = Math.floor(
-    (bandStart.getTime() - winStart.getTime()) / msWeek,
-  );
-  let endIdx = Math.floor((bandEnd.getTime() - winStart.getTime()) / msWeek);
-  startIdx = Math.max(0, Math.min(weeks - 1, startIdx));
-  endIdx = Math.max(startIdx, Math.min(weeks - 1, endIdx));
-  return { gridColumn: `${startIdx + 1} / ${endIdx + 2}` };
+/** Résout plage planifiée Projet (≠ échéance). */
+export function resolveProjetPlan(p: {
+  dateDebut: Date | null;
+  dateFinPlanifiee: Date | null;
+  dateEcheance: Date | null;
+}): { start: Date; end: Date; fromEcheanceFallback: boolean } | null {
+  if (p.dateDebut) {
+    const start = new Date(p.dateDebut);
+    const end = new Date(p.dateFinPlanifiee ?? p.dateDebut);
+    return { start, end, fromEcheanceFallback: false };
+  }
+  // Pas encore de planification : repère visuel sur l’échéance (édition = créer planif).
+  if (p.dateEcheance) {
+    const day = new Date(p.dateEcheance);
+    day.setHours(0, 0, 0, 0);
+    return { start: day, end: day, fromEcheanceFallback: true };
+  }
+  return null;
+}
+
+export function resolveTachePlan(t: {
+  dateDebut: Date | null;
+  dateFinPlanifiee: Date | null;
+  dateEcheance: Date | null;
+  chargeJours?: number | null;
+}): { start: Date; end: Date; fromEcheanceFallback: boolean } | null {
+  if (t.dateDebut) {
+    const start = new Date(t.dateDebut);
+    let end: Date;
+    if (t.dateFinPlanifiee) {
+      end = new Date(t.dateFinPlanifiee);
+    } else if (t.chargeJours && t.chargeJours > 0) {
+      end = addDays(start, Math.max(0, Math.ceil(t.chargeJours) - 1));
+    } else {
+      end = new Date(start);
+    }
+    return { start, end, fromEcheanceFallback: false };
+  }
+  if (t.dateEcheance) {
+    const day = new Date(t.dateEcheance);
+    day.setHours(0, 0, 0, 0);
+    return { start: day, end: day, fromEcheanceFallback: true };
+  }
+  return null;
 }
 
 export function parsePlanningFilters(
@@ -181,6 +225,7 @@ export function parsePlanningFilters(
 /**
  * Grandes plages de travail du collaborateur.
  * Familles calendrier : Projet | Mission | Tâche (conseils, SCI, revues, actions…).
+ * Bande = planification ; l’échéance n’est jamais modifiée par le calendrier.
  */
 export async function getPlanningCollaborateur(
   utilisateurId: string,
@@ -212,6 +257,7 @@ export async function getPlanningCollaborateur(
           code: true,
           nom: true,
           dateDebut: true,
+          dateFinPlanifiee: true,
           dateEcheance: true,
         },
       }),
@@ -285,21 +331,28 @@ export async function getPlanningCollaborateur(
           uniteId,
           responsableId: utilisateurId,
           statut: { notIn: [...TACHE_STATUTS_CLOS] },
-          priorite: { in: ["HAUTE", "CRITIQUE"] },
-          dateEcheance: { not: null },
-          // Éviter de doubler les tâches déjà représentées via leur objet métier
+          OR: [
+            { dateDebut: { not: null } },
+            {
+              priorite: { in: ["HAUTE", "CRITIQUE"] },
+              dateEcheance: { not: null },
+            },
+          ],
           projetId: null,
           missionId: null,
         },
         select: {
           id: true,
           titre: true,
+          dateDebut: true,
+          dateFinPlanifiee: true,
           dateEcheance: true,
+          chargeJours: true,
           conseilId: true,
           controleSCIId: true,
           documentId: true,
         },
-        take: 30,
+        take: 40,
       }),
     ]);
 
@@ -313,21 +366,34 @@ export async function getPlanningCollaborateur(
     if (end < start) end.setTime(start.getTime());
     const clamped = clampBandForWindow(start, end, winStart, winEnd);
     if (!clamped) return;
-    bands.push({ ...band, start: clamped.start, end: clamped.end });
+    bands.push({
+      ...band,
+      start: clamped.start,
+      end: clamped.end,
+      planStartIso: band.planStartIso ?? toIsoDay(start),
+      planEndIso: band.planEndIso ?? toIsoDay(end),
+    });
   };
 
   for (const p of projets) {
-    const s = p.dateDebut ?? p.dateEcheance;
-    const e = p.dateEcheance ?? p.dateDebut;
-    if (!s || !e) continue;
+    const plan = resolveProjetPlan(p);
+    if (!plan) continue;
     pushBand({
       id: `projet-${p.id}`,
       kind: "PROJET",
       title: `${p.code} — ${p.nom}`,
       href: `/projets/${p.id}`,
-      start: new Date(s),
-      end: new Date(e),
-      source: "Projet",
+      start: plan.start,
+      end: plan.end,
+      source: plan.fromEcheanceFallback
+        ? "Projet (repère échéance)"
+        : "Projet",
+      entityType: "PROJET",
+      entityId: p.id,
+      editable: true,
+      echeanceIso: p.dateEcheance ? toIsoDay(new Date(p.dateEcheance)) : undefined,
+      planStartIso: toIsoDay(plan.start),
+      planEndIso: toIsoDay(plan.end),
     });
   }
 
@@ -335,14 +401,21 @@ export async function getPlanningCollaborateur(
     const s = a.dateDebut ?? a.dateFin;
     const e = a.dateFin ?? a.dateDebut;
     if (!s || !e) continue;
+    const start = new Date(s);
+    const end = new Date(e);
     pushBand({
       id: `mission-${a.id}`,
       kind: "MISSION",
       title: `${a.code} — ${a.titre}`,
       href: `/missions/${a.id}`,
-      start: new Date(s),
-      end: new Date(e),
+      start,
+      end,
       source: "Mission",
+      entityType: "MISSION",
+      entityId: a.id,
+      editable: true,
+      planStartIso: toIsoDay(start),
+      planEndIso: toIsoDay(end),
     });
   }
 
@@ -357,6 +430,10 @@ export async function getPlanningCollaborateur(
       start,
       end,
       source: "Conseil",
+      editable: false,
+      echeanceIso: c.dateEcheance
+        ? toIsoDay(new Date(c.dateEcheance))
+        : undefined,
     });
   }
 
@@ -372,6 +449,8 @@ export async function getPlanningCollaborateur(
       start,
       end,
       source: "Revue documentaire",
+      editable: false,
+      echeanceIso: toIsoDay(end),
     });
   }
 
@@ -387,23 +466,34 @@ export async function getPlanningCollaborateur(
       start,
       end,
       source: "Contrôle SCI",
+      editable: false,
+      echeanceIso: toIsoDay(end),
     });
   }
 
   for (const t of actions) {
-    if (!t.dateEcheance) continue;
-    // Si déjà couvert via conseil/SCI/doc lié, on saute
     if (t.conseilId || t.controleSCIId || t.documentId) continue;
-    const day = new Date(t.dateEcheance);
-    day.setHours(0, 0, 0, 0);
+    const plan = resolveTachePlan(t);
+    if (!plan) continue;
     pushBand({
       id: `action-${t.id}`,
       kind: "TACHE",
       title: t.titre,
       href: `/taches/${t.id}`,
-      start: day,
-      end: day,
-      source: "Action",
+      start: plan.start,
+      end: plan.end,
+      source: plan.fromEcheanceFallback
+        ? "Action (repère échéance)"
+        : "Action",
+      entityType: "TACHE",
+      entityId: t.id,
+      editable: true,
+      echeanceIso: t.dateEcheance
+        ? toIsoDay(new Date(t.dateEcheance))
+        : undefined,
+      chargeJours: t.chargeJours,
+      planStartIso: toIsoDay(plan.start),
+      planEndIso: toIsoDay(plan.end),
     });
   }
 
