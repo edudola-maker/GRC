@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/ui";
+import { PageHeader, BtnLink } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
@@ -140,6 +140,16 @@ export default async function RisquesPage({
       <PageHeader
         title="Risques"
         help={<ModuleHelp {...MODULE_HELP.risques} />}
+        actions={
+          <>
+            <BtnLink href="/api/exports/risques" variant="ghost">
+              Exporter Excel
+            </BtnLink>
+            <BtnLink href="/rapports/risques" variant="ghost">
+              Rapport PDF
+            </BtnLink>
+          </>
+        }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 

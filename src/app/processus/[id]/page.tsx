@@ -20,7 +20,7 @@ import { ProcessusContinuitéPanel } from "@/components/processus/ProcessusConti
 import { ProcessusQualitePanel } from "@/components/processus/ProcessusQualitePanel";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, BtnLink } from "@/components/ui";
 import {
   archiveProcessus,
   deleteProcessus,
@@ -351,6 +351,12 @@ export default async function ProcessusDetailPage({
         }
         actions={
           <>
+            <BtnLink
+              href={`/rapports/processus/${processus.id}`}
+              variant="ghost"
+            >
+              Exporter PDF
+            </BtnLink>
             {processus.archive ? (
               <ConfirmActionButton
                 action={unarchiveProcessus}
