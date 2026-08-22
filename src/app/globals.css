@@ -4075,6 +4075,30 @@ a {
   padding-top: 0.65rem;
   border-top: 1px solid var(--border, #d9d0c4);
 }
+.risque-aide__legend {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+.risque-aide__scale {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+.risque-aide__scale li {
+  margin-bottom: 0.25rem;
+}
+.risque-aide__q,
+.risque-aide__ex {
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+  line-height: 1.35;
+}
+.risque-aide__dim select {
+  margin-top: 0.3rem;
+}
+.risque-aide__grid--dims {
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
 
 /* ─── Journal de travail unifié ──────────────────────────── */
 .journal-travail {
@@ -4549,6 +4573,17 @@ html[data-nav="compact"] {
   .app-topbar__brand-text {
     font-family: var(--font-display);
     font-weight: 600;
+  }
+
+  .app-topbar__search {
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .app-nav {
@@ -5164,4 +5199,237 @@ body.is-resizing {
     text-decoration: none !important;
     color: inherit !important;
   }
+}
+
+
+/* ─── PR F — Adoption / intelligence métier ───────────────── */
+.empty-guidance {
+  margin: 0.75rem 0;
+  padding: 1.1rem 1.15rem;
+  border: 1px dashed var(--line, #d9d0c4);
+  border-radius: 10px;
+  background: rgba(255, 252, 248, 0.55);
+}
+.empty-guidance__title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.empty-guidance__body {
+  margin-bottom: 0.85rem;
+}
+.empty-guidance__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.a-faire {
+  margin: 0 0 1.15rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line, #d9d0c4);
+  border-radius: 10px;
+  background: rgba(255, 252, 248, 0.65);
+}
+.a-faire__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+  font-family: var(--font-display);
+}
+.a-faire__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.a-faire__link {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.35rem 0.2rem;
+  border-radius: 6px;
+}
+.a-faire__link:hover {
+  background: rgba(22, 60, 48, 0.06);
+}
+.a-faire__prio {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.1rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+.a-faire__item--haute .a-faire__prio {
+  color: var(--danger, #a33);
+}
+.a-faire__detail {
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 0.1rem;
+}
+
+.processus-cover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.65rem 0 1rem;
+}
+.processus-cover--compact {
+  margin-bottom: 1rem;
+}
+.processus-cover__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  background: var(--bg-muted);
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+.processus-cover__chip--ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.processus-cover__chip--warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.decouvrir-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.decouvrir-index__item {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line, #d9d0c4);
+}
+.decouvrir-index__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: inherit;
+}
+.decouvrir-index__title:hover {
+  text-decoration: underline;
+}
+
+.decouvrir-parcours__steps {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.decouvrir-parcours__step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+.decouvrir-parcours__num {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: #163c30;
+  color: #f4faf7;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.decouvrir-parcours__quiz {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line, #d9d0c4);
+}
+.decouvrir-parcours__quiz h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  font-family: var(--font-display);
+}
+.decouvrir-parcours__q {
+  margin: 0.85rem 0;
+  padding: 0;
+  border: 0;
+}
+.decouvrir-parcours__q legend {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.decouvrir-parcours__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.decouvrir-parcours__opt {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.decouvrir-parcours__hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.88rem;
+}
+
+.recherche-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1.25rem;
+  align-items: flex-end;
+}
+.recherche-form input[type="search"] {
+  width: 100%;
+  min-width: 16rem;
+}
+.recherche-group {
+  margin-bottom: 1.15rem;
+}
+.recherche-group__title {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  font-family: var(--font-display);
+}
+.recherche-group__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.recherche-group__list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line, #ece6dc);
+}
+.recherche-group__list a {
+  text-decoration: none;
+  color: inherit;
+}
+.recherche-group__list a:hover strong {
+  text-decoration: underline;
+}
+.recherche-code {
+  display: inline-block;
+  min-width: 5.5rem;
+  margin-right: 0.5rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
 }

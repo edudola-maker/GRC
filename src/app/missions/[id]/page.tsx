@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
+import { AFaireMaintenant } from "@/components/dashboard/AFaireMaintenant";
 import { MissionForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
@@ -15,6 +16,7 @@ import {
 import { deriveInitiales } from "@/lib/initiales";
 import { requireMissionDetail } from "@/lib/mission-data";
 import { etapeCouranteRecommandee } from "@/lib/mission-etapes";
+import { aFaireMaintenantMission } from "@/lib/a-faire-maintenant";
 import { prisma } from "@/lib/prisma";
 import {
   formatSectionEtatLabel,
@@ -71,6 +73,7 @@ export default async function MissionCockpitPage({
     mission.descriptifPreset?.libelle ?? mission.descriptifLibre ?? "—";
   const recommandee = etapeCouranteRecommandee(etapes);
   const editingVue = edit === "VUE_ENSEMBLE";
+  const aFaire = await aFaireMaintenantMission(mission.id);
 
   return (
     <MissionPageChrome
@@ -84,6 +87,7 @@ export default async function MissionCockpitPage({
         href={baseHref}
         label={`${mission.code} — ${mission.titre}`}
       />
+      <AFaireMaintenant items={aFaire} title="À faire sur cette mission" />
       <CollapsibleSection
         title="Vue d'ensemble"
         defaultOpen

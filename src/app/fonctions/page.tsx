@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FlashBanner } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { EmptyGuidance } from "@/components/ui/EmptyGuidance";
 import {
   PERIMETRE_ACCES_LABELS,
   ROLE_UTILISATEUR_LABELS,
@@ -48,7 +49,18 @@ export default async function FonctionsPage({
       </p>
 
       {rows.length === 0 ? (
-        <p className="empty">Aucune fonction — créez le référentiel.</p>
+        <EmptyGuidance
+          title="Aucune fonction dans le référentiel"
+          actionHref="/fonctions/nouveau"
+          actionLabel="Créer une fonction"
+          guideHref="/decouvrir/fonctions-roles"
+          guideLabel="Guide : fonctions / rôles"
+        >
+          <p style={{ margin: 0 }}>
+            Les fonctions (FCT) ancrent les responsabilités durables (RACI) —
+            distinctes des rôles applicatifs.
+          </p>
+        </EmptyGuidance>
       ) : (
         <div className="table-wrap">
           <table className="data-table">

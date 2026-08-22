@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { EmptyGuidance } from "@/components/ui/EmptyGuidance";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
@@ -89,7 +90,19 @@ export default async function RapportsHubPage() {
           la fiche processus (« Exporter PDF »).
         </p>
         {processus.length === 0 ? (
-          <p className="empty">Aucun processus actif.</p>
+          <EmptyGuidance
+            title="Aucun processus à exporter"
+            actionHref="/processus/nouveau"
+            actionLabel="Créer un processus"
+            guideHref="/decouvrir/documenter-processus"
+            guideLabel="Guide processus"
+          >
+            <p style={{ margin: 0 }}>
+              Les rapports PDF processus s’appuient sur le référentiel. Créez
+              d’abord un processus, ou utilisez les rapports unitaires
+              ci-dessus.
+            </p>
+          </EmptyGuidance>
         ) : (
           <ul className="report-hub__list">
             {processus.map((p) => (

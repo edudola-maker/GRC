@@ -1,7 +1,9 @@
 import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
+import { AFaireMaintenant } from "@/components/dashboard/AFaireMaintenant";
 import { ProjetEtapesPanel } from "@/components/projets/ProjetEtapesPanel";
 import { ensureDefaultProjetEtapes } from "@/app/projets/etapes-actions";
 import { ETAPES_PROJET_DEFAUT } from "@/lib/projet-avancement";
+import { aFaireMaintenantProjet } from "@/lib/a-faire-maintenant";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -132,6 +134,7 @@ export default async function ProjetDetailPage({
   const activation = await getActivationByTacheIds(
     projet.taches.map((t) => t.id),
   );
+  const aFaire = await aFaireMaintenantProjet(projet.id);
 
   const ownedItems: ElementAssocieItem[] = [
     ...projet.documents.map((d) => ({
@@ -188,6 +191,7 @@ export default async function ProjetDetailPage({
 
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
       <TrackRecentView href={baseHref} label={`${projet.code} — ${projet.nom}`} />
+      <AFaireMaintenant items={aFaire} title="À faire sur ce projet" />
 
       {projet.archive ? (
         <div className="flash flash--warn" role="status">

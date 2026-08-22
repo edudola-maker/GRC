@@ -3,21 +3,14 @@
 import { useState } from "react";
 import {
   buildEvaluationSuggestion,
+  IMPACT_DIMENSIONS,
+  IMPACT_NIVEAU_CRITERES,
+  PROBA_EXPOSITION_CRITERES,
+  PROBA_FREQUENCE_CRITERES,
   type ImpactAnswers,
-  type ImpactDimension,
   type ImpactNiveau,
   type ProbabiliteAnswers,
 } from "@/lib/risque-evaluation-aide";
-
-const IMPACT_DIMS: { key: ImpactDimension; label: string }[] = [
-  { key: "financier", label: "Financier" },
-  { key: "operationnel", label: "Opérationnel" },
-  { key: "juridique", label: "Juridique / conformité" },
-  { key: "reputationnel", label: "Réputationnel" },
-  { key: "beneficiaires", label: "Bénéficiaires / usagers" },
-  { key: "duree", label: "Durée de perturbation" },
-  { key: "donnees", label: "Données / sécurité" },
-];
 
 const NIVEAUX: { value: ImpactNiveau; label: string }[] = [
   { value: 0, label: "N/A" },
@@ -45,8 +38,8 @@ function setTextareaValue(id: string, value: string) {
 }
 
 /**
- * Aide déterministe à l’évaluation (Niveau 1).
- * Remplit les champs du formulaire parent (selects + justification).
+ * RiskQuant V2 — aide déterministe (questions, critères, exemples).
+ * Remplit les champs du formulaire parent ; l’humain retient la note.
  */
 export function RisqueEvaluationAide({
   probabiliteFieldId = "probabilite",
@@ -63,16 +56,32 @@ export function RisqueEvaluationAide({
   const [suggestion, setSuggestion] = useState<ReturnType<
     typeof buildEvaluationSuggestion
   > | null>(null);
+  const [retenueP, setRetenueP] = useState(1);
+  const [retenueI, setRetenueI] = useState(1);
 
   function compute() {
-    setSuggestion(buildEvaluationSuggestion(impactAnswers, probaAnswers));
+    const s = buildEvaluationSuggestion(impactAnswers, probaAnswers);
+    setSuggestion(s);
+    setRetenueP(s.probabilite);
+    setRetenueI(s.impact);
   }
 
   function accept() {
     if (!suggestion) return;
-    setSelectValue(probabiliteFieldId, String(suggestion.probabilite));
-    setSelectValue(impactFieldId, String(suggestion.impact));
-    setTextareaValue(justificationFieldId, suggestion.justification);
+    const criticite = retenueP * retenueI;
+    const justification = [
+      suggestion.justificationImpact,
+      suggestion.justificationProbabilite,
+      `Valeur retenue : P=${retenueP} × I=${retenueI} → ${criticite}/25.`,
+      retenueP !== suggestion.probabilite || retenueI !== suggestion.impact
+        ? `(Suggestion outil : P=${suggestion.probabilite}, I=${suggestion.impact}.)`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    setSelectValue(probabiliteFieldId, String(retenueP));
+    setSelectValue(impactFieldId, String(retenueI));
+    setTextareaValue(justificationFieldId, justification);
     setOpen(false);
   }
 
@@ -86,20 +95,41 @@ export function RisqueEvaluationAide({
           setSuggestion(null);
         }}
       >
-        {open ? "Fermer l’aide" : "Aide à l’évaluation"}
+        {open ? "Fermer l’aide" : "Aide à l’évaluation (RiskQuant)"}
       </button>
 
       {open ? (
         <div className="risque-aide__panel">
           <p className="muted" style={{ marginTop: 0 }}>
-            L’outil propose — vous décidez. Moteur déterministe (sans IA).
+            L’outil propose — vous retenez la note. Moteur déterministe (sans
+            IA). Critères 1–5 ci-dessous.
           </p>
 
-          <h4 className="risque-aide__title">Impact</h4>
-          <div className="risque-aide__grid">
-            {IMPACT_DIMS.map((d) => (
-              <label key={d.key} className="field">
+          <details className="risque-aide__legend">
+            <summary>Échelle d’impact (référence)</summary>
+            <ul className="risque-aide__scale">
+              {(
+                Object.entries(IMPACT_NIVEAU_CRITERES) as [
+                  string,
+                  { label: string; exemple: string },
+                ][]
+              ).map(([n, c]) => (
+                <li key={n}>
+                  <strong>
+                    {n} — {c.label}
+                  </strong>
+                  <span className="muted"> — {c.exemple}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+
+          <h4 className="risque-aide__title">Dimensions d’impact</h4>
+          <div className="risque-aide__grid risque-aide__grid--dims">
+            {IMPACT_DIMENSIONS.map((d) => (
+              <label key={d.key} className="field risque-aide__dim">
                 <span className="field__label">{d.label}</span>
+                <span className="muted risque-aide__q">{d.question}</span>
                 <select
                   value={impactAnswers[d.key] ?? 0}
                   onChange={(e) =>
@@ -115,14 +145,21 @@ export function RisqueEvaluationAide({
                     </option>
                   ))}
                 </select>
+                {d.exemples[3] ? (
+                  <span className="muted risque-aide__ex">
+                    Ex. niveau 3 : {d.exemples[3]}
+                  </span>
+                ) : null}
               </label>
             ))}
           </div>
 
-          <h4 className="risque-aide__title">Probabilité</h4>
+          <h4 className="risque-aide__title">
+            Probabilité — fréquence &amp; exposition
+          </h4>
           <div className="risque-aide__grid">
             <label className="field">
-              <span className="field__label">Déjà produit ?</span>
+              <span className="field__label">Fréquence / historique</span>
               <select
                 value={probaAnswers.dejaProduit ?? ""}
                 onChange={(e) =>
@@ -135,11 +172,22 @@ export function RisqueEvaluationAide({
                 }
               >
                 <option value="">—</option>
-                <option value="jamais">Jamais</option>
-                <option value="rare">Rare</option>
-                <option value="occasionnel">Occasionnel</option>
-                <option value="frequent">Fréquent</option>
+                {(
+                  Object.entries(PROBA_FREQUENCE_CRITERES) as [
+                    string,
+                    { label: string; exemple: string },
+                  ][]
+                ).map(([k, c]) => (
+                  <option key={k} value={k}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
+              {probaAnswers.dejaProduit ? (
+                <span className="muted risque-aide__ex">
+                  {PROBA_FREQUENCE_CRITERES[probaAnswers.dejaProduit].exemple}
+                </span>
+              ) : null}
             </label>
             <label className="field">
               <span className="field__label">Exposition</span>
@@ -155,10 +203,22 @@ export function RisqueEvaluationAide({
                 }
               >
                 <option value="">—</option>
-                <option value="faible">Faible</option>
-                <option value="moyenne">Moyenne</option>
-                <option value="forte">Forte</option>
+                {(
+                  Object.entries(PROBA_EXPOSITION_CRITERES) as [
+                    string,
+                    { label: string },
+                  ][]
+                ).map(([k, c]) => (
+                  <option key={k} value={k}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
+              {probaAnswers.exposition ? (
+                <span className="muted risque-aide__ex">
+                  {PROBA_EXPOSITION_CRITERES[probaAnswers.exposition].exemple}
+                </span>
+              ) : null}
             </label>
             <label className="field">
               <span className="field__label">Volume d’opérations</span>
@@ -232,13 +292,13 @@ export function RisqueEvaluationAide({
           {suggestion ? (
             <div className="risque-aide__result">
               <p>
-                <strong>Impact suggéré : {suggestion.impact}/5</strong>
+                <strong>Suggestion — Impact {suggestion.impact}/5</strong>
                 <br />
                 <span className="muted">{suggestion.justificationImpact}</span>
               </p>
               <p>
                 <strong>
-                  Probabilité suggérée : {suggestion.probabilite}/5
+                  Suggestion — Probabilité {suggestion.probabilite}/5
                 </strong>
                 <br />
                 <span className="muted">
@@ -250,13 +310,48 @@ export function RisqueEvaluationAide({
                   Risque inhérent suggéré : {suggestion.criticite}/25
                 </strong>
               </p>
+
+              <h4 className="risque-aide__title">Valeur retenue (vous décidez)</h4>
+              <div className="risque-aide__grid">
+                <label className="field">
+                  <span className="field__label">P retenue</span>
+                  <select
+                    value={retenueP}
+                    onChange={(e) => setRetenueP(Number(e.target.value))}
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span className="field__label">I retenue</span>
+                  <select
+                    value={retenueI}
+                    onChange={(e) => setRetenueI(Number(e.target.value))}
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
+                  Criticité retenue : {retenueP * retenueI}/25 — appliquée au
+                  formulaire + justification.
+                </p>
+              </div>
+
               <div className="form-actions">
                 <button
                   type="button"
                   className="btn btn--primary"
                   onClick={accept}
                 >
-                  Accepter
+                  Appliquer la valeur retenue
                 </button>
                 <button
                   type="button"

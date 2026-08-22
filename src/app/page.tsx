@@ -7,12 +7,14 @@ import { ModuleHelp } from "@/components/ModuleHelp";
 import {
   ReprendreTravail,
 } from "@/components/dashboard/ReprendreTravail";
+import { AFaireMaintenant } from "@/components/dashboard/AFaireMaintenant";
 import {
   SemaineCompacte,
   buildSemaineDays,
 } from "@/components/dashboard/SemaineCompacte";
 import { PageHeader, BtnLink } from "@/components/ui";
 import { getMesActions } from "@/lib/actions-view";
+import { aFaireMaintenantCollaborateur } from "@/lib/a-faire-maintenant";
 import { formatDate } from "@/lib/labels";
 import {
   getPlanningCollaborateur,
@@ -43,9 +45,10 @@ export default async function DashboardCollaborateurPage({
   const weekOffset = Number.parseInt(sp.plan ?? "0", 10) || 0;
   const activeFilters = parsePlanningFilters(sp.f);
 
-  const [actions, planning] = await Promise.all([
+  const [actions, planning, aFaire] = await Promise.all([
     getMesActions(user.id),
     getPlanningCollaborateur(user.id, user.uniteId, { weeks, weekOffset }),
+    aFaireMaintenantCollaborateur(user.id),
   ]);
 
   const retourQs = new URLSearchParams();
@@ -138,6 +141,8 @@ export default async function DashboardCollaborateurPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+
+      <AFaireMaintenant items={aFaire} />
 
       <ReprendreTravail />
 

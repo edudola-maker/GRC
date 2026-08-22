@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
+import { EmptyGuidance } from "@/components/ui/EmptyGuidance";
 import {
   ProcessusInventory,
   type ProcessusInventoryItem,
@@ -99,9 +100,11 @@ export default async function ProcessusPage({
                 risques: true,
                 actifsIT: true,
                 raciLignes: true,
+                exigences: true,
               },
             },
             continuite: { select: { id: true } },
+            qualite: { select: { id: true } },
             risques: {
               where: { archive: false },
               select: {
@@ -188,6 +191,8 @@ export default async function ProcessusPage({
       actifsCount: selectedRaw._count.actifsIT,
       aRaci: selectedRaw._count.raciLignes > 0,
       aContinuite: Boolean(selectedRaw.continuite),
+      aQualite: Boolean(selectedRaw.qualite),
+      exigencesCount: selectedRaw._count.exigences,
       contientDonneesPersonnelles: selectedRaw.contientDonneesPersonnelles,
       niveauConfidentialite: selectedRaw.niveauConfidentialite,
       modifieLe: selectedRaw.modifieLe,
@@ -249,6 +254,19 @@ export default async function ProcessusPage({
             preview ? <ProcessusExplorerDetail processus={preview} /> : null
           }
         />
+      ) : rows.length === 0 ? (
+        <EmptyGuidance
+          title="Aucun processus dans cette unité"
+          actionHref="/processus/nouveau"
+          actionLabel="Créer un processus"
+          guideHref="/decouvrir/documenter-processus"
+          guideLabel="Guide : documenter un processus"
+        >
+          <p style={{ margin: 0 }}>
+            Commencez par créer un processus dans le référentiel, puis complétez
+            RACI, risques et documentation.
+          </p>
+        </EmptyGuidance>
       ) : (
         <ProcessusInventory
           items={items}

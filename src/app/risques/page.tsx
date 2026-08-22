@@ -3,6 +3,7 @@ import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
 import type { PilotageItem } from "@/components/module/PilotageStrip";
+import { EmptyGuidance } from "@/components/ui/EmptyGuidance";
 import { RiskMatrix } from "@/components/risques/RiskMatrix";
 import {
   RisqueInventory,
@@ -155,15 +156,32 @@ export default async function RisquesPage({
 
       <KpiZone items={kpiItems} />
 
-      <RiskMatrix risques={matrixPoints} />
+      {risques.length === 0 ? (
+        <EmptyGuidance
+          title="Aucun risque enregistré"
+          actionHref="/risques/nouveau"
+          actionLabel="Identifier un risque"
+          guideHref="/decouvrir/identifier-risque"
+          guideLabel="Guide : identifier un risque"
+        >
+          <p style={{ margin: 0 }}>
+            Liez chaque risque à un processus, puis évaluez P × I avec l’aide
+            RiskQuant.
+          </p>
+        </EmptyGuidance>
+      ) : (
+        <>
+          <RiskMatrix risques={matrixPoints} />
 
-      <RisqueInventory
-        items={items}
-        responsables={responsables}
-        initialQuick={initialQuick}
-        createHref="/risques/nouveau"
-        createLabel="Nouveau risque"
-      />
+          <RisqueInventory
+            items={items}
+            responsables={responsables}
+            initialQuick={initialQuick}
+            createHref="/risques/nouveau"
+            createLabel="Nouveau risque"
+          />
+        </>
+      )}
     </>
   );
 }

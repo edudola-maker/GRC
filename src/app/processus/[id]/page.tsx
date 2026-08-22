@@ -18,6 +18,7 @@ import { ProcessusRaciPanel } from "@/components/processus/ProcessusRaciPanel";
 import { ProcessusActifsITPanel } from "@/components/processus/ProcessusActifsITPanel";
 import { ProcessusContinuitéPanel } from "@/components/processus/ProcessusContinuitéPanel";
 import { ProcessusQualitePanel } from "@/components/processus/ProcessusQualitePanel";
+import { ProcessusCouvertureBadges } from "@/components/processus/ProcessusCouvertureBadges";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
 import { PageHeader, BtnLink } from "@/components/ui";
@@ -35,6 +36,7 @@ import {
   FREQUENCE_REVUE_QUALITE_LABELS,
   formatDate,
 } from "@/lib/labels";
+import { buildProcessusCouverture } from "@/lib/processus-couverture";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/tags";
 import { listSectionRedactions } from "@/lib/section-redaction";
@@ -166,6 +168,7 @@ export default async function ProcessusDetailPage({
           },
           orderBy: { lieLe: "asc" },
         },
+        _count: { select: { exigences: true } },
       },
     }),
     listUtilisateursActifsForCurrentUnite(),
@@ -340,6 +343,16 @@ export default async function ProcessusDetailPage({
     creeLe: e.creeLe,
   }));
 
+  const controlesCount = risques.reduce((s, r) => s + r.controles.length, 0);
+  const couverture = buildProcessusCouverture({
+    aRaci: processus.raciLignes.length > 0,
+    risquesCount: risques.length,
+    controlesCount,
+    aQualite: Boolean(processus.qualite),
+    exigencesCount: processus._count.exigences,
+    aContinuite: Boolean(processus.continuite),
+  });
+
   return (
     <>
       <BackLink href="/processus" label="← Retour aux processus" />
@@ -385,6 +398,7 @@ export default async function ProcessusDetailPage({
         href={baseHref}
         label={`${processus.code} — ${processus.nom}`}
       />
+      <ProcessusCouvertureBadges items={couverture} />
       {processus.archive ? (
         <div className="flash flash--warn">Ce processus est archivé.</div>
       ) : null}

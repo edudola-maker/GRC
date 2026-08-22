@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
 import { DemoUserSwitcher } from "@/components/DemoUserSwitcher";
+import { RechercheHotkey } from "@/components/RechercheHotkey";
 import { ScrollToHash } from "@/components/module/ScrollToHash";
 import {
   formatUtilisateurNom,
@@ -76,6 +77,7 @@ export default async function RootLayout({
   return (
     <html lang="fr" className={`${display.variable} ${body.variable} h-full`}>
       <body className="min-h-full antialiased">
+        <RechercheHotkey />
         <div className="app-shell">
           <AppNav
             isResponsable={responsable}
