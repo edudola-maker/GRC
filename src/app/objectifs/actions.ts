@@ -8,7 +8,7 @@ import {
 } from "@/lib/catalog";
 import {
   allocateCreateCode,
-  assertNomUnique, nextCode
+  assertNomUnique,
 } from "@/lib/codes";
 import { optDate, optInt, optStr, str } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
@@ -23,9 +23,47 @@ import { getCurrentUser } from "@/lib/session";
 
 const STATUTS = new Set(STATUT_OBJECTIF_OPTIONS.map((o) => o.value));
 const PRIORITES = new Set(PRIORITE_OPTIONS.map((o) => o.value));
+const MODES = new Set(["MANUELLE", "AUTOMATIQUE"]);
+
+function formBool(formData: FormData, key: string): boolean {
+  const v = formData.get(key);
+  return v === "on" || v === "1" || v === "true";
+}
+
+function formIds(formData: FormData, key: string): string[] {
+  return formData
+    .getAll(key)
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .map((v) => v.trim());
+}
 
 function revalidateObjectif(id: string) {
   revalidateApp([`/objectifs/${id}`, `/objectifs/${id}/modifier`, "/unite"]);
+}
+
+async function syncAttributions(
+  objectifId: string,
+  uniteId: string,
+  attributionIds: string[],
+) {
+  if (attributionIds.length > 0) {
+    const count = await prisma.uniteAttribution.count({
+      where: { id: { in: attributionIds }, uniteId, actif: true },
+    });
+    if (count !== attributionIds.length) {
+      return "Attribution invalide.";
+    }
+  }
+  await prisma.objectifAttribution.deleteMany({ where: { objectifId } });
+  if (attributionIds.length > 0) {
+    await prisma.objectifAttribution.createMany({
+      data: attributionIds.map((attributionId) => ({
+        objectifId,
+        attributionId,
+      })),
+    });
+  }
+  return null;
 }
 
 export async function createObjectif(formData: FormData) {
@@ -47,13 +85,20 @@ export async function createObjectif(formData: FormData) {
     redirectWithError(fallback, "Statut ou priorité invalide.");
   }
 
+  const progressionMode = str(formData, "progressionMode") || "MANUELLE";
+  if (!MODES.has(progressionMode)) {
+    redirectWithError(fallback, "Mode de progression invalide.");
+  }
+
   const responsableId = str(formData, "responsableId") || current.id;
   const resp = await prisma.utilisateur.findFirst({
     where: { id: responsableId, uniteId, actif: true },
   });
   if (!resp) redirectWithError(fallback, "Responsable introuvable.");
 
-const allocated = await allocateCreateCode(
+  const attributionIds = formIds(formData, "attributionIds");
+
+  const allocated = await allocateCreateCode(
     "OBJECTIF",
     uniteId,
     optStr(formData, "code"),
@@ -62,7 +107,7 @@ const allocated = await allocateCreateCode(
     redirectWithError("/objectifs/nouveau", allocated.error);
   }
 
-    const objectif = await prisma.objectif.create({
+  const objectif = await prisma.objectif.create({
     data: {
       code: allocated.code,
       uniteId,
@@ -70,15 +115,24 @@ const allocated = await allocateCreateCode(
       description: optStr(formData, "description"),
       cible: optStr(formData, "cible"),
       progression: Math.min(100, Math.max(0, optInt(formData, "progression") ?? 0)),
+      progressionMode: progressionMode as "MANUELLE",
       annee,
       responsableId,
       statut: statut as "EN_COURS",
       priorite: priorite as "MOYENNE",
       dateEcheance: optDate(formData, "dateEcheance"),
+      smartSpecifique: formBool(formData, "smartSpecifique"),
+      smartMesurable: formBool(formData, "smartMesurable"),
+      smartAtteignable: formBool(formData, "smartAtteignable"),
+      smartRealiste: formBool(formData, "smartRealiste"),
+      smartTemporel: formBool(formData, "smartTemporel"),
       creeParId: current.id,
       modifieParId: current.id,
     },
   });
+
+  const attrErr = await syncAttributions(objectif.id, uniteId, attributionIds);
+  if (attrErr) redirectWithError(fallback, attrErr);
 
   revalidateObjectif(objectif.id);
   redirectWithOk(`/objectifs/${objectif.id}`, "cree");
@@ -119,11 +173,25 @@ export async function updateObjectif(formData: FormData) {
       redirectWithError(editFallback, "Statut ou priorité invalide.");
     }
 
+    const progressionMode =
+      str(formData, "progressionMode") || existing.progressionMode;
+    if (!MODES.has(progressionMode)) {
+      redirectWithError(editFallback, "Mode de progression invalide.");
+    }
+
     const responsableId = str(formData, "responsableId") || current.id;
     const resp = await prisma.utilisateur.findFirst({
       where: { id: responsableId, uniteId: existing.uniteId, actif: true },
     });
     if (!resp) redirectWithError(editFallback, "Responsable introuvable.");
+
+    const attributionIds = formIds(formData, "attributionIds");
+    const attrErr = await syncAttributions(
+      id,
+      existing.uniteId,
+      attributionIds,
+    );
+    if (attrErr) redirectWithError(editFallback, attrErr);
 
     await prisma.objectif.update({
       where: { id },
@@ -135,11 +203,17 @@ export async function updateObjectif(formData: FormData) {
           100,
           Math.max(0, optInt(formData, "progression") ?? existing.progression),
         ),
+        progressionMode: progressionMode as "MANUELLE",
         annee,
         responsableId,
         statut: statut as "EN_COURS",
         priorite: priorite as "MOYENNE",
         dateEcheance: optDate(formData, "dateEcheance"),
+        smartSpecifique: formBool(formData, "smartSpecifique"),
+        smartMesurable: formBool(formData, "smartMesurable"),
+        smartAtteignable: formBool(formData, "smartAtteignable"),
+        smartRealiste: formBool(formData, "smartRealiste"),
+        smartTemporel: formBool(formData, "smartTemporel"),
         modifieParId: current.id,
       },
     });

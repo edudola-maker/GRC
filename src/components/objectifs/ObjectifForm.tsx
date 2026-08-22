@@ -9,6 +9,7 @@ import {
 import { toDateInputValue } from "@/lib/form";
 
 type UserOpt = { id: string; nom: string };
+type AttributionOpt = { id: string; titre: string };
 
 export type ObjectifValues = {
   id?: string;
@@ -16,11 +17,18 @@ export type ObjectifValues = {
   description?: string | null;
   cible?: string | null;
   progression?: number | null;
+  progressionMode?: string | null;
   annee?: number;
   responsableId?: string;
   statut?: string;
   priorite?: string;
   dateEcheance?: Date | string | null;
+  smartSpecifique?: boolean;
+  smartMesurable?: boolean;
+  smartAtteignable?: boolean;
+  smartRealiste?: boolean;
+  smartTemporel?: boolean;
+  attributionIds?: string[];
 };
 
 function Field({
@@ -46,6 +54,7 @@ function Field({
 export function ObjectifForm({
   action,
   users,
+  attributions = [],
   values,
   cancelHref,
   submitLabel,
@@ -54,6 +63,7 @@ export function ObjectifForm({
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
+  attributions?: AttributionOpt[];
   values?: ObjectifValues;
   cancelHref: string;
   submitLabel: string;
@@ -61,6 +71,7 @@ export function ObjectifForm({
   draftActions?: boolean;
 }) {
   const anneeDefaut = values?.annee ?? new Date().getFullYear();
+  const selectedAttributions = new Set(values?.attributionIds ?? []);
 
   return (
     <form action={action} className="entity-form">
@@ -125,6 +136,16 @@ export function ObjectifForm({
               defaultValue={values?.progression ?? 0}
             />
           </Field>
+          <Field label="Mode de progression" htmlFor="progressionMode">
+            <select
+              id="progressionMode"
+              name="progressionMode"
+              defaultValue={values?.progressionMode ?? "MANUELLE"}
+            >
+              <option value="MANUELLE">Manuelle</option>
+              <option value="AUTOMATIQUE">Automatique (liens)</option>
+            </select>
+          </Field>
           <Field label="Échéance" htmlFor="dateEcheance">
             <input
               id="dateEcheance"
@@ -175,6 +196,84 @@ export function ObjectifForm({
           </Field>
         </div>
       </FormSection>
+
+      <FormSection title="Critères SMART" defaultOpen={false}>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Assistant léger — cochez les critères couverts (pas de prose
+          obligatoire).
+        </p>
+        <div className="checkbox-list">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="smartSpecifique"
+              value="1"
+              defaultChecked={values?.smartSpecifique ?? false}
+            />{" "}
+            Spécifique
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="smartMesurable"
+              value="1"
+              defaultChecked={values?.smartMesurable ?? false}
+            />{" "}
+            Mesurable
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="smartAtteignable"
+              value="1"
+              defaultChecked={values?.smartAtteignable ?? false}
+            />{" "}
+            Atteignable
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="smartRealiste"
+              value="1"
+              defaultChecked={values?.smartRealiste ?? false}
+            />{" "}
+            Réaliste
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="smartTemporel"
+              value="1"
+              defaultChecked={values?.smartTemporel ?? false}
+            />{" "}
+            Temporel
+          </label>
+        </div>
+      </FormSection>
+
+      {attributions.length > 0 ? (
+        <FormSection
+          title="Attributions / missions institutionnelles"
+          defaultOpen={false}
+        >
+          <p className="muted" style={{ marginTop: 0 }}>
+            Lien vers les missions permanentes de l’unité (UniteAttribution).
+          </p>
+          <div className="checkbox-list">
+            {attributions.map((a) => (
+              <label key={a.id} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="attributionIds"
+                  value={a.id}
+                  defaultChecked={selectedAttributions.has(a.id)}
+                />{" "}
+                {a.titre}
+              </label>
+            ))}
+          </div>
+        </FormSection>
+      ) : null}
 
       {draftActions ? (
         <SectionSaveActions

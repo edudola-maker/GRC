@@ -46,7 +46,7 @@ export default async function ObjectifDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [objectif, users, redactions] = await Promise.all([
+  const [objectif, users, redactions, attributions] = await Promise.all([
     prisma.objectif.findUnique({
       where: { id },
       include: {
@@ -54,14 +54,31 @@ export default async function ObjectifDetailPage({
         creePar: true,
         modifiePar: true,
         unite: true,
+        attributions: { select: { attributionId: true } },
       },
     }),
     listUtilisateursActifsForCurrentUnite(),
     listSectionRedactions("OBJECTIF", id),
+    prisma.uniteAttribution.findMany({
+      where: { uniteId: user.uniteId, actif: true },
+      select: { id: true, titre: true },
+      orderBy: [{ ordre: "asc" }, { titre: "asc" }],
+    }),
   ]);
   if (!objectif || objectif.uniteId !== user.uniteId) notFound();
 
   const baseHref = `/objectifs/${objectif.id}`;
+  const formValues = {
+    ...objectif,
+    attributionIds: objectif.attributions.map((a) => a.attributionId),
+  };
+  const smartBits = [
+    objectif.smartSpecifique && "Spécifique",
+    objectif.smartMesurable && "Mesurable",
+    objectif.smartAtteignable && "Atteignable",
+    objectif.smartRealiste && "Réaliste",
+    objectif.smartTemporel && "Temporel",
+  ].filter(Boolean);
 
   return (
     <>
@@ -98,7 +115,8 @@ export default async function ObjectifDetailPage({
           <ObjectifForm
             action={updateObjectif}
             users={users}
-            values={objectif}
+            attributions={attributions}
+            values={formValues}
             cancelHref={baseHref}
             submitLabel="Finaliser"
             section="INFOS_GENERALES"
@@ -130,6 +148,20 @@ export default async function ObjectifDetailPage({
           <div>
             <dt>Priorité</dt>
             <dd>{PRIORITE_LABELS[objectif.priorite] ?? objectif.priorite}</dd>
+          </div>
+          <div>
+            <dt>Progression</dt>
+            <dd>
+              {objectif.progression} % (
+              {objectif.progressionMode === "AUTOMATIQUE"
+                ? "automatique"
+                : "manuelle"}
+              )
+            </dd>
+          </div>
+          <div>
+            <dt>SMART</dt>
+            <dd>{smartBits.length > 0 ? smartBits.join(" · ") : "—"}</dd>
           </div>
           <div>
             <dt>Échéance</dt>

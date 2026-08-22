@@ -3,7 +3,11 @@ import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
-import { listUtilisateursActifsForCurrentUnite } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import {
+  getCurrentUser,
+  listUtilisateursActifsForCurrentUnite,
+} from "@/lib/session";
 import { createObjectif } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +18,15 @@ export default async function NouveauObjectifPage({
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
-  const users = await listUtilisateursActifsForCurrentUnite();
+  const user = await getCurrentUser();
+  const [users, attributions] = await Promise.all([
+    listUtilisateursActifsForCurrentUnite(),
+    prisma.uniteAttribution.findMany({
+      where: { uniteId: user.uniteId, actif: true },
+      select: { id: true, titre: true },
+      orderBy: [{ ordre: "asc" }, { titre: "asc" }],
+    }),
+  ]);
 
   return (
     <>
@@ -28,6 +40,7 @@ export default async function NouveauObjectifPage({
         <ObjectifForm
           action={createObjectif}
           users={users}
+          attributions={attributions}
           cancelHref="/unite"
           submitLabel="Créer l’objectif"
         />

@@ -60,6 +60,17 @@ async function main() {
   await prisma.processusRaciLigne.deleteMany().catch(() => undefined);
   await prisma.processusActifIT.deleteMany().catch(() => undefined);
   await prisma.processusContinuité.deleteMany().catch(() => undefined);
+  await prisma.ecartQualite.deleteMany().catch(() => undefined);
+  await prisma.qualiteRevue.deleteMany().catch(() => undefined);
+  await prisma.processusQualite.deleteMany().catch(() => undefined);
+  await prisma.exigenceProcessus.deleteMany().catch(() => undefined);
+  await prisma.exigenceControle.deleteMany().catch(() => undefined);
+  await prisma.exigenceDocument.deleteMany().catch(() => undefined);
+  await prisma.decisionExigence.deleteMany().catch(() => undefined);
+  await prisma.arbitrage.deleteMany().catch(() => undefined);
+  await prisma.decision.deleteMany().catch(() => undefined);
+  await prisma.exigence.deleteMany().catch(() => undefined);
+  await prisma.objectifAttribution.deleteMany().catch(() => undefined);
   await prisma.processusDependance.deleteMany().catch(() => undefined);
   await prisma.processusUniteApplicable.deleteMany().catch(() => undefined);
   await prisma.documentProcessus.deleteMany().catch(() => undefined);
@@ -300,6 +311,9 @@ async function main() {
       { uniteId, prefixe: "PRC", dernier: 8 },
       { uniteId, prefixe: "MAC", dernier: 3 },
       { uniteId, prefixe: "FCT", dernier: 4 },
+      { uniteId, prefixe: "EXI", dernier: 1 },
+      { uniteId, prefixe: "ARB", dernier: 1 },
+      { uniteId, prefixe: "DEC", dernier: 1 },
     ],
   });
 
@@ -347,6 +361,23 @@ async function main() {
   });
   // fctResp utilisé plus bas pour lier RACI démo si présent
   void fctResp;
+
+  const attrSci = await prisma.uniteAttribution.create({
+    data: {
+      uniteId,
+      titre: "Surveillance du SCI",
+      description: "Animer le dispositif de contrôles internes.",
+      ordre: 0,
+    },
+  });
+  await prisma.uniteAttribution.create({
+    data: {
+      uniteId,
+      titre: "Missions d’assurance",
+      description: "Planifier et conduire les audits / revues.",
+      ordre: 1,
+    },
+  });
 
   const projetMod = await prisma.projet.create({
     data: {
@@ -1158,8 +1189,14 @@ async function main() {
       statut: "EN_COURS",
       priorite: "HAUTE",
       dateEcheance: daysFromNow(120),
+      smartSpecifique: true,
+      smartMesurable: true,
+      smartTemporel: true,
       creeParId: alice.id,
       modifieParId: alice.id,
+      attributions: {
+        create: [{ attributionId: attrSci.id }],
+      },
     },
   });
   const objAcces = await prisma.objectif.create({
@@ -1191,6 +1228,70 @@ async function main() {
       modifieParId: alice.id,
     },
   });
+
+  await prisma.processusQualite.create({
+    data: {
+      processusId: processusAcces.id,
+      responsableRevueId: bernard.id,
+      frequence: "ANNUELLE",
+      derniereRevue: daysFromNow(-90),
+      prochaineRevue: daysFromNow(275),
+      confluenceUrl: "https://confluence.example/processus/acces",
+      confluenceAJour: true,
+    },
+  });
+
+  const exigence = await prisma.exigence.create({
+    data: {
+      uniteId,
+      code: "EXI-0001",
+      titre: "Revue annuelle des droits d’accès",
+      description:
+        "Tous les comptes applicatifs doivent faire l’objet d’une revue annuelle documentée.",
+      source: "Politique SI / LPD",
+      statut: "A_EVALUER",
+      responsableId: bernard.id,
+      processus: {
+        create: [{ processusId: processusAcces.id }],
+      },
+    },
+  });
+
+  const decision = await prisma.decision.create({
+    data: {
+      uniteId,
+      code: "DEC-0001",
+      titre: "Tolérance résiduelle sur comptes génériques",
+      problematique:
+        "Certains comptes techniques partagés restent nécessaires temporairement.",
+      analyse: "Risque accepté sous conditions de journalisation renforcée.",
+      decisionTexte:
+        "Autoriser les comptes génériques listés jusqu’à la migration SSO, avec revue trimestrielle.",
+      decideurId: alice.id,
+      dateDecision: daysFromNow(-14),
+      statut: "ADOPTEE",
+      processusId: processusAcces.id,
+    },
+  });
+
+  await prisma.arbitrage.create({
+    data: {
+      uniteId,
+      code: "ARB-0001",
+      titre: "Acceptation temporaire comptes techniques",
+      problematique: "Comptes partagés non nominatifs sur application métier.",
+      regleRetenue:
+        "Les comptes techniques listés sont tolérés jusqu’à migration SSO.",
+      justification: "Décision DEC-0001 — journalisation et revue trimestrielle.",
+      statut: "EN_VIGUEUR",
+      processusId: processusAcces.id,
+      risqueId: risque.id,
+      decisionId: decision.id,
+      responsableId: alice.id,
+    },
+  });
+
+  void exigence;
 
   await prisma.lienObjet.createMany({
     data: [

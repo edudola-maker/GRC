@@ -17,6 +17,7 @@ import { ProcessusModelesTachesPanel } from "@/components/processus/ProcessusMod
 import { ProcessusRaciPanel } from "@/components/processus/ProcessusRaciPanel";
 import { ProcessusActifsITPanel } from "@/components/processus/ProcessusActifsITPanel";
 import { ProcessusContinuitéPanel } from "@/components/processus/ProcessusContinuitéPanel";
+import { ProcessusQualitePanel } from "@/components/processus/ProcessusQualitePanel";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { CriticiteBadge } from "@/components/risques/CriticiteBadge";
 import { PageHeader } from "@/components/ui";
@@ -31,6 +32,7 @@ import {
   STATUT_ACTIF_IT_LABELS,
   STATUT_PROCESSUS_LABELS,
   TYPE_ACTIF_IT_LABELS,
+  FREQUENCE_REVUE_QUALITE_LABELS,
   formatDate,
 } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
@@ -127,6 +129,18 @@ export default async function ProcessusDetailPage({
           orderBy: { lieLe: "asc" },
         },
         continuite: true,
+        qualite: true,
+        qualiteRevues: {
+          include: {
+            responsable: { select: { nom: true, prenom: true } },
+          },
+          orderBy: { dateRevue: "desc" },
+          take: 8,
+        },
+        ecartsQualite: {
+          orderBy: { creeLe: "desc" },
+          take: 20,
+        },
         dependDe: {
           include: {
             dependDe: { select: { id: true, code: true, nom: true } },
@@ -293,6 +307,38 @@ export default async function ProcessusDetailPage({
         dateProchaineRevue: processus.continuite.dateProchaineRevue,
       }
     : null;
+  const qualiteValues = processus.qualite
+    ? {
+        responsableRevueId: processus.qualite.responsableRevueId,
+        frequence: processus.qualite.frequence,
+        derniereRevue: processus.qualite.derniereRevue,
+        prochaineRevue: processus.qualite.prochaineRevue,
+        confluenceUrl: processus.qualite.confluenceUrl,
+        confluenceAJour: processus.qualite.confluenceAJour,
+      }
+    : null;
+  const qualiteRevues = processus.qualiteRevues.map((r) => ({
+    id: r.id,
+    dateRevue: r.dateRevue,
+    responsableNom: r.responsable
+      ? formatUtilisateurNom(r.responsable)
+      : null,
+    commentaire: r.commentaire,
+    procedureConformePratique: r.procedureConformePratique,
+    pratiqueConformeProcedure: r.pratiqueConformeProcedure,
+    raciAJour: r.raciAJour,
+    controlesPertinents: r.controlesPertinents,
+    confluenceAJour: r.confluenceAJour,
+    ecartsIdentifies: r.ecartsIdentifies,
+    ameliorationProposee: r.ameliorationProposee,
+  }));
+  const qualiteEcarts = processus.ecartsQualite.map((e) => ({
+    id: e.id,
+    titre: e.titre,
+    description: e.description,
+    statut: e.statut,
+    creeLe: e.creeLe,
+  }));
 
   return (
     <>
@@ -604,6 +650,25 @@ export default async function ProcessusDetailPage({
           editable={false}
         />
       </EditableSection>
+
+      <CollapsibleSection
+        title="Qualité"
+        defaultOpen={false}
+        badge={
+          qualiteValues
+            ? FREQUENCE_REVUE_QUALITE_LABELS[qualiteValues.frequence] ??
+              qualiteValues.frequence
+            : undefined
+        }
+      >
+        <ProcessusQualitePanel
+          processusId={processus.id}
+          values={qualiteValues}
+          users={userOpts}
+          revues={qualiteRevues}
+          ecarts={qualiteEcarts}
+        />
+      </CollapsibleSection>
 
       <CollapsibleSection
         title="Documents du processus"
