@@ -9,10 +9,16 @@ import {
 } from "@/lib/catalog";
 import {
   allocateCreateCode,
-  assertNomUnique, nextCode
+  assertCodeUnique,
+  assertNomUnique,
+  normalizeCode,
 } from "@/lib/codes";
 import { nextControleDate } from "@/lib/dates";
 import { optDate, optInt, optStr, str } from "@/lib/form";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
@@ -29,10 +35,23 @@ async function assertResponsable(id: string) {
   return prisma.utilisateur.findFirst({ where: { id, actif: true } });
 }
 
+async function nextHistVersion(objetId: string) {
+  const last = await prisma.historiqueModification.aggregate({
+    where: { typeObjet: "CONTROLE_SCI", objetId },
+    _max: { versionObjet: true },
+  });
+  return (last._max.versionObjet ?? 0) + 1;
+}
+
 export async function createControleSCI(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/controles-sci/nouveau";
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
   const nom = str(formData, "nom");
   const processusConcerne = str(formData, "processusConcerne");
   if (!nom) redirectWithError(fallback, "Le nom du contrôle est obligatoire.");
@@ -63,16 +82,16 @@ export async function createControleSCI(formData: FormData) {
     optDate(formData, "dateProchaineEcheance") ??
     nextControleDate(new Date(), frequence);
 
-const allocated = await allocateCreateCode(
+  const allocated = await allocateCreateCode(
     "CONTROLE_SCI",
     uniteId,
     optStr(formData, "code"),
   );
   if (!allocated.ok) {
-    redirectWithError("/controles-sci/nouveau", allocated.error);
+    redirectWithError(fallback, allocated.error);
   }
 
-    const controle = await prisma.controleSCI.create({
+  const controle = await prisma.controleSCI.create({
     data: {
       code: allocated.code,
       uniteId,
@@ -127,6 +146,20 @@ export async function updateControleSCI(formData: FormData) {
     redirectWithError(editFallback, "Statut ou fréquence invalide.");
   }
 
+  const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
+
+  const nomErr = await assertNomUnique("CONTROLE_SCI", nom, uniteId, id);
+  if (nomErr) redirectWithError(editFallback, nomErr);
+
+  const codeRaw = optStr(formData, "code") ?? existing.code;
+  const code = normalizeCode(codeRaw);
+  const codeErr = await assertCodeUnique("CONTROLE_SCI", code, uniteId, id);
+  if (codeErr) redirectWithError(editFallback, codeErr);
+
   const responsableId = str(formData, "responsableId") || current.id;
   if (!(await assertResponsable(responsableId))) {
     redirectWithError(editFallback, "Responsable introuvable.");
@@ -143,12 +176,33 @@ export async function updateControleSCI(formData: FormData) {
   const delaiRealisationJours = optInt(formData, "delaiRealisationJours");
   const taxinomie = optStr(formData, "taxinomie");
   const tags = serializeTags(optStr(formData, "tags"));
+  const description = optStr(formData, "description");
+  const commentaires = optStr(formData, "commentaires");
+
+  const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
+    { champ: "nom", avant: existing.nom, apres: nom },
+    { champ: "description", avant: existing.description, apres: description },
+    { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
+    {
+      champ: "processusConcerne",
+      avant: existing.processusConcerne,
+      apres: processusConcerne,
+    },
+    { champ: "statut", avant: existing.statut, apres: statut },
+    {
+      champ: "responsableId",
+      avant: existing.responsableId,
+      apres: responsableId,
+    },
+  ]);
 
   await prisma.controleSCI.update({
     where: { id },
     data: {
+      code,
       nom,
-      description: optStr(formData, "description"),
+      description,
       processusConcerne,
       responsableId,
       typeControle: typeControle as "MANUEL",
@@ -160,10 +214,22 @@ export async function updateControleSCI(formData: FormData) {
       dateDerniereRealisation: optDate(formData, "dateDerniereRealisation"),
       dateProchaineEcheance: optDate(formData, "dateProchaineEcheance"),
       statut: statut as "ACTIF",
-      commentaires: optStr(formData, "commentaires"),
+      commentaires,
+      uniteId,
       modifieParId: current.id,
     },
   });
+
+  if (changes.length > 0) {
+    await enregistrerModifications({
+      typeObjet: "CONTROLE_SCI",
+      objetId: id,
+      uniteId,
+      modifieParId: current.id,
+      changes,
+      versionObjet: await nextHistVersion(id),
+    });
+  }
 
   revalidateApp([`/controles-sci/${id}`, `/controles-sci/${id}?edit=INFOS_GENERALES`]);
   redirectWithOk(sectionSavedHref(base, sectionKey), "modifie");

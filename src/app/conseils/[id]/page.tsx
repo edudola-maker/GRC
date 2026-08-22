@@ -44,6 +44,7 @@ import { JournalTravailPanel } from "@/components/travail/JournalTravailPanel";
 import { listerNotes } from "@/lib/notes";
 import { listerJournalBord } from "@/lib/journal-bord";
 import { JournalTimeline } from "@/components/historique/JournalTimeline";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,7 @@ export default async function ConseilDetailPage({
       ? sp.edit
       : null;
   const user = await getCurrentUser();
-  const [conseil, journal, journalBord, notes, users] = await Promise.all([
+  const [conseil, journal, journalBord, notes, users, unites] = await Promise.all([
     prisma.conseil.findUnique({
       where: { id },
       include: {
@@ -80,6 +81,7 @@ export default async function ConseilDetailPage({
     listerJournalBord("CONSEIL", id),
     listerNotes("CONSEIL", id),
     listUtilisateursActifsForCurrentUnite(),
+    listUnitesActives(),
   ]);
   if (!conseil) notFound();
   const baseHref = `/conseils/${conseil.id}`;
@@ -169,6 +171,7 @@ export default async function ConseilDetailPage({
           <ConseilForm
             action={updateConseil}
             users={users}
+            unites={unites}
             values={conseil}
             cancelHref={baseHref}
             sectionKey="INFOS_GENERALES"

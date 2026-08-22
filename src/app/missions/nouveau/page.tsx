@@ -8,6 +8,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 import { createMission } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function NouveauAuditPage({
 }) {
   const sp = await searchParams;
   const current = await getCurrentUser();
-  const [usersRaw, types, templates, descriptifs, suggestedCode] =
+  const [usersRaw, types, templates, descriptifs, suggestedCode, unites] =
     await Promise.all([
       listUtilisateursActifsForCurrentUnite(),
       prisma.missionType.findMany({
@@ -38,6 +39,7 @@ export default async function NouveauAuditPage({
         select: { id: true, libelle: true, typeId: true },
       }),
       peekNextCode("MISSION", current.uniteId),
+      listUnitesActives(),
     ]);
 
   const users = usersRaw.map((u) => ({
@@ -54,9 +56,11 @@ export default async function NouveauAuditPage({
         <MissionForm
           action={createMission}
           users={users}
+          unites={unites}
           types={types}
           templates={templates}
           descriptifs={descriptifs}
+          values={{ uniteId: current.uniteId }}
           cancelHref="/missions"
           submitLabel="Créer la mission"
           suggestedCode={suggestedCode}

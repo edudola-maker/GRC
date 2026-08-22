@@ -16,9 +16,7 @@ import { MODULE_HELP } from "@/lib/catalog";
 import {
   PRIORITE_LABELS,
   ROLE_UTILISATEUR_LABELS,
-  STATUT_MISSION_LABELS,
   STATUT_OBJECTIF_LABELS,
-  STATUT_PROCESSUS_LABELS,
   formatDate,
 } from "@/lib/labels";
 import { isAdministrateur } from "@/lib/permissions";
@@ -29,7 +27,12 @@ import { getUnitePilotage } from "@/lib/unite-overview";
 
 export const dynamic = "force-dynamic";
 
-const EDIT_SECTIONS = ["ATTRIBUTIONS", "OBJECTIFS", "ELEMENTS_ASSOCIES"] as const;
+const EDIT_SECTIONS = [
+  "PRESENTATION",
+  "ATTRIBUTIONS",
+  "OBJECTIFS",
+  "ELEMENTS_ASSOCIES",
+] as const;
 
 type EditSection = (typeof EDIT_SECTIONS)[number];
 
@@ -63,8 +66,7 @@ export default async function UnitePage({
     attributions,
     objectifs,
     membres,
-    processus,
-    missions,
+    macros,
   ] = await Promise.all([
     prisma.unite.findUnique({
       where: { id: uniteId },
@@ -98,18 +100,16 @@ export default async function UnitePage({
         actif: true,
       },
     }),
-    prisma.processus.findMany({
-      where: { uniteId, archive: false },
-      orderBy: { nom: "asc" },
-      select: { id: true, code: true, nom: true, statut: true },
-    }),
-    prisma.mission.findMany({
+    prisma.macroprocessus.findMany({
       where: { uniteId, archive: false },
       include: {
-        type: { select: { libelle: true } },
-        responsable: { select: { nom: true, prenom: true } },
+        processus: {
+          where: { archive: false },
+          select: { id: true, code: true, nom: true },
+          orderBy: { nom: "asc" },
+        },
       },
-      orderBy: [{ dateDebut: "desc" }, { titre: "asc" }],
+      orderBy: [{ ordre: "asc" }, { nom: "asc" }],
     }),
   ]);
 
@@ -118,6 +118,7 @@ export default async function UnitePage({
   const baseHref = "/unite";
   const canEdit = unite.actif;
   const attributionsActives = attributions.filter((a) => a.actif);
+  const nbProcessus = macros.reduce((n, m) => n + m.processus.length, 0);
 
   return (
     <>
@@ -140,30 +141,18 @@ export default async function UnitePage({
         <div className="flash flash--warn">Cette unité est inactive.</div>
       ) : null}
 
-      <div className="unite-structural-box">
+      <div className="unite-structural-box unite-structural-box--compact">
         <p className="unite-structural-box__label">
-          Informations structurelles — administrées depuis Administration
+          Structure
           {isAdmin ? (
             <>
               {" "}
-              (
-              <Link href="/administration/unites">gérer les unités</Link>)
+              —{" "}
+              <Link href="/administration/unites">Administration</Link>
             </>
           ) : null}
         </p>
         <dl className="kv unite-structural-box__kv">
-          <div>
-            <dt>Code</dt>
-            <dd>{unite.code}</dd>
-          </div>
-          <div>
-            <dt>Nom</dt>
-            <dd>{unite.nom}</dd>
-          </div>
-          <div>
-            <dt>Description</dt>
-            <dd>{unite.description ?? "—"}</dd>
-          </div>
           <div>
             <dt>Responsable</dt>
             <dd>
@@ -181,33 +170,168 @@ export default async function UnitePage({
         </dl>
       </div>
 
-      <CollapsibleSection title="Pilotage" defaultOpen>
-        <PilotageStrip
-          items={[
-            {
-              value: pilotage.objectifsEnCours,
-              label: "objectifs",
-              tone: "ok",
-            },
-            { value: pilotage.projetsActifs, label: "projets" },
-            { value: pilotage.missionsEnCours, label: "missions" },
-            { value: pilotage.processusActifs, label: "processus" },
-            {
-              value: pilotage.tachesEnRetard,
-              label: "à traiter",
-              tone: pilotage.tachesEnRetard > 0 ? "danger" : "default",
-              href:
-                pilotage.tachesEnRetard > 0
-                  ? "/?vue=retard"
-                  : undefined,
-            },
-          ]}
+      <PilotageStrip
+        items={[
+          {
+            value: pilotage.objectifsEnCours,
+            label: "objectifs",
+            tone: "ok",
+          },
+          { value: pilotage.projetsActifs, label: "projets" },
+          { value: pilotage.missionsEnCours, label: "missions" },
+          { value: pilotage.processusActifs, label: "processus" },
+          {
+            value: pilotage.tachesEnRetard,
+            label: "à traiter",
+            tone: pilotage.tachesEnRetard > 0 ? "danger" : "default",
+            href:
+              pilotage.tachesEnRetard > 0 ? "/?vue=retard" : undefined,
+          },
+        ]}
+      />
+
+      <EditableSection
+        title="Présentation de l’unité"
+        sectionKey="PRESENTATION"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("PRESENTATION")}
+        defaultOpen
+        editChildren={
+          <form action={updateUnite} className="entity-form">
+            <input type="hidden" name="id" value={unite.id} />
+            <input type="hidden" name="sectionKey" value="PRESENTATION" />
+            <label className="field" htmlFor="presentation">
+              <span className="field__label">Présentation</span>
+              <textarea
+                id="presentation"
+                name="presentation"
+                rows={8}
+                defaultValue={unite.presentation ?? ""}
+              />
+            </label>
+            <SectionSaveActions
+              baseHref={baseHref}
+              sectionKey="PRESENTATION"
+            />
+          </form>
+        }
+      >
+        {unite.presentation?.trim() ? (
+          <p className="unite-presentation" style={{ whiteSpace: "pre-wrap" }}>
+            {unite.presentation}
+          </p>
+        ) : (
+          <p className="empty">Aucune présentation renseignée.</p>
+        )}
+      </EditableSection>
+
+      <EditableSection
+        title="Missions permanentes"
+        sectionKey="ATTRIBUTIONS"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("ATTRIBUTIONS")}
+        defaultOpen
+        badge={`${attributionsActives.length}`}
+        editChildren={
+          <>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Missions institutionnelles permanentes de l’unité — distinctes
+              des missions d’assurance (audits / revues).
+            </p>
+            <UniteAttributionsPanel attributions={attributions} editable />
+            <form action={updateUnite} className="entity-form">
+              <input type="hidden" name="id" value={unite.id} />
+              <input type="hidden" name="sectionKey" value="ATTRIBUTIONS" />
+              <SectionSaveActions
+                baseHref={baseHref}
+                sectionKey="ATTRIBUTIONS"
+              />
+            </form>
+          </>
+        }
+      >
+        <UniteAttributionsPanel
+          attributions={attributions}
+          editable={false}
         />
-        <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.82rem" }}>
-          Compteurs calculés — « à traiter » ouvre les tâches en retard du
-          tableau de bord.
-        </p>
+      </EditableSection>
+
+      <CollapsibleSection
+        title="Cartographie des activités"
+        defaultOpen
+        badge={`${macros.length} / ${nbProcessus}`}
+      >
+        <div className="form-actions" style={{ marginBottom: "0.65rem" }}>
+          <BtnLink href="/processus?vue=arborescence" variant="ghost">
+            Voir l’arborescence
+          </BtnLink>
+        </div>
+        {macros.length === 0 ? (
+          <p className="empty">
+            Aucun macroprocessus.{" "}
+            <Link href="/macroprocessus/nouveau">Créer le premier</Link>.
+          </p>
+        ) : (
+          <ul className="unite-cartographie">
+            {macros.map((m) => (
+              <li key={m.id} className="unite-cartographie__macro">
+                <Link href={`/macroprocessus/${m.id}`}>
+                  <strong>
+                    {m.code} — {m.nom}
+                  </strong>
+                </Link>
+                {m.processus.length === 0 ? (
+                  <p className="muted" style={{ margin: "0.25rem 0 0" }}>
+                    Aucun processus rattaché.
+                  </p>
+                ) : (
+                  <ul className="unite-cartographie__processus">
+                    {m.processus.map((p) => (
+                      <li key={p.id}>
+                        <Link href={`/processus/${p.id}`}>
+                          {p.code} — {p.nom}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </CollapsibleSection>
+
+      <EditableSection
+        title="Objectifs annuels"
+        sectionKey="OBJECTIFS"
+        baseHref={baseHref}
+        edit={edit}
+        canEdit={canEdit}
+        redaction={redactions.get("OBJECTIFS")}
+        defaultOpen
+        badge={`${objectifs.filter((o) => o.statut === "EN_COURS").length}`}
+        editChildren={
+          <>
+            <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
+              <BtnLink href="/objectifs/nouveau">+ Nouvel objectif</BtnLink>
+            </div>
+            <ObjectifsList objectifs={objectifs} />
+            <form action={updateUnite} className="entity-form">
+              <input type="hidden" name="id" value={unite.id} />
+              <input type="hidden" name="sectionKey" value="OBJECTIFS" />
+              <SectionSaveActions baseHref={baseHref} sectionKey="OBJECTIFS" />
+            </form>
+          </>
+        }
+      >
+        <div id="objectifs">
+          <ObjectifsList objectifs={objectifs} />
+        </div>
+      </EditableSection>
 
       <div id="equipe">
         <CollapsibleSection
@@ -260,139 +384,13 @@ export default async function UnitePage({
       </div>
 
       <EditableSection
-        title="Missions / attributions"
-        sectionKey="ATTRIBUTIONS"
-        baseHref={baseHref}
-        edit={edit}
-        canEdit={canEdit}
-        redaction={redactions.get("ATTRIBUTIONS")}
-        defaultOpen
-        badge={`${attributionsActives.length}`}
-        editChildren={
-          <>
-            <p className="muted" style={{ marginTop: 0 }}>
-              Missions institutionnelles permanentes de l’unité — distinctes
-              des missions d’assurance (audits / revues).
-            </p>
-            <UniteAttributionsPanel attributions={attributions} editable />
-            <form action={updateUnite} className="entity-form">
-              <input type="hidden" name="id" value={unite.id} />
-              <input type="hidden" name="sectionKey" value="ATTRIBUTIONS" />
-              <SectionSaveActions
-                baseHref={baseHref}
-                sectionKey="ATTRIBUTIONS"
-              />
-            </form>
-          </>
-        }
-      >
-        <UniteAttributionsPanel
-          attributions={attributions}
-          editable={false}
-        />
-      </EditableSection>
-
-      <EditableSection
-        title="Objectifs"
-        sectionKey="OBJECTIFS"
-        baseHref={baseHref}
-        edit={edit}
-        canEdit={canEdit}
-        redaction={redactions.get("OBJECTIFS")}
-        defaultOpen
-        badge={`${objectifs.filter((o) => o.statut === "EN_COURS").length}`}
-        editChildren={
-          <>
-            <div className="form-actions" style={{ marginBottom: "0.75rem" }}>
-              <BtnLink href="/objectifs/nouveau">+ Nouvel objectif</BtnLink>
-            </div>
-            <ObjectifsList objectifs={objectifs} />
-            <form action={updateUnite} className="entity-form">
-              <input type="hidden" name="id" value={unite.id} />
-              <input type="hidden" name="sectionKey" value="OBJECTIFS" />
-              <SectionSaveActions baseHref={baseHref} sectionKey="OBJECTIFS" />
-            </form>
-          </>
-        }
-      >
-        <div id="objectifs">
-          <ObjectifsList objectifs={objectifs} />
-        </div>
-      </EditableSection>
-
-      <CollapsibleSection
-        title="Processus"
-        defaultOpen={false}
-        badge={`${processus.length}`}
-      >
-        <div className="form-actions" style={{ marginBottom: "0.65rem" }}>
-          <BtnLink href="/processus" variant="ghost">
-            Voir tous
-          </BtnLink>
-        </div>
-        {processus.length === 0 ? (
-          <p className="empty">Aucun processus.</p>
-        ) : (
-          <ul className="unite-activite__list">
-            {processus.map((p) => (
-              <li key={p.id}>
-                <Link href={`/processus/${p.id}`}>
-                  <strong>
-                    {p.code} — {p.nom}
-                  </strong>
-                </Link>
-                <span className="muted">
-                  {STATUT_PROCESSUS_LABELS[p.statut] ?? p.statut}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        title="Missions d’assurance"
-        defaultOpen={false}
-        badge={`${missions.length}`}
-      >
-        <div className="form-actions" style={{ marginBottom: "0.65rem" }}>
-          <BtnLink href="/missions" variant="ghost">
-            Voir toutes
-          </BtnLink>
-        </div>
-        {missions.length === 0 ? (
-          <p className="empty">Aucune mission d’assurance.</p>
-        ) : (
-          <ul className="unite-activite__list">
-            {missions.map((m) => (
-              <li key={m.id}>
-                <Link href={`/missions/${m.id}`}>
-                  <strong>
-                    {m.code} — {m.titre}
-                  </strong>
-                </Link>
-                <span className="muted">
-                  {m.type.libelle} ·{" "}
-                  {STATUT_MISSION_LABELS[m.statut] ?? m.statut} ·{" "}
-                  {formatUtilisateurNom(m.responsable)}
-                  {m.dateDebut || m.dateFin
-                    ? ` · ${m.dateDebut ? formatDate(m.dateDebut) : "—"} → ${m.dateFin ? formatDate(m.dateFin) : "—"}`
-                    : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CollapsibleSection>
-
-      <EditableSection
         title="Éléments associés"
         sectionKey="ELEMENTS_ASSOCIES"
         baseHref={baseHref}
         edit={edit}
         canEdit={canEdit}
         redaction={redactions.get("ELEMENTS_ASSOCIES")}
-        defaultOpen
+        defaultOpen={false}
         editChildren={
           <>
             <ElementsAssocies
@@ -442,6 +440,8 @@ function ObjectifsList({
     statut: string;
     priorite: string;
     dateEcheance: Date | null;
+    cible?: string | null;
+    progression?: number | null;
     responsable: { nom: string; prenom?: string | null };
   }>;
 }) {
@@ -470,6 +470,10 @@ function ObjectifsList({
               {PRIORITE_LABELS[o.priorite] ?? o.priorite} ·{" "}
               {formatUtilisateurNom(o.responsable)}
               {o.dateEcheance ? ` · éch. ${formatDate(o.dateEcheance)}` : ""}
+              {o.cible?.trim() ? ` · cible : ${o.cible}` : ""}
+              {typeof o.progression === "number"
+                ? ` · ${o.progression} %`
+                : ""}
             </span>
           </div>
         </li>

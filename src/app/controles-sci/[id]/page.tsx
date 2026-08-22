@@ -29,6 +29,7 @@ import { ControleSCIForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function ControleSCIDetailPage({
       : null;
   const user = await getCurrentUser();
 
-  const [controle, users] = await Promise.all([
+  const [controle, users, unites] = await Promise.all([
   prisma.controleSCI.findUnique({
     where: { id },
     include: {
@@ -65,6 +66,7 @@ export default async function ControleSCIDetailPage({
     },
   }),
   listUtilisateursActifsForCurrentUnite(),
+  listUnitesActives(),
   ]);
   if (!controle) notFound();
 
@@ -130,6 +132,7 @@ export default async function ControleSCIDetailPage({
           <ControleSCIForm
             action={updateControleSCI}
             users={users}
+            unites={unites}
             values={controle}
             cancelHref={baseHref}
             sectionKey="INFOS_GENERALES"

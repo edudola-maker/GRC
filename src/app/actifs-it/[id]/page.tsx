@@ -7,6 +7,7 @@ import {
 } from "@/components/FormControls";
 import { ActifITForm } from "@/components/actifs-it/ActifITForm";
 import { FlashBanner, BackLink } from "@/components/Flash";
+import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { EditableSection } from "@/components/module/EditableSection";
 import { PageHeader } from "@/components/ui";
@@ -29,6 +30,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +46,12 @@ export default async function ActifITDetailPage({
   const edit = sp.edit === "INFOS" || sp.edit === "PROCESSUS" ? sp.edit : null;
   const user = await getCurrentUser();
 
-  const [actif, usersRaw, processusActifs] = await Promise.all([
+  const [actif, usersRaw, processusActifs, unites] = await Promise.all([
     prisma.actifIT.findUnique({
       where: { id },
       include: {
         responsable: true,
+        unite: { select: { id: true, code: true, nom: true } },
         creePar: true,
         modifiePar: true,
         processus: {
@@ -67,6 +70,7 @@ export default async function ActifITDetailPage({
       select: { id: true, code: true, nom: true },
       orderBy: { nom: "asc" },
     }),
+    listUnitesActives(),
   ]);
 
   if (!actif || actif.uniteId !== user.uniteId) notFound();
@@ -81,7 +85,7 @@ export default async function ActifITDetailPage({
 
   return (
     <>
-      <BackLink href="/actifs-it" label="← Retour aux actifs IT" />
+      <BackLink href="/actifs-it" label="← Retour aux actifs" />
       <PageHeader
         title={`${actif.code} — ${actif.nom}`}
         actions={
@@ -91,13 +95,13 @@ export default async function ActifITDetailPage({
                 action={archiveActifIT}
                 id={actif.id}
                 label="Archiver"
-                confirmMessage="Archiver cet actif IT ?"
+                confirmMessage="Archiver cet actif ?"
               />
               <ConfirmDeleteButton
                 action={deleteActifIT}
                 id={actif.id}
                 label="Supprimer"
-                confirmMessage="Supprimer définitivement cet actif IT ?"
+                confirmMessage="Supprimer définitivement cet actif ?"
               />
             </>
           ) : (
@@ -105,7 +109,7 @@ export default async function ActifITDetailPage({
               action={unarchiveActifIT}
               id={actif.id}
               label="Restaurer"
-              confirmMessage="Restaurer cet actif IT ?"
+              confirmMessage="Restaurer cet actif ?"
             />
           )
         }
@@ -123,6 +127,7 @@ export default async function ActifITDetailPage({
           <ActifITForm
             action={updateActifIT}
             users={users}
+            unites={unites}
             values={actif}
             cancelHref={baseHref}
             submitLabel="Enregistrer"
@@ -143,6 +148,12 @@ export default async function ActifITDetailPage({
             <dd>{STATUT_ACTIF_IT_LABELS[actif.statut] ?? actif.statut}</dd>
           </div>
           <div>
+            <dt>Unité</dt>
+            <dd>
+              {actif.unite.code} — {actif.unite.nom}
+            </dd>
+          </div>
+          <div>
             <dt>Responsable</dt>
             <dd>
               {actif.responsable
@@ -159,6 +170,14 @@ export default async function ActifITDetailPage({
             <dd>{actif.hebergement ?? "—"}</dd>
           </div>
           <div>
+            <dt>Service fourni</dt>
+            <dd>{actif.serviceFourni ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Criticité</dt>
+            <dd>{actif.criticite != null ? `${actif.criticite} / 5` : "—"}</dd>
+          </div>
+          <div>
             <dt>Description</dt>
             <dd>{actif.description ?? "—"}</dd>
           </div>
@@ -171,7 +190,7 @@ export default async function ActifITDetailPage({
       </EditableSection>
 
       <EditableSection
-        title="Processus supportés"
+        title="Processus dépendants"
         sectionKey="PROCESSUS"
         baseHref={baseHref}
         edit={edit}
@@ -254,6 +273,14 @@ export default async function ActifITDetailPage({
           </ul>
         )}
       </EditableSection>
+
+      <ElementsAssocies
+        uniteId={actif.uniteId}
+        type="ACTIF_IT"
+        id={actif.id}
+        retour={baseHref}
+        editable={false}
+      />
 
       <CollapsibleSection title="Notes" defaultOpen={false}>
         <p className="muted" style={{ margin: 0 }}>

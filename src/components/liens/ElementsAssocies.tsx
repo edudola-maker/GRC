@@ -14,6 +14,7 @@ import type { TypeObjetMetier } from "@/generated/prisma/client";
 const LINKABLE: TypeObjetMetier[] = [
   "PROCESSUS",
   "PROCESSUS_ETAPE",
+  "MACROPROCESSUS",
   "PROJET",
   "CONSEIL",
   "MISSION",
@@ -23,6 +24,7 @@ const LINKABLE: TypeObjetMetier[] = [
   "TACHE",
   "OBJECTIF",
   "MODELE_TACHE",
+  "ACTIF_IT",
   "UNITE",
 ];
 

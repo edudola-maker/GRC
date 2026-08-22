@@ -36,6 +36,7 @@ import {
   formatUtilisateurNom,
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,} from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,7 @@ export default async function RisqueDetailPage({
       : null;
   const user = await getCurrentUser();
 
-  const [risque, users, historique, journal, reevaluations, processus] =
+  const [risque, users, historique, journal, reevaluations, processus, unites] =
     await Promise.all([
     prisma.risque.findUnique({
       where: { id },
@@ -88,6 +89,7 @@ export default async function RisqueDetailPage({
       orderBy: { nom: "asc" },
       select: { id: true, code: true, nom: true },
     }),
+    listUnitesActives(),
   ]);
 
   if (!risque) notFound();
@@ -150,6 +152,7 @@ export default async function RisqueDetailPage({
           <RisqueForm
             action={updateRisque}
             users={users}
+            unites={unites}
             values={risque}
             cancelHref={baseHref}
             sectionKey="INFOS_GENERALES"

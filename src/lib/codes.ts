@@ -9,10 +9,11 @@ const PREFIXES = {
   CONTROLE_SCI: "CTL",
   DOCUMENT: "DOC",
   PROCESSUS: "PRC",
+  MACROPROCESSUS: "MAC",
   MODELE_TACHE: "MDL",
   OBJECTIF: "OBJ",
   UNITE: "UNT",
-  /// Actif IT — préfixe générique AIT (pas APP).
+  /// Actifs (référentiel généralisé) — préfixe AIT conservé.
   ACTIF_IT: "AIT",
 } as const;
 
@@ -84,6 +85,12 @@ async function findCodeCollision(
           where: { uniteId, code: c, ...notId },
         }),
       );
+    case "MACROPROCESSUS":
+      return Boolean(
+        await prisma.macroprocessus.findFirst({
+          where: { uniteId, code: c, ...notId },
+        }),
+      );
     case "CONTROLE_SCI":
       return Boolean(
         await prisma.controleSCI.findFirst({
@@ -137,9 +144,10 @@ const UNIQUE_MESSAGES: Partial<Record<PrefixeCode, string>> = {
   CONSEIL: "Un conseil porte déjà ce code.",
   RISQUE: "Un risque porte déjà ce code.",
   PROCESSUS: "Un processus porte déjà ce code.",
+  MACROPROCESSUS: "Un macroprocessus porte déjà ce code.",
   CONTROLE_SCI: "Un contrôle porte déjà ce code.",
   DOCUMENT: "Un document porte déjà ce code.",
-  ACTIF_IT: "Un actif IT porte déjà ce code.",
+  ACTIF_IT: "Un actif porte déjà ce code.",
   MODELE_TACHE: "Un modèle de tâche porte déjà ce code.",
   RECOMMANDATION: "Une recommandation porte déjà ce code.",
   OBJECTIF: "Un objectif porte déjà ce code.",
@@ -379,7 +387,7 @@ export async function assertNomUnique(
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
     });
-    if (existing) return "Un actif IT actif porte déjà ce nom.";
+    if (existing) return "Un actif non archivé porte déjà ce nom.";
   }
   return null;
 }

@@ -23,6 +23,7 @@ import {
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
 import { parseTags } from "@/lib/tags";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function MissionCockpitPage({
   const user = await getCurrentUser();
   const { mission, redactions, etapes, equipe } = await requireMissionDetail(id);
 
-  const [users, types, templates, descriptifs] = await Promise.all([
+  const [users, types, templates, descriptifs, unites] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     prisma.missionType.findMany({
       where: { actif: true },
@@ -59,6 +60,7 @@ export default async function MissionCockpitPage({
       orderBy: { ordre: "asc" },
       select: { id: true, libelle: true, typeId: true },
     }),
+    listUnitesActives(),
   ]);
 
   const tags = parseTags(mission.tags);
@@ -100,6 +102,7 @@ export default async function MissionCockpitPage({
             <MissionForm
               action={updateMission}
               users={users}
+              unites={unites}
               types={types}
               templates={templates}
               descriptifs={descriptifs}

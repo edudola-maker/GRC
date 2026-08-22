@@ -110,6 +110,10 @@ enum TypeObjetMetier {
   UNITE
   /// Objectif stratégique d’unité (≠ ObjectifAnnuel, ≠ ObjectifModule).
   OBJECTIF
+  /// Famille d’activités (Unité → Macroprocessus → Processus).
+  MACROPROCESSUS
+  /// Actif du référentiel généralisé (IT / Physique / Humain / Prestataire).
+  ACTIF_IT
 }
 
 enum StatutObjectif {
@@ -134,13 +138,24 @@ enum StatutProcessus {
   SUSPENDU
 }
 
-/// Type d’actif IT (MVP léger — pas une CMDB).
+/// Type d’actif du référentiel généralisé (pas une CMDB).
+/// Catégories : IT · Physique · Humain · Prestataire (dérivées en app).
 enum TypeActifIT {
   APPLICATION
   SYSTEME
   INFRASTRUCTURE
   SERVICE
   AUTRE
+  /// Physique
+  LOCAL
+  BATIMENT
+  SALLE
+  MATERIEL
+  /// Humain / compétence critique (pas de personnes nominatives)
+  COMPETENCE_CRITIQUE
+  FONCTION_CRITIQUE
+  /// Prestataire / tiers (MVP léger)
+  PRESTATAIRE
 }
 
 enum StatutActifIT {
@@ -288,8 +303,10 @@ model Unite {
   id            String   @id @default(cuid())
   code          String   @unique
   nom           String
-  /// Mission / description synthétique de l’unité.
+  /// Mission / description synthétique de l’unité (Admin / court).
   description   String?
+  /// Présentation narratif libre (carte d’identité) — rôle, finalité, organisation.
+  presentation  String?
   responsableId String?
   adjointId     String?
   actif         Boolean  @default(true)
@@ -307,6 +324,7 @@ model Unite {
   documents        Document[]
   missions         Mission[]
   processus        Processus[]
+  macroprocessus   Macroprocessus[]
   modelesTache     ModeleTache[]
   recommandations  Recommandation[]
   objectifs        Objectif[]
@@ -324,6 +342,8 @@ model Unite {
   actifsIT         ActifIT[]
   /// Missions institutionnelles / attributions permanentes (≠ Mission d’assurance).
   attributions         UniteAttribution[]
+  macroprocessusApplicables MacroprocessusUniteApplicable[]
+  processusApplicables      ProcessusUniteApplicable[]
 }
 
 /// Attribution / mission institutionnelle d’une Unité (référentiel gouvernance).
@@ -377,6 +397,7 @@ model Utilisateur {
   objectifsCrees          Objectif[]         @relation("ObjectifCreePar")
   objectifsModifies       Objectif[]         @relation("ObjectifModifiePar")
   actifsITResponsable     ActifIT[]          @relation("ActifITResponsable")
+  macroprocessusResponsable Macroprocessus[] @relation("MacroprocessusResponsable")
 
   projetsCrees            Projet[]           @relation("ProjetCreePar")
   projetsModifies         Projet[]           @relation("ProjetModifiePar")
@@ -396,6 +417,8 @@ model Utilisateur {
   processusModifies       Processus[]        @relation("ProcessusModifiePar")
   actifsITCrees           ActifIT[]          @relation("ActifITCreePar")
   actifsITModifies        ActifIT[]          @relation("ActifITModifiePar")
+  macroprocessusCrees     Macroprocessus[]   @relation("MacroprocessusCreePar")
+  macroprocessusModifies  Macroprocessus[]   @relation("MacroprocessusModifiePar")
   historiquesTache        HistoriqueTache[]
   historiquesModification HistoriqueModification[]
   objectifs               ObjectifAnnuel[]
@@ -1111,6 +1134,10 @@ model Objectif {
   code          String
   intitule      String
   description   String?
+  /// Cible éventuelle (texte libre : « 8 audits », « 95 % », …).
+  cible         String?
+  /// Progression 0–100 (saisie ; pas de calcul auto pour l’instant).
+  progression   Int            @default(0)
   annee         Int
   responsableId String
   statut        StatutObjectif @default(EN_COURS)
@@ -1208,7 +1235,8 @@ model ParametreFonctionnel {
 // ─── Processus (référentiel / cartographie SCI) ─────────────
 /// Définition d’un processus métier. Documentation détaillée → Confluence.
 /// Associations libres via LienObjet (Risques, Contrôles SCI, Documents…).
-/// parentId prépare Macro-processus → Processus → Sous-processus.
+/// parentId réservé aux futurs sous-processus (pas exposé UX pour l’instant).
+/// Hiérarchie affichée : Macroprocessus → Processus (≠ ProcessusDependance).
 model Processus {
   id            String          @id @default(cuid())
   uniteId       String
@@ -1223,6 +1251,8 @@ model Processus {
   /// Lien Confluence (documentation) — pas une GED
   reference     String?
   parentId      String?
+  /// Famille d’activités (Macroprocessus).
+  macroprocessusId String?
   /// LPD by design — socle.
   contientDonneesPersonnelles Boolean @default(false)
   niveauConfidentialite       NiveauConfidentialite @default(INTERNE)
@@ -1239,6 +1269,7 @@ model Processus {
   modifiePar  Utilisateur @relation("ProcessusModifiePar", fields: [modifieParId], references: [id])
   parent      Processus?  @relation("ProcessusHierarchie", fields: [parentId], references: [id])
   enfants     Processus[] @relation("ProcessusHierarchie")
+  macroprocessus Macroprocessus? @relation(fields: [macroprocessusId], references: [id], onDelete: SetNull)
   etapes      ProcessusEtape[]
   modelesTache ModeleTacheProcessus[]
   risques     Risque[]
@@ -1248,10 +1279,70 @@ model Processus {
   continuite  ProcessusContinuité?
   dependDe    ProcessusDependance[] @relation("ProcessusDependant")
   dependants  ProcessusDependance[] @relation("ProcessusPrerequis")
+  unitesApplicables ProcessusUniteApplicable[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
   @@index([parentId])
+  @@index([macroprocessusId])
+}
+
+/// Unités pour lesquelles le Processus est applicable/visible (hors propriétaire).
+/// Pas d’héritage automatique depuis le Macroprocessus.
+model ProcessusUniteApplicable {
+  id          String   @id @default(cuid())
+  processusId String
+  uniteId     String
+  creeLe      DateTime @default(now())
+
+  processus Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  unite     Unite     @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+
+  @@unique([processusId, uniteId])
+  @@index([uniteId])
+}
+
+/// Grande famille d’activités (Unité → Macroprocessus → Processus).
+/// Volontairement léger : pas de Risques / Contrôles / RACI / Continuité / Actifs ici.
+model Macroprocessus {
+  id            String   @id @default(cuid())
+  uniteId       String
+  code          String
+  nom           String
+  /// Narratif / finalité.
+  description   String?
+  responsableId String?
+  /// Ordre d’affichage dans l’arborescence.
+  ordre         Int      @default(0)
+  archive       Boolean  @default(false)
+  creeParId     String
+  modifieParId  String
+  creeLe        DateTime @default(now())
+  modifieLe     DateTime @updatedAt
+
+  unite       Unite        @relation(fields: [uniteId], references: [id])
+  responsable Utilisateur? @relation("MacroprocessusResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  creePar     Utilisateur  @relation("MacroprocessusCreePar", fields: [creeParId], references: [id])
+  modifiePar  Utilisateur  @relation("MacroprocessusModifiePar", fields: [modifieParId], references: [id])
+  processus   Processus[]
+  unitesApplicables MacroprocessusUniteApplicable[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, ordre])
+}
+
+/// Unités pour lesquelles le Macroprocessus est applicable/visible (hors propriétaire).
+model MacroprocessusUniteApplicable {
+  id               String   @id @default(cuid())
+  macroprocessusId String
+  uniteId          String
+  creeLe           DateTime @default(now())
+
+  macroprocessus Macroprocessus @relation(fields: [macroprocessusId], references: [id], onDelete: Cascade)
+  unite          Unite          @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+
+  @@unique([macroprocessusId, uniteId])
+  @@index([uniteId])
 }
 
 /// Étapes ordonnées d’un processus (« quoi ») — le « comment » reste dans Confluence.
@@ -1306,8 +1397,9 @@ model ProcessusRaciParticipant {
   @@index([utilisateurId])
 }
 
-/// Référentiel transversal Actifs IT (MVP — identifier quels systèmes supportent quels processus).
-/// Préfixe AIT-xxxx (plus générique que APP — types APPLICATION / SYSTEME / …).
+/// Référentiel Actifs (généralisé : IT / Physique / Humain / Prestataire).
+/// Préfixe AIT-xxxx conservé pour l’historique ; libellé UI = « Actifs ».
+/// Information / Données = inventaire séparé (roadmap).
 model ActifIT {
   id             String       @id @default(cuid())
   uniteId        String
@@ -1319,6 +1411,10 @@ model ActifIT {
   statut         StatutActifIT @default(ACTIF)
   fournisseur    String?
   hebergement    String?
+  /// Prestataire : service fourni.
+  serviceFourni  String?
+  /// Criticité éventuelle (1–5) — prestataire / actifs critiques.
+  criticite      Int?
   archive        Boolean      @default(false)
   creeParId      String
   modifieParId   String
@@ -1333,6 +1429,7 @@ model ActifIT {
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
+  @@index([uniteId, type])
 }
 
 /// Relation N–N Processus ↔ Actif IT.

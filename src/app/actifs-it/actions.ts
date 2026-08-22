@@ -9,10 +9,13 @@ import {
   allocateCreateCode,
   assertCodeUnique,
   assertNomUnique,
-  nextCode,
-  normalizeCode
+  normalizeCode,
 } from "@/lib/codes";
-import { optStr, str } from "@/lib/form";
+import { optInt, optStr, str } from "@/lib/form";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import { getCurrentUser } from "@/lib/session";
@@ -30,18 +33,40 @@ async function assertResponsable(id: string | null) {
   return Boolean(u);
 }
 
+async function assertUniteActive(uniteId: string) {
+  return prisma.unite.findFirst({ where: { id: uniteId, actif: true } });
+}
+
+function parseCriticite(formData: FormData): number | null {
+  const n = optInt(formData, "criticite");
+  if (n == null) return null;
+  if (n < 1 || n > 5) return null;
+  return n;
+}
+
+async function nextHistVersion(objetId: string) {
+  const last = await prisma.historiqueModification.aggregate({
+    where: { typeObjet: "ACTIF_IT", objetId },
+    _max: { versionObjet: true },
+  });
+  return (last._max.versionObjet ?? 0) + 1;
+}
+
 export async function createActifIT(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/actifs-it/nouveau";
   const nom = str(formData, "nom");
-  if (!nom) redirectWithError(fallback, "Le nom de l’actif IT est obligatoire.");
+  if (!nom) redirectWithError(fallback, "Le nom de l’actif est obligatoire.");
 
   const type = str(formData, "type") || "APPLICATION";
   const statut = str(formData, "statut") || "ACTIF";
   if (!TYPES.has(type as "APPLICATION") || !STATUTS.has(statut as "ACTIF")) {
     redirectWithError(fallback, "Type ou statut invalide.");
   }
+
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await assertUniteActive(uniteId);
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
 
   const nomErr = await assertNomUnique("ACTIF_IT", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
@@ -51,7 +76,13 @@ export async function createActifIT(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
-const allocated = await allocateCreateCode(
+  const criticiteRaw = str(formData, "criticite");
+  const criticite = parseCriticite(formData);
+  if (criticiteRaw && criticite == null) {
+    redirectWithError(fallback, "Criticité invalide (1 à 5).");
+  }
+
+  const allocated = await allocateCreateCode(
     "ACTIF_IT",
     uniteId,
     optStr(formData, "code"),
@@ -60,7 +91,7 @@ const allocated = await allocateCreateCode(
     redirectWithError("/actifs-it/nouveau", allocated.error);
   }
 
-    const actif = await prisma.actifIT.create({
+  const actif = await prisma.actifIT.create({
     data: {
       code: allocated.code,
       uniteId,
@@ -71,6 +102,8 @@ const allocated = await allocateCreateCode(
       statut: statut as "ACTIF",
       fournisseur: optStr(formData, "fournisseur"),
       hebergement: optStr(formData, "hebergement"),
+      serviceFourni: optStr(formData, "serviceFourni"),
+      criticite,
       creeParId: current.id,
       modifieParId: current.id,
     },
@@ -87,7 +120,7 @@ export async function updateActifIT(formData: FormData) {
   const fallback = `/actifs-it/${id}?edit=INFOS`;
 
   const existing = await prisma.actifIT.findUnique({ where: { id } });
-  if (!existing) redirectWithError("/actifs-it", "Actif IT introuvable.");
+  if (!existing) redirectWithError("/actifs-it", "Actif introuvable.");
   if (existing.archive) {
     redirectWithError(`/actifs-it/${id}`, "Actif archivé — modification impossible.");
   }
@@ -101,12 +134,16 @@ export async function updateActifIT(formData: FormData) {
     redirectWithError(fallback, "Type ou statut invalide.");
   }
 
-  const nomErr = await assertNomUnique("ACTIF_IT", nom, existing.uniteId, id);
+  const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+  const unite = await assertUniteActive(uniteId);
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
+  const nomErr = await assertNomUnique("ACTIF_IT", nom, uniteId, id);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const codeRaw = optStr(formData, "code") ?? existing.code;
   const code = normalizeCode(codeRaw);
-  const codeErr = await assertCodeUnique("ACTIF_IT", code, existing.uniteId, id);
+  const codeErr = await assertCodeUnique("ACTIF_IT", code, uniteId, id);
   if (codeErr) redirectWithError(fallback, codeErr);
 
   const responsableId = optStr(formData, "responsableId");
@@ -114,20 +151,67 @@ export async function updateActifIT(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
+  const criticiteRaw = str(formData, "criticite");
+  const criticite = parseCriticite(formData);
+  if (criticiteRaw && criticite == null) {
+    redirectWithError(fallback, "Criticité invalide (1 à 5).");
+  }
+
+  const serviceFourni = optStr(formData, "serviceFourni");
+  const description = optStr(formData, "description");
+  const fournisseur = optStr(formData, "fournisseur");
+  const hebergement = optStr(formData, "hebergement");
+
+  const changes = diffChamps([
+    { champ: "code", avant: existing.code, apres: code },
+    { champ: "nom", avant: existing.nom, apres: nom },
+    { champ: "type", avant: existing.type, apres: type },
+    { champ: "statut", avant: existing.statut, apres: statut },
+    { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
+    {
+      champ: "responsableId",
+      avant: existing.responsableId,
+      apres: responsableId,
+    },
+    { champ: "description", avant: existing.description, apres: description },
+    { champ: "fournisseur", avant: existing.fournisseur, apres: fournisseur },
+    { champ: "hebergement", avant: existing.hebergement, apres: hebergement },
+    {
+      champ: "serviceFourni",
+      avant: existing.serviceFourni,
+      apres: serviceFourni,
+    },
+    { champ: "criticite", avant: existing.criticite, apres: criticite },
+  ]);
+
   await prisma.actifIT.update({
     where: { id },
     data: {
       code,
       nom,
       type: type as "APPLICATION",
-      description: optStr(formData, "description"),
+      description,
       responsableId: responsableId ?? null,
       statut: statut as "ACTIF",
-      fournisseur: optStr(formData, "fournisseur"),
-      hebergement: optStr(formData, "hebergement"),
+      fournisseur,
+      hebergement,
+      serviceFourni,
+      criticite,
+      uniteId,
       modifieParId: current.id,
     },
   });
+
+  if (changes.length > 0) {
+    await enregistrerModifications({
+      typeObjet: "ACTIF_IT",
+      objetId: id,
+      uniteId,
+      modifieParId: current.id,
+      changes,
+      versionObjet: await nextHistVersion(id),
+    });
+  }
 
   revalidateActif(id);
   redirectWithOk(`/actifs-it/${id}`, "modifie");
@@ -164,7 +248,7 @@ export async function deleteActifIT(formData: FormData) {
     where: { id },
     include: { _count: { select: { processus: true } } },
   });
-  if (!existing) redirectWithError("/actifs-it", "Actif IT introuvable.");
+  if (!existing) redirectWithError("/actifs-it", "Actif introuvable.");
   if (existing._count.processus > 0) {
     redirectWithError(
       `/actifs-it/${id}`,
@@ -192,7 +276,7 @@ export async function linkActifProcessus(formData: FormData) {
     }),
   ]);
   if (!actif || actif.uniteId !== current.uniteId) {
-    redirectWithError("/actifs-it", "Actif IT introuvable.");
+    redirectWithError("/actifs-it", "Actif introuvable.");
   }
   if (!processus) redirectWithError(retour, "Processus introuvable ou archivé.");
 

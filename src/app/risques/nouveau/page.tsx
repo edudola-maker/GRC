@@ -10,6 +10,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 import { createRisque } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function NouveauRisquePage({
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [usersRaw, processus, suggestedCode] = await Promise.all([
+  const [usersRaw, processus, suggestedCode, unites] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     prisma.processus.findMany({
       where: { uniteId: user.uniteId, archive: false },
@@ -29,6 +30,7 @@ export default async function NouveauRisquePage({
       select: { id: true, code: true, nom: true },
     }),
     peekNextCode("RISQUE", user.uniteId),
+    listUnitesActives(),
   ]);
 
   const users = usersRaw.map((u) => ({
@@ -52,6 +54,8 @@ export default async function NouveauRisquePage({
         <RisqueForm
           action={createRisque}
           users={users}
+          unites={unites}
+          values={{ uniteId: user.uniteId }}
           cancelHref="/risques"
           submitLabel="Créer le risque"
           processusOptions={processusOptions}

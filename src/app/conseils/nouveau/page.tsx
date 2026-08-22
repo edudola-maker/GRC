@@ -10,6 +10,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 import { createConseil } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +22,10 @@ export default async function NouveauConseilPage({
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [usersRaw, suggestedCode] = await Promise.all([
+  const [usersRaw, suggestedCode, unites] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
     peekNextCode("CONSEIL", user.uniteId),
+    listUnitesActives(),
   ]);
   const users = usersRaw.map((u) => ({
     id: u.id,
@@ -44,7 +46,12 @@ export default async function NouveauConseilPage({
         <ConseilForm
           action={createConseil}
           users={users}
-          values={{ dateReception: today, dateEcheance: echeance }}
+          unites={unites}
+          values={{
+            dateReception: today,
+            dateEcheance: echeance,
+            uniteId: user.uniteId,
+          }}
           cancelHref="/conseils"
           submitLabel="Créer le conseil"
           showCreerTache

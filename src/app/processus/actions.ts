@@ -14,6 +14,10 @@ import {
   normalizeCode
 } from "@/lib/codes";
 import { optInt, optStr, str } from "@/lib/form";
+import {
+  diffChamps,
+  enregistrerModifications,
+} from "@/lib/historique";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
 import {
@@ -24,6 +28,7 @@ import {
 import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/section-nav";
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
+import { syncApplicables } from "@/lib/unites-referentiel";
 
 const STATUTS = new Set(STATUT_PROCESSUS_OPTIONS.map((o) => o.value));
 const NIVEAUX_CONF = new Set<string>(
@@ -42,12 +47,18 @@ function parseLpd(formData: FormData) {
 }
 
 function revalidateProcessus(id: string) {
-  revalidateApp([`/processus/${id}`, `/processus/${id}/modifier`]);
+  revalidateApp([`/processus/${id}`, `/processus/${id}/modifier`, "/processus"]);
+}
+
+function parseApplicableUniteIds(formData: FormData): string[] {
+  const raw = formData.getAll("applicableUniteIds");
+  return raw
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean);
 }
 
 export async function createProcessus(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/processus/nouveau";
   const nom = str(formData, "nom");
   if (!nom) redirectWithError(fallback, "Le nom du processus est obligatoire.");
@@ -57,12 +68,26 @@ export async function createProcessus(formData: FormData) {
     redirectWithError(fallback, "Statut invalide.");
   }
 
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
   const nomErr = await assertNomUnique("PROCESSUS", nom, uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
   const responsableId = str(formData, "responsableId") || current.id;
   const lpd = parseLpd(formData);
-const allocated = await allocateCreateCode(
+  const macroprocessusId = optStr(formData, "macroprocessusId");
+  if (macroprocessusId) {
+    const macro = await prisma.macroprocessus.findFirst({
+      where: { id: macroprocessusId, archive: false },
+    });
+    if (!macro) redirectWithError(fallback, "Macroprocessus invalide.");
+  }
+
+  const allocated = await allocateCreateCode(
     "PROCESSUS",
     uniteId,
     optStr(formData, "code"),
@@ -71,7 +96,7 @@ const allocated = await allocateCreateCode(
     redirectWithError("/processus/nouveau", allocated.error);
   }
 
-    const processus = await prisma.processus.create({
+  const processus = await prisma.processus.create({
     data: {
       code: allocated.code,
       uniteId,
@@ -81,6 +106,7 @@ const allocated = await allocateCreateCode(
       responsableId,
       statut: statut as "ACTIF",
       reference: optStr(formData, "reference"),
+      macroprocessusId: macroprocessusId || null,
       contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
       niveauConfidentialite: lpd.niveauConfidentialite,
       archive: false,
@@ -88,6 +114,13 @@ const allocated = await allocateCreateCode(
       modifieParId: current.id,
     },
   });
+
+  await syncApplicables(
+    "processus",
+    processus.id,
+    uniteId,
+    parseApplicableUniteIds(formData),
+  );
 
   revalidateProcessus(processus.id);
   redirectWithOk(`/processus/${processus.id}`, "cree");
@@ -115,12 +148,19 @@ export async function updateProcessus(formData: FormData) {
     if (!STATUTS.has(statut as "ACTIF" | "SUSPENDU")) {
       redirectWithError(editFallback, "Statut invalide.");
     }
+
+    const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+    const unite = await prisma.unite.findFirst({
+      where: { id: uniteId, actif: true },
+    });
+    if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
+
     const codeRaw = str(formData, "code");
     const code = normalizeCode(codeRaw);
     const codeErr = await assertCodeUnique(
       "PROCESSUS",
       code,
-      existing.uniteId,
+      uniteId,
       id,
     );
     if (codeErr) redirectWithError(editFallback, codeErr);
@@ -128,12 +168,46 @@ export async function updateProcessus(formData: FormData) {
     const nomErr = await assertNomUnique(
       "PROCESSUS",
       nom,
-      existing.uniteId,
+      uniteId,
       id,
     );
     if (nomErr) redirectWithError(editFallback, nomErr);
 
+    const macroprocessusId = optStr(formData, "macroprocessusId");
+    if (macroprocessusId) {
+      const macro = await prisma.macroprocessus.findFirst({
+        where: { id: macroprocessusId, archive: false },
+      });
+      if (!macro) redirectWithError(editFallback, "Macroprocessus invalide.");
+    }
+
     const responsableId = str(formData, "responsableId") || current.id;
+    const changes = diffChamps([
+      { champ: "code", avant: existing.code, apres: code },
+      { champ: "nom", avant: existing.nom, apres: nom },
+      {
+        champ: "description",
+        avant: existing.description,
+        apres: optStr(formData, "description"),
+      },
+      {
+        champ: "uniteId",
+        avant: existing.uniteId,
+        apres: uniteId,
+      },
+      {
+        champ: "macroprocessusId",
+        avant: existing.macroprocessusId,
+        apres: macroprocessusId || null,
+      },
+      {
+        champ: "responsableId",
+        avant: existing.responsableId,
+        apres: responsableId,
+      },
+      { champ: "statut", avant: existing.statut, apres: statut },
+    ]);
+
     await prisma.processus.update({
       where: { id },
       data: {
@@ -143,9 +217,29 @@ export async function updateProcessus(formData: FormData) {
         reference: optStr(formData, "reference"),
         responsableId,
         statut: statut as "ACTIF",
+        uniteId,
+        macroprocessusId: macroprocessusId || null,
         modifieParId: current.id,
       },
     });
+
+    await syncApplicables(
+      "processus",
+      id,
+      uniteId,
+      parseApplicableUniteIds(formData),
+    );
+
+    if (changes.length > 0) {
+      await enregistrerModifications({
+        typeObjet: "PROCESSUS",
+        objetId: id,
+        uniteId,
+        modifieParId: current.id,
+        changes,
+        versionObjet: 1,
+      });
+    }
   } else if (sectionKey === "LPD") {
     const lpd = parseLpd(formData);
     await prisma.processus.update({

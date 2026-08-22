@@ -58,8 +58,12 @@ async function labelResponsable(id: string) {
 
 export async function createRisque(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/risques/nouveau";
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
 
   const nom = str(formData, "nom");
   if (!nom) {
@@ -121,16 +125,16 @@ export async function createRisque(formData: FormData) {
     }
   }
 
-const allocated = await allocateCreateCode(
+  const allocated = await allocateCreateCode(
     "RISQUE",
     uniteId,
     optStr(formData, "code"),
   );
   if (!allocated.ok) {
-    redirectWithError("/risques/nouveau", allocated.error);
+    redirectWithError(fallback, allocated.error);
   }
 
-    const risque = await prisma.risque.create({
+  const risque = await prisma.risque.create({
     data: {
       code: allocated.code,
       uniteId,
@@ -174,7 +178,6 @@ const allocated = await allocateCreateCode(
 
 export async function updateRisque(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const id = str(formData, "id");
   if (!id) redirectWithError("/risques", "Identifiant risque manquant.");
 
@@ -204,6 +207,12 @@ export async function updateRisque(formData: FormData) {
   if (!(await assertResponsable(responsableId))) {
     redirectWithError(editFallback, "Responsable introuvable.");
   }
+
+  const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
 
   const probabilite = parseEchelle(formData, "probabilite", existing.probabilite);
   const impact = parseEchelle(formData, "impact", existing.impact);
@@ -283,6 +292,7 @@ export async function updateRisque(formData: FormData) {
     { champ: "description", avant: existing.description, apres: description },
     { champ: "taxinomie", avant: existing.taxinomie, apres: taxinomie },
     { champ: "tags", avant: existing.tags, apres: tags },
+    { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
     {
       champ: "processus",
       avant: labelPrc(avantPrc) ?? existing.processus,
@@ -345,6 +355,7 @@ export async function updateRisque(formData: FormData) {
       statut: statut as "IDENTIFIE",
       commentaires,
       justificationEvaluation,
+      uniteId,
       modifieParId: current.id,
       ...(bump ? { contenuVersion: nextVersion } : {}),
     },
@@ -354,7 +365,7 @@ export async function updateRisque(formData: FormData) {
     await enregistrerModifications({
       typeObjet: "RISQUE",
       objetId: id,
-      uniteId: existing.uniteId,
+      uniteId,
       modifieParId: current.id,
       changes,
       versionObjet: nextVersion,
@@ -365,7 +376,7 @@ export async function updateRisque(formData: FormData) {
     await ajouterJournal({
       typeObjet: "RISQUE",
       objetId: id,
-      uniteId: existing.uniteId,
+      uniteId,
       typeEvenement: TYPE_EVENEMENT.STATUT,
       message: `Statut : ${STATUT_RISQUE_LABELS[existing.statut] ?? existing.statut} → ${STATUT_RISQUE_LABELS[statut] ?? statut}`,
       auteurId: current.id,

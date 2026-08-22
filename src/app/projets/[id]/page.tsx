@@ -44,6 +44,7 @@ import { listerNotes } from "@/lib/notes";
 import { listerJournalBord } from "@/lib/journal-bord";
 import { deleteTache } from "@/app/taches/actions";
 import { formatUtilisateurNom } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function ProjetDetailPage({
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
 
-  const [projet, users, redactions, notes, journalBord] = await Promise.all([
+  const [projet, users, redactions, notes, journalBord, unites] = await Promise.all([
     prisma.projet.findUnique({
       where: { id },
       include: {
@@ -102,6 +103,7 @@ export default async function ProjetDetailPage({
     listSectionRedactions("PROJET", id),
     listerNotes("PROJET", id),
     listerJournalBord("PROJET", id),
+    listUnitesActives(),
   ]);
 
   if (!projet) notFound();
@@ -204,6 +206,7 @@ export default async function ProjetDetailPage({
           <ProjetForm
             action={updateProjet}
             users={users}
+            unites={unites}
             values={projet}
             cancelHref={baseHref}
             submitLabel="Finaliser"

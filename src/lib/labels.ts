@@ -133,6 +133,8 @@ export const TYPE_OBJET_LABELS: Record<string, string> = {
   MODELE_TACHE: "Modèle de tâche",
   UNITE: "Unité",
   OBJECTIF: "Objectif",
+  MACROPROCESSUS: "Macroprocessus",
+  ACTIF_IT: "Actif",
 };
 
 export const STATUT_OBJECTIF_LABELS: Record<string, string> = {
@@ -158,10 +160,42 @@ export const STATUT_PROCESSUS_LABELS: Record<string, string> = {
 export const TYPE_ACTIF_IT_LABELS: Record<string, string> = {
   APPLICATION: "Application",
   SYSTEME: "Système",
-  INFRASTRUCTURE: "Infrastructure",
-  SERVICE: "Service",
-  AUTRE: "Autre",
+  INFRASTRUCTURE: "Infrastructure IT",
+  SERVICE: "Service / outil IT",
+  AUTRE: "Autre (IT)",
+  LOCAL: "Local",
+  BATIMENT: "Bâtiment",
+  SALLE: "Salle",
+  MATERIEL: "Matériel physique",
+  COMPETENCE_CRITIQUE: "Compétence critique",
+  FONCTION_CRITIQUE: "Fonction critique",
+  PRESTATAIRE: "Prestataire / tiers",
 };
+
+/** Catégorie produit dérivée du type (filtre inventaire). */
+export const CATEGORIE_ACTIF_LABELS: Record<string, string> = {
+  IT: "IT",
+  PHYSIQUE: "Physique",
+  HUMAIN: "Humain",
+  PRESTATAIRE: "Prestataire",
+};
+
+export function categorieActifFromType(type: string): keyof typeof CATEGORIE_ACTIF_LABELS {
+  switch (type) {
+    case "LOCAL":
+    case "BATIMENT":
+    case "SALLE":
+    case "MATERIEL":
+      return "PHYSIQUE";
+    case "COMPETENCE_CRITIQUE":
+    case "FONCTION_CRITIQUE":
+      return "HUMAIN";
+    case "PRESTATAIRE":
+      return "PRESTATAIRE";
+    default:
+      return "IT";
+  }
+}
 
 export const STATUT_ACTIF_IT_LABELS: Record<string, string> = {
   ACTIF: "Actif",

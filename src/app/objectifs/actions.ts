@@ -68,6 +68,8 @@ const allocated = await allocateCreateCode(
       uniteId,
       intitule,
       description: optStr(formData, "description"),
+      cible: optStr(formData, "cible"),
+      progression: Math.min(100, Math.max(0, optInt(formData, "progression") ?? 0)),
       annee,
       responsableId,
       statut: statut as "EN_COURS",
@@ -128,6 +130,11 @@ export async function updateObjectif(formData: FormData) {
       data: {
         intitule,
         description: optStr(formData, "description"),
+        cible: optStr(formData, "cible"),
+        progression: Math.min(
+          100,
+          Math.max(0, optInt(formData, "progression") ?? existing.progression),
+        ),
         annee,
         responsableId,
         statut: statut as "EN_COURS",

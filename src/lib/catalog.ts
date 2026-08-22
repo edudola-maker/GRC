@@ -133,11 +133,18 @@ export const STATUT_PROCESSUS_OPTIONS = [
 ] as const;
 
 export const TYPE_ACTIF_IT_OPTIONS = [
-  { value: "APPLICATION", label: "Application" },
-  { value: "SYSTEME", label: "Système" },
-  { value: "INFRASTRUCTURE", label: "Infrastructure" },
-  { value: "SERVICE", label: "Service" },
-  { value: "AUTRE", label: "Autre" },
+  { value: "APPLICATION", label: "IT — Application" },
+  { value: "SYSTEME", label: "IT — Système" },
+  { value: "INFRASTRUCTURE", label: "IT — Infrastructure" },
+  { value: "SERVICE", label: "IT — Service / outil" },
+  { value: "AUTRE", label: "IT — Autre" },
+  { value: "LOCAL", label: "Physique — Local" },
+  { value: "BATIMENT", label: "Physique — Bâtiment" },
+  { value: "SALLE", label: "Physique — Salle" },
+  { value: "MATERIEL", label: "Physique — Matériel" },
+  { value: "COMPETENCE_CRITIQUE", label: "Humain — Compétence critique" },
+  { value: "FONCTION_CRITIQUE", label: "Humain — Fonction critique" },
+  { value: "PRESTATAIRE", label: "Prestataire / tiers" },
 ] as const;
 
 export const STATUT_ACTIF_IT_OPTIONS = [
@@ -364,24 +371,41 @@ export const MODULE_HELP = {
       },
       {
         heading: "Chaîne cible",
-        body: "Unité → Processus → (RACI, Risques & Contrôles, Actifs IT, Continuité) → vues transversales. Un objet peut être lié au processus ou à une étape précise.",
+        body: "Unité → Macroprocessus → Processus → (RACI, Risques & Contrôles, Actifs IT, Continuité) → vues transversales. Un objet peut être lié au processus ou à une étape précise.",
       },
       {
-        heading: "Hiérarchie (plus tard)",
-        body: "Un champ parent prépare Macro-processus → Processus → Sous-processus, sans complexifier la première version.",
+        heading: "Arborescence",
+        body: "L’arborescence regroupe les processus sous leurs macroprocessus (MAC-xxxx). Les processus sans rattachement apparaissent sous « Sans macroprocessus ».",
+      },
+    ],
+  },
+  macroprocessus: {
+    title: "Comprendre les Macroprocessus",
+    sections: [
+      {
+        heading: "À quoi ça sert ?",
+        body: "Regrouper les processus en grandes familles d’activités de l’unité. Objet volontairement léger : pas de RACI, risques, contrôles ou continuité ici — ceux-ci restent sur le Processus.",
+      },
+      {
+        heading: "Que saisir ?",
+        body: "Code (MAC-xxxx), nom, narratif / finalité, responsable, ordre d’affichage, unité propriétaire. Optionnel : unités applicables (visibilité hors propriétaire).",
+      },
+      {
+        heading: "Hiérarchie",
+        body: "Unité → Macroprocessus → Processus. L’arborescence Processus s’appuie sur ce niveau pour structurer le référentiel.",
       },
     ],
   },
   actifsIT: {
-    title: "Comprendre le référentiel Actifs IT",
+    title: "Comprendre le référentiel Actifs",
     sections: [
       {
         heading: "À quoi ça sert ?",
-        body: "Identifier quels systèmes / applications supportent quels processus. Vue inverse : si un actif est indisponible, quels processus sont impactés ?",
+        body: "Référentiel généralisé (IT, physique, humain, prestataire) pour identifier ce qui supporte les processus. Vue inverse : si un actif est indisponible, quels processus sont impactés ?",
       },
       {
         heading: "Que saisir ?",
-        body: "Code AIT-xxxx, nom, type, description, responsable, statut. Optionnel : fournisseur, hébergement. Pas une CMDB complète.",
+        body: "Code AIT-xxxx, nom, type (catégories IT / physique / humain / prestataire), description, responsable, statut. Optionnel : fournisseur, hébergement, service fourni, criticité 1–5. Pas une CMDB complète.",
       },
       {
         heading: "Liens",

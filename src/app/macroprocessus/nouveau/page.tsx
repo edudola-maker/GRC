@@ -1,30 +1,34 @@
-import { DocumentForm } from "@/components/EntityForms";
+import { MacroprocessusForm } from "@/components/macroprocessus/MacroprocessusForm";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { PageHeader } from "@/components/ui";
 import { MODULE_HELP } from "@/lib/catalog";
 import { peekNextCode } from "@/lib/codes";
+import { prisma } from "@/lib/prisma";
 import {
   formatUtilisateurNom,
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
-import { listUnitesActives } from "@/lib/unites-referentiel";
-import { createDocument } from "../actions";
+import { createMacroprocessus } from "../actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function NouveauDocumentPage({
+export default async function NouveauMacroprocessusPage({
   searchParams,
 }: {
   searchParams: Promise<{ erreur?: string }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const [usersRaw, suggestedCode, unites] = await Promise.all([
+  const [usersRaw, unites, suggestedCode] = await Promise.all([
     listUtilisateursActifsForCurrentUnite(),
-    peekNextCode("DOCUMENT", user.uniteId),
-    listUnitesActives(),
+    prisma.unite.findMany({
+      where: { actif: true },
+      select: { id: true, nom: true, code: true },
+      orderBy: { nom: "asc" },
+    }),
+    peekNextCode("MACROPROCESSUS", user.uniteId),
   ]);
   const users = usersRaw.map((u) => ({
     id: u.id,
@@ -33,21 +37,21 @@ export default async function NouveauDocumentPage({
 
   return (
     <>
-      <BackLink href="/documents" label="← Retour aux documents" />
+      <BackLink href="/macroprocessus" label="← Retour aux macroprocessus" />
       <PageHeader
-        title="Nouveau document"
-        help={<ModuleHelp {...MODULE_HELP.documents} />}
+        title="Nouveau macroprocessus"
+        help={<ModuleHelp {...MODULE_HELP.macroprocessus} />}
       />
       <FlashBanner erreur={sp.erreur} />
       <div className="entity-form-wrap">
-        <DocumentForm
-          action={createDocument}
+        <MacroprocessusForm
+          suggestedCode={suggestedCode}
+          action={createMacroprocessus}
           users={users}
           unites={unites}
-          values={{ uniteId: user.uniteId }}
-          cancelHref="/documents"
-          submitLabel="Créer le document"
-          suggestedCode={suggestedCode}
+          defaultUniteId={user.uniteId}
+          cancelHref="/macroprocessus"
+          submitLabel="Créer le macroprocessus"
         />
       </div>
     </>

@@ -76,8 +76,13 @@ async function resolveTemplateId(
 
 export async function createMission(formData: FormData) {
   const current = await getCurrentUser();
-  const uniteId = current.uniteId;
   const fallback = "/missions/nouveau";
+  const uniteId = optStr(formData, "uniteId") || current.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(fallback, "Unité responsable invalide.");
+
   const titre = str(formData, "titre");
   if (!titre) {
     redirectWithError(fallback, "Le titre de la mission est obligatoire.");
@@ -130,7 +135,7 @@ export async function createMission(formData: FormData) {
     optStr(formData, "code"),
   );
   if (!allocated.ok) {
-    redirectWithError("/missions/nouveau", allocated.error);
+    redirectWithError(fallback, allocated.error);
   }
 
   const mission = await prisma.mission.create({
@@ -224,7 +229,13 @@ export async function updateMission(formData: FormData) {
     redirectWithError(editFallback, "Responsable introuvable.");
   }
 
-  const nomErr = await assertNomUnique("MISSION", titre, existing.uniteId, id);
+  const uniteId = optStr(formData, "uniteId") || existing.uniteId;
+  const unite = await prisma.unite.findFirst({
+    where: { id: uniteId, actif: true },
+  });
+  if (!unite) redirectWithError(editFallback, "Unité responsable invalide.");
+
+  const nomErr = await assertNomUnique("MISSION", titre, uniteId, id);
   if (nomErr) redirectWithError(editFallback, nomErr);
 
   const codeRaw = optStr(formData, "code") ?? existing.code;
@@ -232,7 +243,7 @@ export async function updateMission(formData: FormData) {
   const codeErr = await assertCodeUnique(
     "MISSION",
     code,
-    existing.uniteId,
+    uniteId,
     id,
   );
   if (codeErr) redirectWithError(editFallback, codeErr);
@@ -251,6 +262,7 @@ export async function updateMission(formData: FormData) {
     { champ: "titre", avant: existing.titre, apres: titre },
     { champ: "statut", avant: existing.statut, apres: statut },
     { champ: "typeId", avant: existing.typeId, apres: typeId },
+    { champ: "uniteId", avant: existing.uniteId, apres: uniteId },
     { champ: "responsableId", avant: existing.responsableId, apres: responsableId },
     { champ: "nature", avant: existing.nature, apres: nature },
     { champ: "tags", avant: existing.tags, apres: tags },
@@ -290,6 +302,7 @@ export async function updateMission(formData: FormData) {
       analyseTravaux,
       contientDonneesPersonnelles: lpd.contientDonneesPersonnelles,
       niveauConfidentialite: lpd.niveauConfidentialite,
+      uniteId,
       modifieParId: current.id,
       ...(bump ? { contenuVersion: nextVersion } : {}),
     },
@@ -299,7 +312,7 @@ export async function updateMission(formData: FormData) {
     await enregistrerModifications({
       typeObjet: "MISSION",
       objetId: id,
-      uniteId: existing.uniteId,
+      uniteId,
       modifieParId: current.id,
       changes,
       versionObjet: nextVersion,
@@ -307,7 +320,7 @@ export async function updateMission(formData: FormData) {
   }
 
   await markSectionRedaction({
-    uniteId: existing.uniteId,
+    uniteId,
     typeObjet: "MISSION",
     objetId: id,
     sectionKey,

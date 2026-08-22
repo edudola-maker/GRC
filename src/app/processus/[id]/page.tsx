@@ -40,6 +40,7 @@ import {
   getCurrentUser,
   listUtilisateursActifsForCurrentUnite,
 } from "@/lib/session";
+import { listUnitesActives } from "@/lib/unites-referentiel";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,7 @@ export default async function ProcessusDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [processus, users, redactions, risques, documentsLies, actifsDisponibles] =
+  const [processus, users, redactions, risques, documentsLies, actifsDisponibles, unites, macros] =
     await Promise.all([
     prisma.processus.findUnique({
       where: { id },
@@ -83,6 +84,8 @@ export default async function ProcessusDetailPage({
         creePar: true,
         modifiePar: true,
         unite: true,
+        macroprocessus: { select: { id: true, code: true, nom: true } },
+        unitesApplicables: { select: { uniteId: true } },
         etapes: { orderBy: { ordre: "asc" } },
         raciLignes: {
           include: {
@@ -160,6 +163,12 @@ export default async function ProcessusDetailPage({
       select: { id: true, code: true, nom: true },
       orderBy: { nom: "asc" },
     }),
+    listUnitesActives(),
+    prisma.macroprocessus.findMany({
+      where: { archive: false },
+      select: { id: true, code: true, nom: true },
+      orderBy: [{ ordre: "asc" }, { nom: "asc" }],
+    }),
   ]);
   if (!processus) notFound();
 
@@ -175,6 +184,12 @@ export default async function ProcessusDetailPage({
     id: u.id,
     nom: formatUtilisateurNom(u),
   }));
+  const formValues = {
+    ...processus,
+    macroprocessusId: processus.macroprocessusId,
+    uniteId: processus.uniteId,
+    applicableUniteIds: processus.unitesApplicables.map((a) => a.uniteId),
+  };
   const liesActifIds = new Set(processus.actifsIT.map((l) => l.actifITId));
   const actifsOpts = actifsDisponibles
     .filter((a) => !liesActifIds.has(a.id))
@@ -295,7 +310,9 @@ export default async function ProcessusDetailPage({
           <ProcessusForm
             action={updateProcessus}
             users={userOpts}
-            values={processus}
+            values={formValues}
+            macros={macros}
+            unites={unites}
             cancelHref={baseHref}
             submitLabel="Finaliser"
             section="INFOS_GENERALES"
@@ -311,6 +328,18 @@ export default async function ProcessusDetailPage({
           <div>
             <dt>Unité propriétaire</dt>
             <dd>{processus.unite.nom}</dd>
+          </div>
+          <div>
+            <dt>Macroprocessus</dt>
+            <dd>
+              {processus.macroprocessus ? (
+                <Link href={`/macroprocessus/${processus.macroprocessus.id}`}>
+                  {processus.macroprocessus.code} — {processus.macroprocessus.nom}
+                </Link>
+              ) : (
+                "—"
+              )}
+            </dd>
           </div>
           <div>
             <dt>Responsable</dt>
@@ -472,7 +501,7 @@ export default async function ProcessusDetailPage({
       </CollapsibleSection>
 
       <EditableSection
-        title="Actifs IT"
+        title="Actifs"
         sectionKey="ACTIFS_IT"
         baseHref={baseHref}
         edit={edit}
@@ -536,7 +565,7 @@ export default async function ProcessusDetailPage({
       </EditableSection>
 
       <CollapsibleSection
-        title="Documents liés"
+        title="Documents du processus"
         defaultOpen={false}
         badge={`${documentsLies.length}`}
       >

@@ -2,6 +2,10 @@
 
 import { SubmitButton } from "@/components/FormControls";
 import {
+  UniteSelectField,
+  type UniteOpt,
+} from "@/components/referentiel/UniteResponsableFields";
+import {
   STATUT_ACTIF_IT_OPTIONS,
   TYPE_ACTIF_IT_OPTIONS,
 } from "@/lib/catalog";
@@ -19,6 +23,9 @@ type Values = {
   statut?: string;
   fournisseur?: string | null;
   hebergement?: string | null;
+  serviceFourni?: string | null;
+  criticite?: number | null;
+  uniteId?: string | null;
 };
 
 function Field({
@@ -48,6 +55,7 @@ export function ActifITForm({
   cancelHref,
   submitLabel,
   suggestedCode,
+  unites,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
@@ -55,6 +63,7 @@ export function ActifITForm({
   cancelHref: string;
   submitLabel: string;
   suggestedCode?: string;
+  unites?: UniteOpt[];
 }) {
   return (
     <form action={action} className="entity-form">
@@ -136,7 +145,45 @@ export function ActifITForm({
             placeholder="Ex. SaaS, on-premise, cloud interne…"
           />
         </Field>
+        <Field
+          label="Service fourni"
+          htmlFor="serviceFourni"
+          hint="Utile pour les prestataires / tiers"
+        >
+          <input
+            id="serviceFourni"
+            name="serviceFourni"
+            defaultValue={values?.serviceFourni ?? ""}
+          />
+        </Field>
+        <Field
+          label="Criticité"
+          htmlFor="criticite"
+          hint="Optionnel — échelle 1 (faible) à 5 (critique)"
+        >
+          <select
+            id="criticite"
+            name="criticite"
+            defaultValue={
+              values?.criticite != null ? String(values.criticite) : ""
+            }
+          >
+            <option value="">— Non renseignée —</option>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
+
+      {unites && unites.length > 0 ? (
+        <UniteSelectField
+          unites={unites}
+          uniteId={values?.uniteId ?? undefined}
+        />
+      ) : null}
 
       <Field label="Description" htmlFor="description">
         <textarea
