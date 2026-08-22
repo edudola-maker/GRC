@@ -22,7 +22,9 @@ export function MissionEtapesNav({
             : "mission-etapes-nav__item"
         }
       >
-        <span className="mission-etapes-nav__ordre">◎</span>
+        <span className="mission-etapes-nav__ordre" aria-hidden>
+          ·
+        </span>
         <span className="mission-etapes-nav__title">Cockpit</span>
       </Link>
       {etapes.map((e) => {

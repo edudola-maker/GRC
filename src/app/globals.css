@@ -4281,3 +4281,468 @@ a {
     grid-template-columns: 6.5rem 1fr;
   }
 }
+
+
+/* ─── Delta UX : sidebar compacte + mobile + split Processus ─── */
+
+:root {
+  --nav-width-compact: 72px;
+}
+
+html[data-nav="compact"] {
+  --nav-width: var(--nav-width-compact);
+}
+
+.app-nav__brand-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.app-nav__brand {
+  flex: 1;
+  min-width: 0;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+
+.app-nav__brand:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app-nav__brand:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.app-nav__collapse,
+.app-nav__mobile-close {
+  display: none;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.app-nav__collapse:hover,
+.app-nav__mobile-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@media (min-width: 761px) {
+  .app-nav__collapse {
+    display: grid;
+  }
+}
+
+.app-nav__icon {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  opacity: 0.92;
+}
+
+.app-nav__icon svg {
+  display: block;
+}
+
+.app-nav.is-compact .app-nav__brand-text,
+.app-nav.is-compact .app-nav__group-label,
+.app-nav.is-compact .app-nav__label,
+.app-nav.is-compact .app-nav__footnote,
+.app-nav.is-compact .app-nav__soon {
+  display: none;
+}
+
+.app-nav.is-compact .app-nav__link {
+  justify-content: center;
+  padding-inline: 0.55rem;
+}
+
+.app-nav.is-compact .app-nav__brand {
+  justify-content: center;
+  padding-inline: 0.25rem;
+}
+
+.app-nav.is-compact .app-nav__mark {
+  margin: 0 auto;
+}
+
+.app-nav.is-compact .app-nav__collapse {
+  margin-inline: auto;
+}
+
+.app-topbar {
+  display: none;
+}
+
+/* Mobile drawer */
+@media (max-width: 760px) {
+  .app-shell {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding: 0.65rem 0.85rem;
+    background: #163c30;
+    color: #f4faf7;
+  }
+
+  .app-topbar__menu {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .app-topbar__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .app-topbar__brand .app-nav__mark {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.75rem;
+  }
+
+  .app-topbar__brand-text {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+
+  .app-nav {
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    width: min(288px, 86vw);
+    height: 100vh !important;
+    z-index: 60;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    padding: 1rem 0.85rem !important;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    overflow-y: auto;
+  }
+
+  .app-nav.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .app-nav__mobile-close {
+    display: grid;
+  }
+
+  .app-nav__collapse {
+    display: none !important;
+  }
+
+  .app-nav.is-compact .app-nav__brand-text,
+  .app-nav.is-compact .app-nav__group-label,
+  .app-nav.is-compact .app-nav__label {
+    display: revert;
+  }
+
+  .app-nav.is-compact .app-nav__link {
+    justify-content: flex-start;
+    padding-inline: 0.75rem;
+  }
+
+  .app-nav__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border: 0;
+    background: rgba(20, 32, 28, 0.45);
+    cursor: pointer;
+  }
+
+  .app-nav__links {
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    width: 100%;
+  }
+
+  body.nav-drawer-open {
+    overflow: hidden;
+  }
+}
+
+/* Intermediate: prefer compact nav space */
+@media (max-width: 1100px) and (min-width: 761px) {
+  .app-main {
+    min-width: 0;
+  }
+}
+
+.filter-bar--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Processus split view */
+.processus-split {
+  display: grid;
+  grid-template-columns: var(--split-left, 300px) 6px minmax(0, 1fr);
+  min-height: min(70vh, 720px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.processus-split__master {
+  min-width: 0;
+  overflow: auto;
+  padding: 0.75rem;
+  background: #f7faf8;
+  border-right: 1px solid var(--line);
+}
+
+.processus-split__master-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.processus-split__resizer {
+  cursor: col-resize;
+  background: var(--bg-muted);
+  transition: background 0.15s ease;
+}
+
+.processus-split__resizer:hover,
+body.is-resizing .processus-split__resizer {
+  background: var(--brand-soft);
+}
+
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.processus-split__detail {
+  min-width: 0;
+  overflow: auto;
+  padding: 1rem 1.15rem;
+}
+
+.processus-split__empty {
+  display: grid;
+  place-content: center;
+  min-height: 280px;
+  text-align: center;
+  color: var(--ink-muted);
+  gap: 0.35rem;
+}
+
+.processus-split__detail-mobile-back {
+  display: none;
+  margin-bottom: 0.75rem;
+}
+
+.processus-arbo__link.is-selected {
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  font-weight: 600;
+}
+
+.processus-arbo__code {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  margin-right: 0.35rem;
+  font-size: 0.85em;
+}
+
+.processus-arbo__chevron {
+  display: inline-block;
+  width: 0.9rem;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.processus-preview__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.processus-preview__title {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.processus-preview__desc {
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.processus-preview__cover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.processus-preview__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.processus-preview__chip.is-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.processus-preview__chip.is-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.processus-preview__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.processus-preview__stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: var(--bg-muted);
+}
+
+.processus-preview__stats strong {
+  font-size: 1.15rem;
+}
+
+.processus-preview__stats span {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 900px) {
+  .processus-split {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .processus-split__resizer {
+    display: none;
+  }
+
+  .processus-split__master {
+    border-right: 0;
+  }
+
+  .processus-split.has-selection .processus-split__master {
+    display: none;
+  }
+
+  .processus-split:not(.has-selection) .processus-split__detail {
+    display: none;
+  }
+
+  .processus-split__detail-mobile-back {
+    display: block;
+  }
+
+  .processus-preview__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Responsive panels / dashboards */
+@media (max-width: 980px) {
+  .resp-cockpit,
+  .resp-charts,
+  .panels,
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .planning-equipe__grid {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .planning-desktop-only {
+    display: none;
+  }
+
+  .planning-mobile-only {
+    display: block;
+  }
+
+  .planning-mobile-list {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .planning-mobile-list a {
+    display: block;
+    padding: 0.55rem 0.65rem;
+    border-radius: 8px;
+    background: var(--bg-muted);
+  }
+}
+
+@media (min-width: 721px) {
+  .planning-mobile-only {
+    display: none;
+  }
+}
+
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}

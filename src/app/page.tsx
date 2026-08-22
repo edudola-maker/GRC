@@ -142,22 +142,43 @@ export default async function DashboardCollaborateurPage({
       <ReprendreTravail />
 
       <CollapsibleSection title="Ma planification" defaultOpen>
-        <PlanningCalendar
-          columns={planning.window.columns}
-          bands={planning.bands}
-          winStart={planning.window.start}
-          weeks={planning.window.weeks}
-          weekOffset={planning.window.weekOffset}
-          activeFilters={activeFilters}
-          vue={vue}
-          horizon={horizon}
-          step={weeks}
-        />
-        <div className="planning__mini-semaine">
-          <p className="muted" style={{ marginTop: "0.85rem", marginBottom: "0.45rem" }}>
-            Bande jour — ⚑ échéance · ▸ plage planifiée
+        <div className="planning-desktop-only">
+          <PlanningCalendar
+            columns={planning.window.columns}
+            bands={planning.bands}
+            winStart={planning.window.start}
+            weeks={planning.window.weeks}
+            weekOffset={planning.window.weekOffset}
+            activeFilters={activeFilters}
+            vue={vue}
+            horizon={horizon}
+            step={weeks}
+          />
+          <div className="planning__mini-semaine">
+            <p
+              className="muted"
+              style={{ marginTop: "0.85rem", marginBottom: "0.45rem" }}
+            >
+              Bande jour — échéance / plage planifiée
+            </p>
+            <SemaineCompacte days={weekDays} />
+          </div>
+        </div>
+        <div className="planning-mobile-only">
+          <p className="muted" style={{ marginTop: 0 }}>
+            Vue adaptée téléphone — liste de la semaine.
           </p>
           <SemaineCompacte days={weekDays} />
+          <ul className="planning-mobile-list">
+            {planning.bands.slice(0, 12).map((b) => (
+              <li key={b.id}>
+                <Link href={b.href}>
+                  <strong>{b.title}</strong>
+                  <span className="muted"> · {b.kind.toLowerCase()}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </CollapsibleSection>
 
