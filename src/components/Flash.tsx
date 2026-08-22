@@ -45,6 +45,10 @@ export function FlashBanner({
     active: "Élément réactivé.",
     dependance: "Prérequis de tâche mis à jour.",
     reevaluation: "Réévaluation documentée.",
+    continuite: "Analyse de continuité enregistrée.",
+    qualite: "Paramètres qualité enregistrés.",
+    revue: "Revue qualité enregistrée.",
+    ecart: "Écart qualité ajouté.",
   };
 
   return (

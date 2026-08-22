@@ -114,6 +114,10 @@ enum TypeObjetMetier {
   MACROPROCESSUS
   /// Actif du référentiel généralisé (IT / Physique / Humain / Prestataire).
   ACTIF_IT
+  FONCTION
+  EXIGENCE
+  ARBITRAGE
+  DECISION
 }
 
 enum StatutObjectif {
@@ -121,6 +125,38 @@ enum StatutObjectif {
   ATTEINT
   REPORTE
   ABANDONNE
+}
+
+enum ModeProgressionObjectif {
+  MANUELLE
+  AUTOMATIQUE
+}
+
+enum FrequenceRevueQualite {
+  TRIMESTRIELLE
+  SEMESTRIELLE
+  ANNUELLE
+  BIANNUELLE
+}
+
+enum StatutConformiteExigence {
+  CONFORME
+  PARTIELLEMENT_CONFORME
+  NON_CONFORME
+  A_EVALUER
+}
+
+enum StatutArbitrage {
+  EN_VIGUEUR
+  REMPLACE
+  ABROGE
+}
+
+enum StatutDecision {
+  PROPOSEE
+  ADOPTEE
+  REMPLACEE
+  ABROGEE
 }
 
 /// État de rédaction d’une box/section — distinct du statut métier de l’objet.
@@ -361,6 +397,11 @@ model Unite {
   macroprocessusApplicables MacroprocessusUniteApplicable[]
   processusApplicables      ProcessusUniteApplicable[]
   fonctions                 Fonction[]
+  exigences                 Exigence[]
+  arbitrages                Arbitrage[]
+  decisions                 Decision[]
+  qualiteRevues             QualiteRevue[]
+  ecartsQualite             EcartQualite[]
 }
 
 /// Attribution / mission institutionnelle d’une Unité (référentiel gouvernance).
@@ -376,6 +417,7 @@ model UniteAttribution {
   modifieLe   DateTime @updatedAt
 
   unite Unite @relation(fields: [uniteId], references: [id], onDelete: Cascade)
+  objectifs ObjectifAttribution[]
 
   @@index([uniteId, ordre])
 }
@@ -466,6 +508,11 @@ model Utilisateur {
   journalBordAuteur       JournalBordEntree[] @relation("JournalBordAuteur")
   fonctionAffectations    FonctionAffectation[]
   permissionExceptions    PermissionException[]
+  exigencesResponsable    Exigence[]            @relation("ExigenceResponsable")
+  arbitragesResponsable   Arbitrage[]           @relation("ArbitrageResponsable")
+  decisionsDecideur       Decision[]            @relation("DecisionDecideur")
+  qualiteRevuesResponsable QualiteRevue[]       @relation("QualiteRevueResponsable")
+  qualiteProcessusResponsable ProcessusQualite[] @relation("QualiteProcessusResponsable")
 }
 
 // ─── Projet ─────────────────────────────────────────────────
@@ -766,6 +813,7 @@ model ControleSCI {
   preuves     ControleDocument[]
   risques     RisqueControle[]
   taches      Tache[]
+  exigences   ExigenceControle[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -832,6 +880,7 @@ model Risque {
 
   taches         Tache[]
   missionRisques MissionRisque[]
+  arbitrages     Arbitrage[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, criticite])
@@ -927,6 +976,7 @@ model Document {
   missions   MissionDocument[]
   tachesRevue Tache[]
   processus   DocumentProcessus[]
+  exigences   ExigenceDocument[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1181,13 +1231,21 @@ model Objectif {
   description   String?
   /// Cible éventuelle (texte libre : « 8 audits », « 95 % », …).
   cible         String?
-  /// Progression 0–100 (saisie ; pas de calcul auto pour l’instant).
+  /// Progression 0–100.
   progression   Int            @default(0)
+  /// MANUELLE = saisie ; AUTOMATIQUE = dérivée des liens (missions / tâches) quand possible.
+  progressionMode ModeProgressionObjectif @default(MANUELLE)
   annee         Int
   responsableId String
   statut        StatutObjectif @default(EN_COURS)
   priorite      Priorite       @default(MOYENNE)
   dateEcheance  DateTime?
+  /// Assistant SMART léger — critères structurés (pas de prose obligatoire).
+  smartSpecifique   Boolean @default(false)
+  smartMesurable    Boolean @default(false)
+  smartAtteignable  Boolean @default(false)
+  smartRealiste     Boolean @default(false)
+  smartTemporel     Boolean @default(false)
   creeParId     String
   modifieParId  String
   creeLe        DateTime       @default(now())
@@ -1197,10 +1255,25 @@ model Objectif {
   responsable Utilisateur @relation("ObjectifResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur @relation("ObjectifCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur @relation("ObjectifModifiePar", fields: [modifieParId], references: [id])
+  attributions ObjectifAttribution[]
 
   @@unique([uniteId, code])
   @@index([uniteId, annee, statut])
   @@index([uniteId, intitule])
+}
+
+/// Lien Objectif ↔ Mission institutionnelle (UniteAttribution).
+model ObjectifAttribution {
+  id            String   @id @default(cuid())
+  objectifId    String
+  attributionId String
+  creeLe        DateTime @default(now())
+
+  objectif    Objectif          @relation(fields: [objectifId], references: [id], onDelete: Cascade)
+  attribution UniteAttribution  @relation(fields: [attributionId], references: [id], onDelete: Cascade)
+
+  @@unique([objectifId, attributionId])
+  @@index([attributionId])
 }
 
 /// Objectif individuel collaborateur (année) — vue Équipe / Dashboard.
@@ -1325,6 +1398,12 @@ model Processus {
   dependDe    ProcessusDependance[] @relation("ProcessusDependant")
   dependants  ProcessusDependance[] @relation("ProcessusPrerequis")
   unitesApplicables ProcessusUniteApplicable[]
+  qualite           ProcessusQualite?
+  exigences         ExigenceProcessus[]
+  arbitrages        Arbitrage[]
+  decisions         Decision[]
+  qualiteRevues     QualiteRevue[]
+  ecartsQualite     EcartQualite[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
@@ -1904,4 +1983,201 @@ model HistoriqueModification {
   @@index([typeObjet, objetId, modifieLe])
   @@index([uniteId, modifieLe])
   @@index([typeObjet, objetId, versionObjet])
+}
+
+// ─── Gouvernance : Qualité / Conformité / Arbitrages / Décisions ───
+
+/// Paramètres qualité d’un Processus (revue périodique).
+model ProcessusQualite {
+  id                    String               @id @default(cuid())
+  processusId           String               @unique
+  responsableRevueId    String?
+  frequence             FrequenceRevueQualite @default(ANNUELLE)
+  derniereRevue         DateTime?
+  prochaineRevue        DateTime?
+  confluenceUrl         String?
+  confluenceAJour       Boolean?
+  creeLe                DateTime             @default(now())
+  modifieLe             DateTime             @updatedAt
+
+  processus        Processus    @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  responsableRevue Utilisateur? @relation("QualiteProcessusResponsable", fields: [responsableRevueId], references: [id], onDelete: SetNull)
+}
+
+model QualiteRevue {
+  id          String   @id @default(cuid())
+  uniteId     String
+  processusId String
+  dateRevue   DateTime @default(now())
+  responsableId String?
+  procedureConformePratique Boolean?
+  pratiqueConformeProcedure Boolean?
+  raciAJour                 Boolean?
+  controlesPertinents       Boolean?
+  confluenceAJour           Boolean?
+  ecartsIdentifies          Boolean?
+  ameliorationProposee      Boolean?
+  commentaire               String?
+  creeLe                    DateTime @default(now())
+
+  unite       Unite        @relation(fields: [uniteId], references: [id])
+  processus   Processus    @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  responsable Utilisateur? @relation("QualiteRevueResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  ecarts      EcartQualite[]
+
+  @@index([processusId, dateRevue])
+  @@index([uniteId])
+}
+
+model EcartQualite {
+  id          String   @id @default(cuid())
+  uniteId     String
+  processusId String
+  revueId     String?
+  titre       String
+  description String?
+  tacheId     String?
+  projetId    String?
+  statut      String   @default("OUVERT")
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  unite     Unite         @relation(fields: [uniteId], references: [id])
+  processus Processus     @relation(fields: [processusId], references: [id], onDelete: Cascade)
+  revue     QualiteRevue? @relation(fields: [revueId], references: [id], onDelete: SetNull)
+
+  @@index([processusId])
+  @@index([uniteId])
+}
+
+model Exigence {
+  id            String                   @id @default(cuid())
+  uniteId       String
+  code          String
+  titre         String
+  description   String?
+  source        String?
+  statut        StatutConformiteExigence @default(A_EVALUER)
+  responsableId String?
+  archive       Boolean                  @default(false)
+  creeLe        DateTime                 @default(now())
+  modifieLe     DateTime                 @updatedAt
+
+  unite       Unite               @relation(fields: [uniteId], references: [id])
+  responsable Utilisateur?        @relation("ExigenceResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  processus   ExigenceProcessus[]
+  controles   ExigenceControle[]
+  documents   ExigenceDocument[]
+  decisions   DecisionExigence[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
+}
+
+model ExigenceProcessus {
+  id          String   @id @default(cuid())
+  exigenceId  String
+  processusId String
+  creeLe      DateTime @default(now())
+
+  exigence  Exigence  @relation(fields: [exigenceId], references: [id], onDelete: Cascade)
+  processus Processus @relation(fields: [processusId], references: [id], onDelete: Cascade)
+
+  @@unique([exigenceId, processusId])
+}
+
+model ExigenceControle {
+  id         String   @id @default(cuid())
+  exigenceId String
+  controleId String
+  creeLe     DateTime @default(now())
+
+  exigence Exigence    @relation(fields: [exigenceId], references: [id], onDelete: Cascade)
+  controle ControleSCI @relation(fields: [controleId], references: [id], onDelete: Cascade)
+
+  @@unique([exigenceId, controleId])
+}
+
+model ExigenceDocument {
+  id         String   @id @default(cuid())
+  exigenceId String
+  documentId String
+  creeLe     DateTime @default(now())
+
+  exigence Exigence @relation(fields: [exigenceId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([exigenceId, documentId])
+}
+
+model Arbitrage {
+  id            String          @id @default(cuid())
+  uniteId       String
+  code          String
+  titre         String
+  problematique String?
+  regleRetenue  String
+  justification String?
+  statut        StatutArbitrage @default(EN_VIGUEUR)
+  processusId   String?
+  risqueId      String?
+  decisionId    String?
+  responsableId String?
+  dateEffet     DateTime?
+  archive       Boolean         @default(false)
+  creeLe        DateTime        @default(now())
+  modifieLe     DateTime        @updatedAt
+
+  unite       Unite        @relation(fields: [uniteId], references: [id])
+  processus   Processus?   @relation(fields: [processusId], references: [id], onDelete: SetNull)
+  risque      Risque?      @relation(fields: [risqueId], references: [id], onDelete: SetNull)
+  decision    Decision?    @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+  responsable Utilisateur? @relation("ArbitrageResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
+  @@index([processusId])
+  @@index([risqueId])
+}
+
+model Decision {
+  id                   String         @id @default(cuid())
+  uniteId              String
+  code                 String
+  titre                String
+  problematique        String?
+  analyse              String?
+  decisionTexte        String
+  decideurId           String?
+  dateDecision         DateTime?
+  statut               StatutDecision @default(PROPOSEE)
+  processusId          String?
+  decisionPrecedenteId String?
+  archive              Boolean        @default(false)
+  creeLe               DateTime       @default(now())
+  modifieLe            DateTime       @updatedAt
+
+  unite              Unite       @relation(fields: [uniteId], references: [id])
+  decideur           Utilisateur? @relation("DecisionDecideur", fields: [decideurId], references: [id], onDelete: SetNull)
+  processus          Processus?  @relation(fields: [processusId], references: [id], onDelete: SetNull)
+  decisionPrecedente Decision?   @relation("DecisionRemplacement", fields: [decisionPrecedenteId], references: [id], onDelete: SetNull)
+  decisionsSuivantes Decision[]  @relation("DecisionRemplacement")
+  arbitrages         Arbitrage[]
+  exigences          DecisionExigence[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, statut])
+  @@index([processusId])
+}
+
+model DecisionExigence {
+  id         String   @id @default(cuid())
+  decisionId String
+  exigenceId String
+  creeLe     DateTime @default(now())
+
+  decision Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  exigence Exigence @relation(fields: [exigenceId], references: [id], onDelete: Cascade)
+
+  @@unique([decisionId, exigenceId])
 }
