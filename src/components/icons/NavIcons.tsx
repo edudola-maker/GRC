@@ -191,6 +191,24 @@ export function IconChevronRight(p: IconProps) {
   );
 }
 
+export function IconSearch(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="11" cy="11" r="6.5" {...stroke} />
+      <path d="M16 16l4 4" {...stroke} />
+    </Svg>
+  );
+}
+
+export function IconGuide(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v16H7.5A2.5 2.5 0 0 0 5 21.5V5.5Z" {...stroke} />
+      <path d="M5 18.5A2.5 2.5 0 0 1 7.5 16H19" {...stroke} />
+    </Svg>
+  );
+}
+
 export type NavIconName =
   | "home"
   | "unit"
@@ -205,7 +223,9 @@ export type NavIconName =
   | "risk"
   | "document"
   | "users"
-  | "roles";
+  | "roles"
+  | "search"
+  | "guide";
 
 export function NavIcon({
   name,
@@ -240,6 +260,10 @@ export function NavIcon({
       return <IconUsers {...props} />;
     case "roles":
       return <IconRoles {...props} />;
+    case "search":
+      return <IconSearch {...props} />;
+    case "guide":
+      return <IconGuide {...props} />;
     default:
       return null;
   }

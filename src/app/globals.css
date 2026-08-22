@@ -4075,6 +4075,30 @@ a {
   padding-top: 0.65rem;
   border-top: 1px solid var(--border, #d9d0c4);
 }
+.risque-aide__legend {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+.risque-aide__scale {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+.risque-aide__scale li {
+  margin-bottom: 0.25rem;
+}
+.risque-aide__q,
+.risque-aide__ex {
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+  line-height: 1.35;
+}
+.risque-aide__dim select {
+  margin-top: 0.3rem;
+}
+.risque-aide__grid--dims {
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+}
 
 /* ─── Journal de travail unifié ──────────────────────────── */
 .journal-travail {
@@ -4549,6 +4573,17 @@ html[data-nav="compact"] {
   .app-topbar__brand-text {
     font-family: var(--font-display);
     font-weight: 600;
+  }
+
+  .app-topbar__search {
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .app-nav {

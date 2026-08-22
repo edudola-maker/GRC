@@ -4,6 +4,8 @@ import {
   STATUT_PROCESSUS_LABELS,
   formatDate,
 } from "@/lib/labels";
+import { buildProcessusCouverture } from "@/lib/processus-couverture";
+import { ProcessusCouvertureBadges } from "@/components/processus/ProcessusCouvertureBadges";
 
 export type ProcessusPreviewData = {
   id: string;
@@ -22,6 +24,8 @@ export type ProcessusPreviewData = {
   actifsCount: number;
   aRaci: boolean;
   aContinuite: boolean;
+  aQualite: boolean;
+  exigencesCount: number;
   contientDonneesPersonnelles: boolean;
   niveauConfidentialite: string;
   modifieLe: Date;
@@ -33,18 +37,14 @@ export function ProcessusExplorerDetail({
 }: {
   processus: ProcessusPreviewData;
 }) {
-  const couverture = [
-    { label: "Procédure", ok: Boolean(processus.reference) },
-    { label: "RACI", ok: processus.aRaci },
-    { label: "Risques", ok: processus.risquesCount > 0, warn: processus.risquesCount === 0 },
-    {
-      label: "Contrôles",
-      ok: processus.controlesCount > 0,
-      warn: processus.controlesCount === 0,
-    },
-    { label: "Actifs", ok: processus.actifsCount > 0 },
-    { label: "Continuité", ok: processus.aContinuite, warn: !processus.aContinuite },
-  ];
+  const couverture = buildProcessusCouverture({
+    aRaci: processus.aRaci,
+    risquesCount: processus.risquesCount,
+    controlesCount: processus.controlesCount,
+    aQualite: processus.aQualite,
+    exigencesCount: processus.exigencesCount,
+    aContinuite: processus.aContinuite,
+  });
 
   return (
     <div className="processus-preview">
@@ -91,16 +91,7 @@ export function ProcessusExplorerDetail({
         <p className="muted">Aucune présentation renseignée.</p>
       )}
 
-      <div className="processus-preview__cover" aria-label="Couverture gouvernance">
-        {couverture.map((c) => (
-          <span
-            key={c.label}
-            className={`processus-preview__chip${c.ok ? " is-ok" : c.warn ? " is-warn" : ""}`}
-          >
-            <span aria-hidden>{c.ok ? "✓" : "○"}</span> {c.label}
-          </span>
-        ))}
-      </div>
+      <ProcessusCouvertureBadges items={couverture} compact />
 
       <div className="processus-preview__stats">
         <div>

@@ -40,6 +40,8 @@ const NAV_GROUPS: NavGroup[] = [
         responsableOnly: true,
       },
       { href: "/taches", label: "Tâches", icon: "check" },
+      { href: "/recherche", label: "Recherche", icon: "search" },
+      { href: "/decouvrir", label: "Découvrir l’outil", icon: "guide" },
     ],
   },
   {
@@ -214,6 +216,14 @@ export function AppNav({
         <Link href="/" className="app-topbar__brand" aria-label="Accueil GRC">
           <span className="app-nav__mark">GRC</span>
           <span className="app-topbar__brand-text">Pilotage</span>
+        </Link>
+        <Link
+          href="/recherche"
+          className="app-topbar__search"
+          aria-label="Recherche (Ctrl+K)"
+          title="Recherche (Ctrl+K)"
+        >
+          <NavIcon name="search" size={18} />
         </Link>
       </header>
 
