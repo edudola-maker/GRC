@@ -76,7 +76,7 @@ export default async function ProcessusDetailPage({
   const edit = parseEdit(sp.edit);
   const user = await getCurrentUser();
 
-  const [processus, users, redactions, risques, documentsLies, actifsDisponibles, unites, macros] =
+  const [processus, users, redactions, risques, documentsLies, actifsDisponibles, unites, macros, fonctions] =
     await Promise.all([
     prisma.processus.findUnique({
       where: { id },
@@ -91,7 +91,22 @@ export default async function ProcessusDetailPage({
         raciLignes: {
           include: {
             participants: {
-              include: { utilisateur: true },
+              include: {
+                utilisateur: true,
+                fonction: {
+                  include: {
+                    affectations: {
+                      where: { type: "TITULAIRE" },
+                      include: {
+                        utilisateur: {
+                          select: { id: true, nom: true, prenom: true },
+                        },
+                      },
+                      take: 3,
+                    },
+                  },
+                },
+              },
             },
           },
           orderBy: { ordre: "asc" },
@@ -170,6 +185,11 @@ export default async function ProcessusDetailPage({
       select: { id: true, code: true, nom: true },
       orderBy: [{ ordre: "asc" }, { nom: "asc" }],
     }),
+    prisma.fonction.findMany({
+      where: { uniteId: user.uniteId, archive: false, actif: true },
+      select: { id: true, code: true, nom: true },
+      orderBy: { nom: "asc" },
+    }),
   ]);
   if (!processus) notFound();
 
@@ -184,6 +204,10 @@ export default async function ProcessusDetailPage({
   const userOpts = users.map((u) => ({
     id: u.id,
     nom: formatUtilisateurNom(u),
+  }));
+  const fonctionOpts = fonctions.map((f) => ({
+    id: f.id,
+    nom: `${f.code} — ${f.nom}`,
   }));
   const formValues = {
     ...processus,
@@ -210,14 +234,24 @@ export default async function ProcessusDetailPage({
     activite: l.activite,
     etapeId: l.etapeId,
     ordre: l.ordre,
-    participants: l.participants.map((p) => ({
-      id: p.id,
-      role: p.role,
-      utilisateurId: p.utilisateurId,
-      utilisateurNom: p.utilisateur
-        ? formatUtilisateurNom(p.utilisateur)
-        : null,
-    })),
+    participants: l.participants.map((p) => {
+      const titulaireNoms =
+        p.fonction?.affectations.map((a) =>
+          formatUtilisateurNom(a.utilisateur),
+        ) ?? [];
+      const label =
+        p.fonction?.nom ??
+        p.libelleFonction ??
+        (p.utilisateur ? formatUtilisateurNom(p.utilisateur) : null);
+      return {
+        id: p.id,
+        role: p.role,
+        utilisateurId: p.utilisateurId,
+        fonctionId: p.fonctionId,
+        label,
+        titulaireNoms,
+      };
+    }),
   }));
   const dependDe = processus.dependDe.map((d) => ({
     lienId: d.id,
@@ -425,6 +459,7 @@ export default async function ProcessusDetailPage({
               libelle: e.libelle,
             }))}
             users={userOpts}
+            fonctions={fonctionOpts}
             editable
           />
         }
@@ -437,6 +472,7 @@ export default async function ProcessusDetailPage({
             libelle: e.libelle,
           }))}
           users={userOpts}
+          fonctions={fonctionOpts}
           editable={false}
         />
       </EditableSection>

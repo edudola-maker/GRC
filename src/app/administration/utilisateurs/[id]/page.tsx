@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { CollaborateurResponsabilites } from "@/components/organisation/CollaborateurResponsabilites";
 import { UtilisateurForm } from "@/components/administration/UtilisateurForm";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader } from "@/components/ui";
@@ -43,7 +44,31 @@ export default async function AdminUtilisateurDetailPage({
         badge={user.actif ? undefined : "Inactif"}
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+
+      <section className="card-section">
+        <h2>Identité & accès</h2>
+        <dl className="kv-list">
+          <div>
+            <dt>Unité</dt>
+            <dd>
+              {user.unite.code} — {user.unite.nom}
+            </dd>
+          </div>
+          <div>
+            <dt>Rôle applicatif</dt>
+            <dd>{ROLE_UTILISATEUR_LABELS[user.role] ?? user.role}</dd>
+          </div>
+          <div>
+            <dt>Titre libre (legacy)</dt>
+            <dd>{user.fonction?.trim() || "—"}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <CollaborateurResponsabilites utilisateurId={user.id} uniteId={user.uniteId} />
+
       <div className="entity-form-wrap">
+        <h2>Compte</h2>
         <UtilisateurForm
           action={updateUtilisateur}
           deleteAction={deleteUtilisateur}

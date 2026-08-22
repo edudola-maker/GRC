@@ -260,6 +260,14 @@ export const ROLE_UTILISATEUR_LABELS: Record<string, string> = {
   COLLABORATEUR: "Collaborateur",
   RESPONSABLE: "Responsable d’unité",
   ADMINISTRATEUR: "Administrateur",
+  LECTURE_SEULE: "Lecture seule",
+};
+
+export const PERIMETRE_ACCES_LABELS: Record<string, string> = {
+  MES_OBJETS: "Mes objets",
+  MON_UNITE: "Mon unité",
+  UNITES_AUTORISEES: "Unités autorisées",
+  ORGANISATION: "Organisation entière",
 };
 
 export function formatDate(date: Date | string | null | undefined): string {

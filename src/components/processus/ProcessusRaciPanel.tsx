@@ -16,7 +16,9 @@ export type RaciParticipant = {
   id: string;
   role: "R" | "A" | "C" | "I";
   utilisateurId: string | null;
-  utilisateurNom: string | null;
+  fonctionId?: string | null;
+  label: string | null;
+  titulaireNoms?: string[];
 };
 
 export type RaciLigne = {
@@ -28,6 +30,7 @@ export type RaciLigne = {
 };
 
 type UserOpt = { id: string; nom: string };
+type FonctionOpt = { id: string; nom: string };
 type EtapeOpt = { id: string; libelle: string };
 
 const ROLES = ["R", "A", "C", "I"] as const;
@@ -41,12 +44,14 @@ export function ProcessusRaciPanel({
   lignes,
   etapes,
   users,
+  fonctions = [],
   editable,
 }: {
   processusId: string;
   lignes: RaciLigne[];
   etapes: EtapeOpt[];
   users: UserOpt[];
+  fonctions?: FonctionOpt[];
   editable: boolean;
 }) {
   const sorted = [...lignes].sort((a, b) => a.ordre - b.ordre);
@@ -54,8 +59,8 @@ export function ProcessusRaciPanel({
   return (
     <div className="raci-panel">
       <p className="muted" style={{ marginTop: 0 }}>
-        Matrice facultative — un responsable principal peut suffire. Les
-        personnes proviennent du référentiel Utilisateurs.
+        Privilégier les <strong>Fonctions</strong> (responsabilité durable). Un
+        Collaborateur précis reste possible en exception.
       </p>
 
       {sorted.length === 0 ? (
@@ -124,14 +129,23 @@ export function ProcessusRaciPanel({
                           ))}
                         </select>
                         <select
-                          name="utilisateurId"
-                          required
+                          name="fonctionId"
                           defaultValue=""
-                          aria-label="Personne"
+                          aria-label="Fonction"
                         >
-                          <option value="" disabled>
-                            Collaborateur…
-                          </option>
+                          <option value="">Fonction…</option>
+                          {fonctions.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.nom}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          name="utilisateurId"
+                          defaultValue=""
+                          aria-label="Collaborateur (exception)"
+                        >
+                          <option value="">ou Collaborateur…</option>
                           {users.map((u) => (
                             <option key={u.id} value={u.id}>
                               {u.nom}
@@ -152,7 +166,13 @@ export function ProcessusRaciPanel({
                           <ul className="raci-people">
                             {parts.map((p) => (
                               <li key={p.id}>
-                                {p.utilisateurNom ?? "—"}
+                                <span>{p.label ?? "—"}</span>
+                                {p.titulaireNoms && p.titulaireNoms.length > 0 ? (
+                                  <span className="muted raci-titulaire">
+                                    {" "}
+                                    ({p.titulaireNoms.join(", ")})
+                                  </span>
+                                ) : null}
                                 {editable ? (
                                   <form
                                     action={removeProcessusRaciParticipant}
@@ -189,7 +209,9 @@ export function ProcessusRaciPanel({
                           name="processusId"
                           value={processusId}
                         />
-                        <SubmitButton variant="ghost">Suppr.</SubmitButton>
+                        <button type="submit" className="btn-link" title="Supprimer la ligne">
+                          ×
+                        </button>
                       </form>
                     </td>
                   ) : null}

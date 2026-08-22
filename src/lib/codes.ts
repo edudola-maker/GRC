@@ -15,6 +15,8 @@ const PREFIXES = {
   UNITE: "UNT",
   /// Actifs (référentiel généralisé) — préfixe AIT conservé.
   ACTIF_IT: "AIT",
+  /// Fonctions organisationnelles.
+  FONCTION: "FCT",
 } as const;
 
 export type PrefixeCode = keyof typeof PREFIXES;
@@ -109,6 +111,12 @@ async function findCodeCollision(
           where: { uniteId, code: c, ...notId },
         }),
       );
+    case "FONCTION":
+      return Boolean(
+        await prisma.fonction.findFirst({
+          where: { uniteId, code: c, ...notId },
+        }),
+      );
     case "MODELE_TACHE":
       return Boolean(
         await prisma.modeleTache.findFirst({
@@ -148,6 +156,7 @@ const UNIQUE_MESSAGES: Partial<Record<PrefixeCode, string>> = {
   CONTROLE_SCI: "Un contrôle porte déjà ce code.",
   DOCUMENT: "Un document porte déjà ce code.",
   ACTIF_IT: "Un actif porte déjà ce code.",
+  FONCTION: "Une fonction porte déjà ce code.",
   MODELE_TACHE: "Un modèle de tâche porte déjà ce code.",
   RECOMMANDATION: "Une recommandation porte déjà ce code.",
   OBJECTIF: "Un objectif porte déjà ce code.",
