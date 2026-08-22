@@ -56,6 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Gouvernance",
     items: [
       { href: "/processus", label: "Processus", icon: "processus" },
+      { href: "/fonctions", label: "Fonctions", icon: "roles" },
       { href: "/actifs-it", label: "Actifs", icon: "asset" },
       { href: "/modeles-taches", label: "Modèles de tâches", icon: "list" },
       { href: "/risques", label: "Risques", icon: "risk" },

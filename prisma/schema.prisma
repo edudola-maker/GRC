@@ -279,6 +279,22 @@ enum RoleUtilisateur {
   COLLABORATEUR
   RESPONSABLE
   ADMINISTRATEUR
+  /// Lecture seule — architecture RBAC (prototype permissif).
+  LECTURE_SEULE
+}
+
+/// Type d’affectation à une Fonction organisationnelle.
+enum TypeAffectationFonction {
+  TITULAIRE
+  SUPPLEANT
+}
+
+/// Périmètre d’accès (RBAC) — architecture multi-unités.
+enum PerimetreAcces {
+  MES_OBJETS
+  MON_UNITE
+  UNITES_AUTORISEES
+  ORGANISATION
 }
 
 enum ModuleMetier {
@@ -344,6 +360,7 @@ model Unite {
   attributions         UniteAttribution[]
   macroprocessusApplicables MacroprocessusUniteApplicable[]
   processusApplicables      ProcessusUniteApplicable[]
+  fonctions                 Fonction[]
 }
 
 /// Attribution / mission institutionnelle d’une Unité (référentiel gouvernance).
@@ -447,6 +464,8 @@ model Utilisateur {
   notesTravailAuteur      NoteTravail[]      @relation("NoteTravailAuteur")
   noteParticipants        NoteParticipant[]
   journalBordAuteur       JournalBordEntree[] @relation("JournalBordAuteur")
+  fonctionAffectations    FonctionAffectation[]
+  permissionExceptions    PermissionException[]
 }
 
 // ─── Projet ─────────────────────────────────────────────────
@@ -1404,22 +1423,88 @@ model ProcessusRaciLigne {
   @@index([etapeId])
 }
 
-/// Participant RACI — personne issue du référentiel Utilisateurs.
-/// Architecture souple : plus tard une fonction/rôle pourra porter la responsabilité
-/// (libelleFonction) sans imposer cette sophistication dès maintenant.
+/// Participant RACI — privilégier une Fonction ; Collaborateur en exception.
+/// libelleFonction conservé pour compatibilité / affichage legacy.
 model ProcessusRaciParticipant {
   id              String   @id @default(cuid())
   ligneId         String
   role            RoleRaci
   utilisateurId   String?
-  /// Réserve future : responsabilité portée par une fonction (pas une personne).
+  /// Fonction organisationnelle (préféré).
+  fonctionId      String?
+  /// Libellé libre legacy — migrer vers fonctionId lorsque possible.
   libelleFonction String?
   creeLe          DateTime @default(now())
 
   ligne       ProcessusRaciLigne @relation(fields: [ligneId], references: [id], onDelete: Cascade)
   utilisateur Utilisateur?       @relation(fields: [utilisateurId], references: [id], onDelete: SetNull)
+  fonction    Fonction?          @relation(fields: [fonctionId], references: [id], onDelete: SetNull)
 
   @@index([ligneId, role])
+  @@index([utilisateurId])
+  @@index([fonctionId])
+}
+
+/// Référentiel organisationnel durable (≠ rôle applicatif).
+/// Préfixe FCT-xxxx. Ex. Responsable UCAE, Auditeur, Juriste.
+model Fonction {
+  id               String          @id @default(cuid())
+  uniteId          String
+  code             String
+  nom              String
+  description      String?
+  /// Rôle applicatif typiquement associé (héritage soft pour les titulaires).
+  roleApplicatif   RoleUtilisateur?
+  perimetre        PerimetreAcces  @default(MON_UNITE)
+  actif            Boolean         @default(true)
+  archive          Boolean         @default(false)
+  creeLe           DateTime        @default(now())
+  modifieLe        DateTime        @updatedAt
+
+  unite            Unite                 @relation(fields: [uniteId], references: [id])
+  affectations     FonctionAffectation[]
+  raciParticipants ProcessusRaciParticipant[]
+
+  @@unique([uniteId, code])
+  @@index([uniteId, archive, actif])
+}
+
+/// Titulaire(s) / suppléant(s) d’une Fonction.
+/// Suppléance = architecture (pas de moteur de délégation temporaire encore).
+model FonctionAffectation {
+  id            String                 @id @default(cuid())
+  fonctionId    String
+  utilisateurId String
+  type          TypeAffectationFonction @default(TITULAIRE)
+  /// Fenêtre optionnelle (avenir — absences / délégation).
+  debut         DateTime?
+  fin           DateTime?
+  creeLe        DateTime               @default(now())
+
+  fonction    Fonction    @relation(fields: [fonctionId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@unique([fonctionId, utilisateurId, type])
+  @@index([utilisateurId])
+  @@index([fonctionId, type])
+}
+
+/// Exception individuelle rare (architecture) — visible, identifiable.
+/// Mode normal = droits via Fonction / rôle ; pas le mécanisme par défaut.
+model PermissionException {
+  id            String   @id @default(cuid())
+  utilisateurId String
+  /// Clé métier ex. "risques.modifier", "processus.valider".
+  permissionKey String
+  /// true = octroi, false = retrait explicite.
+  accord        Boolean  @default(true)
+  motif         String?
+  creeLe        DateTime @default(now())
+  modifieLe     DateTime @updatedAt
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, permissionKey])
   @@index([utilisateurId])
 }
 

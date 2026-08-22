@@ -590,10 +590,14 @@ export async function addProcessusRaciParticipant(formData: FormData) {
   const ligneId = str(formData, "ligneId");
   const processusId = str(formData, "processusId");
   const role = str(formData, "role");
+  const fonctionId = str(formData, "fonctionId");
   const utilisateurId = str(formData, "utilisateurId");
   const href = `/processus/${processusId}?edit=RACI`;
-  if (!ligneId || !processusId || !RACI_ROLES.has(role) || !utilisateurId) {
+  if (!ligneId || !processusId || !RACI_ROLES.has(role)) {
     redirectWithError(href || "/processus", "Participant RACI incomplet.");
+  }
+  if (!fonctionId && !utilisateurId) {
+    redirectWithError(href, "Choisir une Fonction (préféré) ou un Collaborateur.");
   }
 
   const ligne = await prisma.processusRaciLigne.findUnique({
@@ -604,13 +608,38 @@ export async function addProcessusRaciParticipant(formData: FormData) {
     redirectWithError("/processus", "Ligne RACI introuvable.");
   }
 
-  const user = await prisma.utilisateur.findFirst({
-    where: { id: utilisateurId, uniteId: current.uniteId, actif: true },
-  });
-  if (!user) redirectWithError(href, "Collaborateur introuvable.");
+  let resolvedFonctionId: string | null = null;
+  let resolvedUserId: string | null = null;
+  let libelleFonction: string | null = null;
+
+  if (fonctionId) {
+    const fonc = await prisma.fonction.findFirst({
+      where: {
+        id: fonctionId,
+        uniteId: current.uniteId,
+        archive: false,
+        actif: true,
+      },
+    });
+    if (!fonc) redirectWithError(href, "Fonction introuvable.");
+    resolvedFonctionId = fonc.id;
+    libelleFonction = fonc.nom;
+  } else if (utilisateurId) {
+    const user = await prisma.utilisateur.findFirst({
+      where: { id: utilisateurId, uniteId: current.uniteId, actif: true },
+    });
+    if (!user) redirectWithError(href, "Collaborateur introuvable.");
+    resolvedUserId = user.id;
+  }
 
   const exists = await prisma.processusRaciParticipant.findFirst({
-    where: { ligneId, role: role as "R", utilisateurId },
+    where: {
+      ligneId,
+      role: role as "R",
+      ...(resolvedFonctionId
+        ? { fonctionId: resolvedFonctionId }
+        : { utilisateurId: resolvedUserId! }),
+    },
   });
   if (exists) redirectWithOk(href, "raci");
 
@@ -618,7 +647,9 @@ export async function addProcessusRaciParticipant(formData: FormData) {
     data: {
       ligneId,
       role: role as "R",
-      utilisateurId,
+      fonctionId: resolvedFonctionId,
+      utilisateurId: resolvedUserId,
+      libelleFonction,
     },
   });
   revalidateProcessus(processusId);

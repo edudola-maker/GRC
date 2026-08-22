@@ -299,8 +299,54 @@ async function main() {
       { uniteId, prefixe: "AIT", dernier: 4 },
       { uniteId, prefixe: "PRC", dernier: 8 },
       { uniteId, prefixe: "MAC", dernier: 3 },
+      { uniteId, prefixe: "FCT", dernier: 4 },
     ],
   });
+
+  const fctResp = await prisma.fonction.create({
+    data: {
+      uniteId,
+      code: "FCT-0001",
+      nom: "Responsable d’unité",
+      description: "Pilotage et responsabilité de l’unité.",
+      roleApplicatif: "RESPONSABLE",
+      perimetre: "MON_UNITE",
+      affectations: {
+        create: [
+          { utilisateurId: alice.id, type: "TITULAIRE" },
+          { utilisateurId: bernard.id, type: "SUPPLEANT" },
+        ],
+      },
+    },
+  });
+  await prisma.fonction.create({
+    data: {
+      uniteId,
+      code: "FCT-0002",
+      nom: "Auditeur",
+      description: "Réalisation des missions d’assurance.",
+      roleApplicatif: "COLLABORATEUR",
+      perimetre: "MON_UNITE",
+      affectations: {
+        create: [{ utilisateurId: bernard.id, type: "TITULAIRE" }],
+      },
+    },
+  });
+  await prisma.fonction.create({
+    data: {
+      uniteId,
+      code: "FCT-0003",
+      nom: "Analyste risques",
+      description: "Identification et suivi des risques.",
+      roleApplicatif: "COLLABORATEUR",
+      perimetre: "MES_OBJETS",
+      affectations: {
+        create: [{ utilisateurId: claire.id, type: "TITULAIRE" }],
+      },
+    },
+  });
+  // fctResp utilisé plus bas pour lier RACI démo si présent
+  void fctResp;
 
   const projetMod = await prisma.projet.create({
     data: {
