@@ -95,6 +95,9 @@ async function main() {
   await prisma.noteTravail.deleteMany().catch(() => undefined);
   await prisma.historiqueModification.deleteMany().catch(() => undefined);
   await prisma.risqueReevaluation.deleteMany().catch(() => undefined);
+  await prisma.fonctionAffectation.deleteMany().catch(() => undefined);
+  await prisma.permissionException.deleteMany().catch(() => undefined);
+  await prisma.fonction.deleteMany().catch(() => undefined);
   await prisma.sequenceCode.deleteMany();
   // Lever les FK Unite → Utilisateur avant suppression des utilisateurs.
   await prisma.unite.updateMany({
