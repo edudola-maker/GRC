@@ -1,7 +1,17 @@
 # Synthèse Roadmap B → F
 
 Consolidation des livraisons **PR B à PR F** (pilotage UX → adoption / intelligence métier).  
-PR G non démarrée.
+**STOP — PR G non démarrée.**
+
+## Pull requests
+
+| PR | Branche | GitHub |
+|----|---------|--------|
+| B | `cursor/sprint-pilotage-visuel-72a6` | [#21](https://github.com/edudola-maker/GRC/pull/21) |
+| C | `cursor/organisation-fonctions-rbac-72a6` | [#22](https://github.com/edudola-maker/GRC/pull/22) |
+| D | `cursor/gouvernance-qualite-conformite-72a6` | [#23](https://github.com/edudola-maker/GRC/pull/23) |
+| E | `cursor/rapports-exports-72a6` | [#24](https://github.com/edudola-maker/GRC/pull/24) |
+| F | `cursor/adoption-intelligence-metier-72a6` | [#25](https://github.com/edudola-maker/GRC/pull/25) |
 
 ---
 
@@ -67,10 +77,10 @@ PR G non démarrée.
 |--|--|
 | **Features** | Guide `/decouvrir` ; RiskQuant V2 ; Recherche globale ; À faire maintenant ; Couverture Processus ; empty states |
 | **Migrations** | N/A |
-| **Architecture** | Libs déterministes (`recherche-globale`, `a-faire-maintenant`, `processus-couverture`, `risque-evaluation-aide` V2) — **pas d’IA** |
-| **UX** | Nav Découvrir + Recherche ; Cmd/Ctrl+K ; badges couverture ; empty guidés |
+| **Architecture** | Libs déterministes — **pas d’IA** |
+| **UX** | Nav Découvrir + Recherche ; Cmd/Ctrl+K ; badges couverture |
 | **Tests** | `tsc` + `next build` |
-| **Dette** | Recherche non indexée ; questionnaires locaux ; couverture = présence |
+| **Dette** | Recherche non indexée ; couverture = présence |
 | **Arbitrages** | Humain retient toujours P/I ; pas de score maturité |
 
 ---
@@ -78,51 +88,28 @@ PR G non démarrée.
 ## ÉTAT DU PRODUIT (fin PR F)
 
 ### Mature / utilisable en démo
-- Dashboards collaborateur & responsable (actions, planning)
-- Projets + étapes pondérées + tâches
-- Missions d’assurance (cockpit / étapes)
-- Processus (arborescence, inventaire, RACI, continuité, qualité)
-- Risques (matrice, évaluation aidée, réévaluations, contrôles)
-- Contrôles SCI, Documents (inventaire / revues)
-- Conseils
-- Fonctions / admin utilisateurs & unités
-- Gouvernance EXI / ARB / DEC
-- Objectifs d’unité
-- Rapports & exports CSV/PDF print
-- Guide d’adoption + recherche + recommandations légères
+- Structure Unité → Macroprocessus → Processus
+- Pilotage collab / responsable avec planification éditable
+- Projets à étapes pondérées + sliders
+- Fonctions / RACI / seed riche
+- Exports essentiels + guide d’adoption
 
-### Prototype / partiel
-- RBAC (modèle + UI admin, enforcement off par défaut)
-- Objectifs : progression déclarative
-- Recherche : filtre mémoire, pas FTS
-- Couverture processus : indicateurs de présence
-- RiskQuant : Niveau 1 déterministe (Niveau 2 IA non fait)
+### Prototype
+- RBAC (matrice prête, non appliquée)
+- Qualité / Conformité / Arbitrages / Décisions (CRUD léger)
+- PDF via impression navigateur
+- Recherche globale simple
 
-### Dettes techniques notables
-- Enforcement RBAC pages
-- PDF serveur / exports CSV étendus
-- Versioning / visas : socle partiel selon modules
-- `utilisateur.fonction` string legacy
-- Inventaires gouvernance encore simples (peu de filtres avancés)
+### Dettes
+- Technique : enforcement RBAC ; PDF serveur ; index recherche
+- UX : `docs/AUDIT_UX_FINAL.md`
+- Métier : LPD complète, IA, CMDB — hors périmètre
 
-### Risques produit
-- Adoption : courbe d’apprentissage GRC — mitigée par `/decouvrir`
-- Confusion planification vs échéance — documentée, UX à surveiller
-- Fausse confiance « couverture ✓ » ≠ maturité réelle
+### Roadmap recommandée suivante
+1. Activer RBAC progressivement
+2. Qualité / Conformité en profondeur
+3. PDF serveur + exports étendus
+4. Registre traitements LPD
+5. IA locale sur données structurées
 
-### Non développé (hors B–F)
-- IA / RAG métier opérationnel
-- Moteur de délégation / absences
-- Audits formels (objet Audit dédié)
-- GED / stockage fichier avancé
-- Multi-tenant avancé / droits croisés unités
-- Notifications push / calendrier externe
-- Mobile app native
-
-### Next roadmap (piste PR G+)
-- Endurcissement RBAC (`RBAC_ENFORCE`)
-- Notifications & rappels d’échéances
-- FTS / recherche plus riche
-- Exports & PDF serveur si besoin métier
-- Maturité / campagnes de revue (sans confondre avec couverture)
-- Intégrations (SSO, Confluence bidirectionnelle)
+Voir aussi : `docs/AUDIT_ARCHITECTURE_FINAL.md`, `docs/AUDIT_UX_FINAL.md`.
