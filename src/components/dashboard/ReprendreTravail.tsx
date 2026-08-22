@@ -49,9 +49,9 @@ export function ReprendreTravail() {
   if (items.length === 0) return null;
 
   return (
-    <CollapsibleLike title="Reprendre votre travail">
+    <CollapsibleLike title="Reprendre">
       <ul className="reprendre-list">
-        {items.slice(0, 5).map((i) => (
+        {items.slice(0, 3).map((i) => (
           <li key={i.href}>
             <Link href={i.href}>
               <span>{i.label}</span>

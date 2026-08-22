@@ -4,16 +4,25 @@ import {
   PLANNING_KINDS,
   bandStyle,
   type PlanningBand,
+  type PlanningHorizon,
   type PlanningKind,
 } from "@/lib/planning";
+
+const HORIZON_MODES: { id: PlanningHorizon; label: string }[] = [
+  { id: "semaine", label: "Semaine" },
+  { id: "4sem", label: "4 semaines" },
+  { id: "mois", label: "Mois" },
+];
 
 function buildPlanHref(params: {
   weekOffset: number;
   filters: Set<PlanningKind>;
   vue?: string;
+  horizon: PlanningHorizon;
 }) {
   const qs = new URLSearchParams();
   if (params.vue && params.vue !== "toutes") qs.set("vue", params.vue);
+  if (params.horizon !== "semaine") qs.set("horizon", params.horizon);
   if (params.weekOffset !== 0) qs.set("plan", String(params.weekOffset));
   const allOn = PLANNING_KINDS.every((k) => params.filters.has(k));
   if (!allOn) {
@@ -44,6 +53,8 @@ export function PlanningCalendar({
   weekOffset,
   activeFilters,
   vue,
+  horizon = "semaine",
+  step,
 }: {
   columns: {
     index: number;
@@ -57,29 +68,51 @@ export function PlanningCalendar({
   weekOffset: number;
   activeFilters: Set<PlanningKind>;
   vue?: string;
+  horizon?: PlanningHorizon;
+  /** Navigation step in weeks — defaults to `weeks` (horizon size). */
+  step?: number;
 }) {
   const visible = bands.filter((b) => activeFilters.has(b.kind));
-  const step = 4;
+  const navStep = step ?? weeks;
 
   return (
     <div className="planning">
       <div className="planning__toolbar">
+        <div className="planning__modes" aria-label="Horizon de planification">
+          {HORIZON_MODES.map((m) => (
+            <Link
+              key={m.id}
+              href={buildPlanHref({
+                weekOffset: 0,
+                filters: activeFilters,
+                vue,
+                horizon: m.id,
+              })}
+              className={`planning__mode${horizon === m.id ? " is-active" : ""}`}
+            >
+              {m.label}
+            </Link>
+          ))}
+        </div>
+
         <div className="planning__nav" aria-label="Navigation temporelle">
           <Link
             href={buildPlanHref({
-              weekOffset: weekOffset - step,
+              weekOffset: weekOffset - navStep,
               filters: activeFilters,
               vue,
+              horizon,
             })}
             className="btn btn--ghost planning__nav-btn"
           >
-            ← {step} sem.
+            ← {navStep} sem.
           </Link>
           <Link
             href={buildPlanHref({
               weekOffset: 0,
               filters: activeFilters,
               vue,
+              horizon,
             })}
             className={`btn btn--ghost planning__nav-btn${weekOffset === 0 ? " is-current" : ""}`}
           >
@@ -87,13 +120,14 @@ export function PlanningCalendar({
           </Link>
           <Link
             href={buildPlanHref({
-              weekOffset: weekOffset + step,
+              weekOffset: weekOffset + navStep,
               filters: activeFilters,
               vue,
+              horizon,
             })}
             className="btn btn--ghost planning__nav-btn"
           >
-            {step} sem. →
+            {navStep} sem. →
           </Link>
         </div>
 
@@ -108,6 +142,7 @@ export function PlanningCalendar({
                   weekOffset,
                   filters: next,
                   vue,
+                  horizon,
                 })}
                 className={`planning__chip planning__chip--${kind.toLowerCase()}${on ? " is-active" : ""}`}
                 aria-pressed={on}

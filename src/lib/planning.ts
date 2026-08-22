@@ -7,6 +7,34 @@ export type PlanningKind = "PROJET" | "MISSION" | "TACHE";
 
 export const PLANNING_KINDS: PlanningKind[] = ["PROJET", "MISSION", "TACHE"];
 
+/** Horizon de la vue planification collaborateur. */
+export type PlanningHorizon = "semaine" | "4sem" | "mois";
+
+export const PLANNING_HORIZONS: PlanningHorizon[] = [
+  "semaine",
+  "4sem",
+  "mois",
+];
+
+export function parsePlanningHorizon(
+  raw: string | undefined,
+): PlanningHorizon {
+  if (raw === "4sem" || raw === "mois" || raw === "semaine") return raw;
+  return "semaine";
+}
+
+/** Nombre de semaines affichées selon l’horizon. */
+export function weeksForHorizon(horizon: PlanningHorizon): number {
+  switch (horizon) {
+    case "semaine":
+      return 1;
+    case "4sem":
+      return 4;
+    case "mois":
+      return 5;
+  }
+}
+
 export type PlanningBand = {
   id: string;
   kind: PlanningKind;
@@ -107,7 +135,7 @@ function overlaps(
   return aStart <= bEnd && aEnd >= bStart;
 }
 
-function clampBand(
+export function clampBandForWindow(
   start: Date,
   end: Date,
   winStart: Date,
@@ -283,7 +311,7 @@ export async function getPlanningCollaborateur(
     const start = new Date(band.start);
     const end = new Date(band.end);
     if (end < start) end.setTime(start.getTime());
-    const clamped = clampBand(start, end, winStart, winEnd);
+    const clamped = clampBandForWindow(start, end, winStart, winEnd);
     if (!clamped) return;
     bands.push({ ...band, start: clamped.start, end: clamped.end });
   };

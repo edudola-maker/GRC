@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ConfirmDeleteButton } from "@/components/FormControls";
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import {
@@ -80,6 +81,10 @@ export default async function ObjectifDetailPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <TrackRecentView
+        href={baseHref}
+        label={`${objectif.code} — ${objectif.intitule}`}
+      />
 
       <EditableSection
         title="Informations générales"

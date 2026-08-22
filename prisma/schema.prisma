@@ -486,9 +486,31 @@ model Projet {
   membres     ProjetMembre[]
   /// Conservé pour migration — UI unifiée via LienObjet / Éléments associés.
   documents   ProjetDocument[]
+  /// Étapes pondérées — avancement Projet = Σ (poids × avancement étape).
+  etapes      ProjetEtape[]
 
   @@unique([uniteId, code])
   @@index([uniteId, archive, statut])
+}
+
+/// Étape de Projet avec pondération et avancement 0–100 %.
+/// Avancement global = Σ (poids × avancement) / 100 (poids en %, total 100).
+model ProjetEtape {
+  id          String   @id @default(cuid())
+  projetId    String
+  libelle     String
+  ordre       Int      @default(0)
+  /// Poids dans le projet (0–100). Somme des poids = 100.
+  poids       Int      @default(0)
+  /// Avancement de l’étape 0–100 (slider).
+  avancement  Int      @default(0)
+  termine     Boolean  @default(false)
+  creeLe      DateTime @default(now())
+  modifieLe   DateTime @updatedAt
+
+  projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+
+  @@index([projetId, ordre])
 }
 
 model ProjetMembre {

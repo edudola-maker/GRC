@@ -4,6 +4,7 @@ import {
   ConfirmActionButton,
   ConfirmDeleteButton,
 } from "@/components/FormControls";
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { PageHeader, BtnLink } from "@/components/ui";
 import {
@@ -81,6 +82,10 @@ export default async function ControleSCIDetailPage({
   return (
     <>
       <BackLink href="/controles-sci" label="← Retour aux contrôles" />
+      <TrackRecentView
+        href={baseHref}
+        label={`${controle.code} — ${controle.nom}`}
+      />
       <PageHeader
         title={`${controle.code} — ${controle.nom}`}
         description={controle.description ?? "Aucune description."}

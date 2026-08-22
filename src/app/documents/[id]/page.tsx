@@ -5,6 +5,7 @@ import {
   ConfirmDeleteButton,
   SubmitButton,
 } from "@/components/FormControls";
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { DocumentForm } from "@/components/EntityForms";
 import { DocumentProcessusPanel } from "@/components/documents/DocumentProcessusPanel";
@@ -99,6 +100,10 @@ export default async function DocumentDetailPage({
   return (
     <>
       <BackLink href="/documents" label="← Retour aux documents" />
+      <TrackRecentView
+        href={baseHref}
+        label={`${document.code} — ${document.nom}`}
+      />
       <PageHeader
         title={`${document.code} — ${document.nom}`}
         description={document.description ?? "Aucune description."}

@@ -1,4 +1,7 @@
 import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
+import { ProjetEtapesPanel } from "@/components/projets/ProjetEtapesPanel";
+import { ensureDefaultProjetEtapes } from "@/app/projets/etapes-actions";
+import { ETAPES_PROJET_DEFAUT } from "@/lib/projet-avancement";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -16,7 +19,6 @@ import {
 } from "../actions";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import {
-  PRIORITE_LABELS,
   STATUT_PROJET_LABELS,
   STATUT_TACHE_LABELS,
   formatDate,
@@ -86,6 +88,7 @@ export default async function ProjetDetailPage({
         creePar: true,
         modifiePar: true,
         unite: true,
+        etapes: { orderBy: { ordre: "asc" } },
         membres: { include: { utilisateur: true } },
         documents: { include: { document: true } },
         taches: {
@@ -107,6 +110,20 @@ export default async function ProjetDetailPage({
   ]);
 
   if (!projet) notFound();
+
+  if (projet.etapes.length === 0 && !projet.archive) {
+    await ensureDefaultProjetEtapes(projet.id, user.id, [...ETAPES_PROJET_DEFAUT]);
+    const refreshed = await prisma.projet.findUnique({
+      where: { id: projet.id },
+      include: {
+        etapes: { orderBy: { ordre: "asc" } },
+      },
+    });
+    if (refreshed) {
+      (projet as { etapes: typeof refreshed.etapes }).etapes = refreshed.etapes;
+      (projet as { avancement: number }).avancement = refreshed.avancement;
+    }
+  }
 
   const canEdit = !projet.archive;
   const baseHref = `/projets/${projet.id}`;
@@ -274,12 +291,8 @@ export default async function ProjetDetailPage({
             <dd>{STATUT_PROJET_LABELS[projet.statut]}</dd>
           </div>
           <div>
-            <dt>Priorité</dt>
-            <dd>{PRIORITE_LABELS[projet.priorite]}</dd>
-          </div>
-          <div>
             <dt>Avancement</dt>
-            <dd>{projet.avancement} %</dd>
+            <dd>{projet.avancement} % <span className="muted">(calculé)</span></dd>
           </div>
           <div>
             <dt>Début</dt>
@@ -294,6 +307,18 @@ export default async function ProjetDetailPage({
           <p className="detail-note">{projet.commentaires}</p>
         ) : null}
       </EditableSection>
+
+      <CollapsibleSection
+        title="Avancement par étapes"
+        defaultOpen
+        badge={`${projet.avancement} %`}
+      >
+        <ProjetEtapesPanel
+          projetId={projet.id}
+          etapes={projet.etapes}
+          editable={canEdit}
+        />
+      </CollapsibleSection>
 
       <CollapsibleSection
         title="Tâches"
