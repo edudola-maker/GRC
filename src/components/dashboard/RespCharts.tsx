@@ -107,6 +107,8 @@ export type BarItem = {
   value: number;
   href: string;
   tone?: "default" | "warn" | "danger";
+  /** Sous-titre optionnel (ex. cible). */
+  subtitle?: string;
 };
 
 export function HBarChart({
@@ -123,7 +125,12 @@ export function HBarChart({
         const pct = Math.round((i.value / m) * 100);
         return (
           <Link key={i.key} href={i.href} className="hbar__row">
-            <span className="hbar__label">{i.label}</span>
+            <span className="hbar__label">
+              {i.label}
+              {i.subtitle ? (
+                <em className="hbar__subtitle">{i.subtitle}</em>
+              ) : null}
+            </span>
             <span className="hbar__track">
               <span
                 className={`hbar__fill${i.tone && i.tone !== "default" ? ` hbar__fill--${i.tone}` : ""}`}

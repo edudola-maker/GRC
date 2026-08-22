@@ -338,29 +338,6 @@ export function ProjetForm({
                 ))}
               </select>
             </Field>
-            <Field label="Priorité" htmlFor="priorite">
-              <select
-                id="priorite"
-                name="priorite"
-                defaultValue={values?.priorite ?? "MOYENNE"}
-              >
-                {PRIORITE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Avancement (%)" htmlFor="avancement">
-              <input
-                id="avancement"
-                name="avancement"
-                type="number"
-                min={0}
-                max={100}
-                defaultValue={values?.avancement ?? 0}
-              />
-            </Field>
             <Field label="Date de début" htmlFor="dateDebut">
               <input
                 id="dateDebut"

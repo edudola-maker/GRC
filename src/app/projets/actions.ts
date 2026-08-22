@@ -28,6 +28,7 @@ import { sectionDraftHref, sectionEditHref, sectionSavedHref } from "@/lib/secti
 import { getCurrentUser } from "@/lib/session";
 import { serializeTags } from "@/lib/tags";
 import { setTachePrerequis } from "@/lib/tache-dependances";
+import { ETAPES_PROJET_DEFAUT } from "@/lib/projet-avancement";
 
 const STATUTS = new Set<string>(STATUT_PROJET_OPTIONS.map((o) => o.value));
 const PRIORITES = new Set<string>(PRIORITE_OPTIONS.map((o) => o.value));
@@ -72,11 +73,6 @@ export async function createProjet(formData: FormData) {
     redirectWithError(fallback, "Responsable introuvable.");
   }
 
-  const avancement = Math.min(
-    100,
-    Math.max(0, optInt(formData, "avancement") ?? 0),
-  );
-
   const allocated = await allocateCreateCode(
     "PROJET",
     uniteId,
@@ -99,12 +95,20 @@ export async function createProjet(formData: FormData) {
       dateEcheance: optDate(formData, "dateEcheance"),
       statut: statut as "IDEE",
       priorite: priorite as "MOYENNE",
-      avancement,
+      avancement: 0,
       commentaires: optStr(formData, "commentaires"),
       reflexion: optStr(formData, "reflexion"),
       archive: false,
       creeParId: current.id,
       modifieParId: current.id,
+      etapes: {
+        create: ETAPES_PROJET_DEFAUT.map((e, ordre) => ({
+          libelle: e.libelle,
+          ordre,
+          poids: e.poids,
+          avancement: 0,
+        })),
+      },
     },
   });
 
@@ -185,19 +189,15 @@ export async function updateProjet(formData: FormData) {
     }
   } else if (sectionKey === "PILOTAGE" || sectionKey === "EQUIPE") {
     const statut = str(formData, "statut") || existing.statut;
-    const priorite = str(formData, "priorite") || existing.priorite;
     if (sectionKey === "PILOTAGE") {
-      if (!STATUTS.has(statut) || !PRIORITES.has(priorite)) {
-        redirectWithError(editFallback, "Statut ou priorité invalide.");
+      if (!STATUTS.has(statut)) {
+        redirectWithError(editFallback, "Statut invalide.");
       }
       const responsableId = str(formData, "responsableId") || current.id;
       if (!(await assertResponsable(responsableId))) {
         redirectWithError(editFallback, "Responsable introuvable.");
       }
-      const avancement = Math.min(
-        100,
-        Math.max(0, optInt(formData, "avancement") ?? 0),
-      );
+      // Avancement = calculé depuis les étapes (sliders), jamais saisi ici.
       await prisma.projet.update({
         where: { id },
         data: {
@@ -205,8 +205,6 @@ export async function updateProjet(formData: FormData) {
           dateDebut: optDate(formData, "dateDebut"),
           dateEcheance: optDate(formData, "dateEcheance"),
           statut: statut as "IDEE",
-          priorite: priorite as "MOYENNE",
-          avancement,
           commentaires: optStr(formData, "commentaires"),
           modifieParId: current.id,
         },

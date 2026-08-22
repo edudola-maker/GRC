@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import { MissionForm } from "@/components/EntityForms";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
@@ -79,6 +80,10 @@ export default async function MissionCockpitPage({
       ok={sp.ok}
       erreur={sp.erreur}
     >
+      <TrackRecentView
+        href={baseHref}
+        label={`${mission.code} — ${mission.titre}`}
+      />
       <CollapsibleSection
         title="Vue d'ensemble"
         defaultOpen

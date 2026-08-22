@@ -64,6 +64,7 @@ async function main() {
   await prisma.processusUniteApplicable.deleteMany().catch(() => undefined);
   await prisma.documentProcessus.deleteMany().catch(() => undefined);
   await prisma.processusEtape.deleteMany();
+  await prisma.projetEtape.deleteMany().catch(() => undefined);
   await prisma.projetMembre.deleteMany();
   await prisma.conseil.deleteMany();
   await prisma.document.deleteMany();
@@ -311,6 +312,7 @@ async function main() {
       tags: "SCI, procédures",
       responsableId: alice.id,
       dateDebut: daysFromNow(-60),
+      dateFinPlanifiee: daysFromNow(30),
       dateEcheance: daysFromNow(45),
       statut: "EN_COURS",
       priorite: "HAUTE",
@@ -333,6 +335,7 @@ async function main() {
       tags: "digital",
       responsableId: bernard.id,
       dateDebut: daysFromNow(-30),
+      dateFinPlanifiee: daysFromNow(14),
       dateEcheance: daysFromNow(20),
       statut: "PLANIFIE",
       priorite: "MOYENNE",
@@ -358,6 +361,65 @@ async function main() {
       modifieParId: claire.id,
     },
   });
+
+  // Étapes pondérées (avancement = Σ poids × avancement)
+  const projetsSeed = await prisma.projet.findMany({
+    where: { uniteId },
+    select: { id: true },
+  });
+  for (const pr of projetsSeed) {
+    const exists = await prisma.projetEtape.count({ where: { projetId: pr.id } });
+    if (exists > 0) continue;
+    await prisma.projetEtape.createMany({
+      data: [
+        {
+          projetId: pr.id,
+          libelle: "Cadrage",
+          ordre: 0,
+          poids: 10,
+          avancement: 100,
+          termine: true,
+        },
+        {
+          projetId: pr.id,
+          libelle: "Analyse",
+          ordre: 1,
+          poids: 20,
+          avancement: 100,
+          termine: true,
+        },
+        {
+          projetId: pr.id,
+          libelle: "Travaux",
+          ordre: 2,
+          poids: 40,
+          avancement: 45,
+          termine: false,
+        },
+        {
+          projetId: pr.id,
+          libelle: "Revue",
+          ordre: 3,
+          poids: 20,
+          avancement: 0,
+          termine: false,
+        },
+        {
+          projetId: pr.id,
+          libelle: "Finalisation",
+          ordre: 4,
+          poids: 10,
+          avancement: 0,
+          termine: false,
+        },
+      ],
+    });
+    // 10+20+18 = 48 %
+    await prisma.projet.update({
+      where: { id: pr.id },
+      data: { avancement: 48 },
+    });
+  }
 
   const reception = daysFromNow(-3);
   const conseil = await prisma.conseil.create({

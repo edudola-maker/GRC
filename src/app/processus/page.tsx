@@ -7,14 +7,16 @@ import {
   ProcessusInventory,
   type ProcessusInventoryItem,
 } from "@/components/processus/ProcessusInventory";
+import { type MacroArboItem } from "@/components/processus/ProcessusArborescence";
+import { ProcessusSplitView } from "@/components/processus/ProcessusSplitView";
 import {
-  ProcessusArborescence,
-  type MacroArboItem,
-} from "@/components/processus/ProcessusArborescence";
+  ProcessusExplorerDetail,
+  type ProcessusPreviewData,
+} from "@/components/processus/ProcessusExplorerDetail";
 import { MODULE_HELP } from "@/lib/catalog";
 import { STATUT_PROCESSUS_LABELS } from "@/lib/labels";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { formatUtilisateurNom, getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -26,14 +28,16 @@ export default async function ProcessusPage({
     erreur?: string;
     filtre?: string;
     vue?: string;
+    selected?: string;
   }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
   const uniteId = user.uniteId;
   const vue = sp.vue === "inventaire" ? "inventaire" : "arborescence";
+  const selectedId = sp.selected?.trim() || null;
 
-  const [rows, actifs, suspendus, unite, macros] = await Promise.all([
+  const [rows, actifs, suspendus, unite, macros, selectedRaw] = await Promise.all([
     prisma.processus.findMany({
       where: {
         OR: [
@@ -76,6 +80,37 @@ export default async function ProcessusPage({
       },
       orderBy: [{ ordre: "asc" }, { nom: "asc" }],
     }),
+    selectedId
+      ? prisma.processus.findFirst({
+          where: {
+            id: selectedId,
+            OR: [
+              { uniteId },
+              { unitesApplicables: { some: { uniteId } } },
+            ],
+          },
+          include: {
+            responsable: true,
+            unite: { select: { nom: true } },
+            macroprocessus: { select: { code: true, nom: true } },
+            _count: {
+              select: {
+                etapes: true,
+                risques: true,
+                actifsIT: true,
+                raciLignes: true,
+              },
+            },
+            continuite: { select: { id: true } },
+            risques: {
+              where: { archive: false },
+              select: {
+                _count: { select: { controles: true } },
+              },
+            },
+          },
+        })
+      : Promise.resolve(null),
   ]);
 
   const items: ProcessusInventoryItem[] = rows.map((p) => ({
@@ -86,7 +121,7 @@ export default async function ProcessusPage({
     statut: p.statut,
     statutLabel: STATUT_PROCESSUS_LABELS[p.statut] ?? p.statut,
     responsableId: p.responsableId,
-    responsableNom: p.responsable.nom,
+    responsableNom: formatUtilisateurNom(p.responsable),
     criticite: p.criticite,
     parentNom: p.macroprocessus
       ? `${p.macroprocessus.code} — ${p.macroprocessus.nom}`
@@ -121,8 +156,43 @@ export default async function ProcessusPage({
   }));
   const macroIds = new Set(macros.map((m) => m.id));
   const orphelins = rows
-    .filter((p) => !p.archive && (!p.macroprocessusId || !macroIds.has(p.macroprocessusId)))
+    .filter(
+      (p) =>
+        !p.archive &&
+        (!p.macroprocessusId || !macroIds.has(p.macroprocessusId)),
+    )
     .map((p) => ({ id: p.id, code: p.code, nom: p.nom }));
+
+  let preview: ProcessusPreviewData | null = null;
+  if (selectedRaw) {
+    const controlesCount = selectedRaw.risques.reduce(
+      (s, r) => s + r._count.controles,
+      0,
+    );
+    preview = {
+      id: selectedRaw.id,
+      code: selectedRaw.code,
+      nom: selectedRaw.nom,
+      description: selectedRaw.description,
+      statut: selectedRaw.statut,
+      criticite: selectedRaw.criticite,
+      reference: selectedRaw.reference,
+      responsableNom: formatUtilisateurNom(selectedRaw.responsable),
+      uniteNom: selectedRaw.unite.nom,
+      macroNom: selectedRaw.macroprocessus
+        ? `${selectedRaw.macroprocessus.code} — ${selectedRaw.macroprocessus.nom}`
+        : null,
+      etapesCount: selectedRaw._count.etapes,
+      risquesCount: selectedRaw._count.risques,
+      controlesCount,
+      actifsCount: selectedRaw._count.actifsIT,
+      aRaci: selectedRaw._count.raciLignes > 0,
+      aContinuite: Boolean(selectedRaw.continuite),
+      contientDonneesPersonnelles: selectedRaw.contientDonneesPersonnelles,
+      niveauConfidentialite: selectedRaw.niveauConfidentialite,
+      modifieLe: selectedRaw.modifieLe,
+    };
+  }
 
   return (
     <>
@@ -132,7 +202,7 @@ export default async function ProcessusPage({
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
 
-      <div className="filter-bar" style={{ marginBottom: "1rem", gap: "0.5rem" }}>
+      <div className="filter-bar filter-bar--wrap" style={{ marginBottom: "1rem" }}>
         <Link
           href="/processus?vue=arborescence"
           className={`chip${vue === "arborescence" ? " is-active" : ""}`}
@@ -145,36 +215,39 @@ export default async function ProcessusPage({
         >
           Inventaire
         </Link>
-        <Link href="/macroprocessus/nouveau" className="btn btn--ghost">
-          + Macroprocessus
-        </Link>
         <Link href="/processus/nouveau" className="btn btn--primary">
           + Processus
         </Link>
       </div>
 
-      <KpiZone
-        items={[
-          { value: actifs, label: "actifs", tone: "ok" },
-          { value: suspendus, label: "suspendus" },
-          { value: rows.length, label: "total" },
-          {
-            value: sansConfluence,
-            label: "à compléter",
-            tone: sansConfluence > 0 ? "warn" : "default",
-            href:
-              sansConfluence > 0
-                ? "?vue=inventaire&filtre=sans_confluence#inventaire"
-                : undefined,
-          },
-        ]}
-      />
+      {vue === "inventaire" ? (
+        <KpiZone
+          items={[
+            { value: actifs, label: "actifs", tone: "ok" },
+            { value: suspendus, label: "suspendus" },
+            { value: rows.length, label: "total" },
+            {
+              value: sansConfluence,
+              label: "à compléter",
+              tone: sansConfluence > 0 ? "warn" : "default",
+              href:
+                sansConfluence > 0
+                  ? "?vue=inventaire&filtre=sans_confluence#inventaire"
+                  : undefined,
+            },
+          ]}
+        />
+      ) : null}
 
       {vue === "arborescence" ? (
-        <ProcessusArborescence
+        <ProcessusSplitView
           unite={unite}
           macros={macrosArbo}
           orphelins={orphelins}
+          selectedId={preview?.id ?? selectedId}
+          detail={
+            preview ? <ProcessusExplorerDetail processus={preview} /> : null
+          }
         />
       ) : (
         <ProcessusInventory

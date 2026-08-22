@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ActionBucket } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
+import { PlanningCalendar } from "@/components/PlanningCalendar";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import {
@@ -13,6 +14,12 @@ import {
 import { PageHeader, BtnLink } from "@/components/ui";
 import { getMesActions } from "@/lib/actions-view";
 import { formatDate } from "@/lib/labels";
+import {
+  getPlanningCollaborateur,
+  parsePlanningFilters,
+  parsePlanningHorizon,
+  weeksForHorizon,
+} from "@/lib/planning";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -24,13 +31,28 @@ export default async function DashboardCollaborateurPage({
     ok?: string;
     erreur?: string;
     vue?: string;
+    horizon?: string;
+    plan?: string;
+    f?: string;
   }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  const actions = await getMesActions(user.id);
+  const horizon = parsePlanningHorizon(sp.horizon);
+  const weeks = weeksForHorizon(horizon);
+  const weekOffset = Number.parseInt(sp.plan ?? "0", 10) || 0;
+  const activeFilters = parsePlanningFilters(sp.f);
+
+  const [actions, planning] = await Promise.all([
+    getMesActions(user.id),
+    getPlanningCollaborateur(user.id, user.uniteId, { weeks, weekOffset }),
+  ]);
+
   const retourQs = new URLSearchParams();
   if (sp.vue) retourQs.set("vue", sp.vue);
+  if (horizon !== "semaine") retourQs.set("horizon", horizon);
+  if (weekOffset !== 0) retourQs.set("plan", String(weekOffset));
+  if (sp.f) retourQs.set("f", sp.f);
   const retour = retourQs.toString() ? `/?${retourQs}` : "/";
 
   const vue = sp.vue || "toutes";
@@ -96,11 +118,11 @@ export default async function DashboardCollaborateurPage({
             sections={[
               {
                 heading: "À quoi ça sert ?",
-                body: "Voir immédiatement ce qui demande votre attention : retards, échéances, semaine, et reprendre un travail récent.",
+                body: "Voir immédiatement ce qui demande votre attention : retards, échéances, planification, et reprendre un travail récent.",
               },
               {
-                heading: "Semaine",
-                body: "⚑ = échéance à rendre ce jour. ▸ = début de plage planifiée. Outlook reste l’outil des réunions.",
+                heading: "Planification",
+                body: "Vue Semaine / 4 semaines / Mois. Glisser une barre replanifie le travail sans modifier l’échéance. Mobile : liste / tap.",
               },
               {
                 heading: "Charge",
@@ -119,11 +141,67 @@ export default async function DashboardCollaborateurPage({
 
       <ReprendreTravail />
 
-      <CollapsibleSection title="Ma semaine" defaultOpen>
-        <p className="muted" style={{ marginTop: 0, marginBottom: "0.65rem" }}>
-          ⚑ échéance · ▸ plage planifiée
-        </p>
-        <SemaineCompacte days={weekDays} />
+      <CollapsibleSection title="Ma planification" defaultOpen>
+        <div className="planning-desktop-only">
+          <PlanningCalendar
+            columns={planning.window.columns}
+            bands={planning.bands.map((b) => ({
+              id: b.id,
+              kind: b.kind,
+              title: b.title,
+              href: b.href,
+              source: b.source,
+              entityType: b.entityType,
+              entityId: b.entityId,
+              editable: b.editable,
+              echeanceIso: b.echeanceIso,
+              chargeJours: b.chargeJours,
+              planStartIso: b.planStartIso,
+              planEndIso: b.planEndIso,
+              startIso: b.start.toISOString(),
+              endIso: b.end.toISOString(),
+            }))}
+            winStartIso={planning.window.start.toISOString()}
+            weeks={planning.window.weeks}
+            weekOffset={planning.window.weekOffset}
+            activeFilters={[...activeFilters]}
+            vue={vue}
+            horizon={horizon}
+            step={weeks}
+          />
+          <div className="planning__mini-semaine">
+            <p
+              className="muted"
+              style={{ marginTop: "0.85rem", marginBottom: "0.45rem" }}
+            >
+              Bande jour — échéance / plage planifiée
+            </p>
+            <SemaineCompacte days={weekDays} />
+          </div>
+        </div>
+        <div className="planning-mobile-only">
+          <p className="muted" style={{ marginTop: 0 }}>
+            Vue téléphone — agenda / liste (tap pour ouvrir). Pas de
+            glisser-déposer.
+          </p>
+          <SemaineCompacte days={weekDays} />
+          <ul className="planning-mobile-list">
+            {planning.bands.slice(0, 12).map((b) => (
+              <li key={b.id}>
+                <Link href={b.href}>
+                  <strong>{b.title}</strong>
+                  <span className="muted">
+                    {" "}
+                    · {formatDate(b.start)}
+                    {b.end.getTime() !== b.start.getTime()
+                      ? ` → ${formatDate(b.end)}`
+                      : ""}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection

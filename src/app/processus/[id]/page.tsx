@@ -4,6 +4,7 @@ import {
   ConfirmActionButton,
   ConfirmDeleteButton,
 } from "@/components/FormControls";
+import { TrackRecentView } from "@/components/dashboard/ReprendreTravail";
 import { ProcessusForm } from "@/components/EntityForms";
 import { FlashBanner, BackLink } from "@/components/Flash";
 import { ElementsAssocies } from "@/components/liens/ElementsAssocies";
@@ -294,6 +295,10 @@ export default async function ProcessusDetailPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <TrackRecentView
+        href={baseHref}
+        label={`${processus.code} — ${processus.nom}`}
+      />
       {processus.archive ? (
         <div className="flash flash--warn">Ce processus est archivé.</div>
       ) : null}

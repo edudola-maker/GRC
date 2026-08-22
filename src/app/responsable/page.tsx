@@ -4,6 +4,7 @@ import { ActionRow } from "@/components/ActionRow";
 import { FlashBanner } from "@/components/Flash";
 import { CollapsibleSection } from "@/components/module/CollapsibleSection";
 import { ModuleHelp } from "@/components/ModuleHelp";
+import { PlanningEquipeGantt } from "@/components/dashboard/PlanningEquipeGantt";
 import {
   AttentionCounters,
   DonutChart,
@@ -27,8 +28,16 @@ import {
   formatDate,
 } from "@/lib/labels";
 import { getObjectifsModuleAggreges } from "@/lib/objectifs-module";
+import { PLANNING_KINDS, type PlanningKind } from "@/lib/planning";
+import {
+  getPlanningEquipe,
+  parsePlanningEquipeHorizon,
+  stepForEquipeHorizon,
+  weeksForEquipeHorizon,
+} from "@/lib/planning-equipe";
 import { RAG_LABELS, ragEcheance, type RagStatut } from "@/lib/rag";
 import {
+  formatUtilisateurNom,
   getCurrentUser,
   isResponsable,
   listUtilisateursActifsForCurrentUnite,
@@ -83,12 +92,31 @@ export default async function DashboardResponsablePage({
     priorite?: string;
     echeance?: string;
     rag?: string;
+    /** Planning équipe — horizon */
+    ph?: string;
+    plan?: string;
+    pcollab?: string;
+    pk?: string;
   }>;
 }) {
   const user = await getCurrentUser();
   if (!isResponsable(user)) notFound();
 
   const sp = await searchParams;
+  const planHorizon = parsePlanningEquipeHorizon(sp.ph);
+  const planWeeks = weeksForEquipeHorizon(planHorizon);
+  const planStep = stepForEquipeHorizon(planHorizon);
+  const planOffset = Number.parseInt(sp.plan ?? "0", 10) || 0;
+  const planKindsRaw = (sp.pk ?? "")
+    .split(",")
+    .map((p) => p.trim().toUpperCase())
+    .filter((p): p is PlanningKind =>
+      PLANNING_KINDS.includes(p as PlanningKind),
+    );
+  const planKinds =
+    planKindsRaw.length > 0
+      ? new Set(planKindsRaw)
+      : new Set(PLANNING_KINDS);
   const ragFilter =
     sp.rag === "vert" || sp.rag === "jaune" || sp.rag === "rouge"
       ? sp.rag
@@ -97,9 +125,22 @@ export default async function DashboardResponsablePage({
   today.setHours(0, 0, 0, 0);
   const in7 = new Date(today);
   in7.setDate(in7.getDate() + 7);
+  const annee = today.getFullYear();
 
-  const [data, users, monitoring, objectifsModule, unite, auditsActifs, revuesActives, conseilsRetard, tachesSemaine, tachesPlus] =
-    await Promise.all([
+  const [
+    data,
+    users,
+    monitoring,
+    objectifsModule,
+    objectifsAnnuels,
+    planningEquipe,
+    unite,
+    auditsActifs,
+    revuesActives,
+    conseilsRetard,
+    tachesSemaine,
+    tachesPlus,
+  ] = await Promise.all([
     getDashboardResponsable(user.uniteId),
     listUtilisateursActifsForCurrentUnite(),
     getActionsUnite(user.uniteId, {
@@ -113,6 +154,24 @@ export default async function DashboardResponsablePage({
           : undefined,
     }),
     getObjectifsModuleAggreges(user.uniteId),
+    prisma.objectif.findMany({
+      where: { uniteId: user.uniteId, annee },
+      orderBy: { intitule: "asc" },
+      select: {
+        id: true,
+        intitule: true,
+        progression: true,
+        cible: true,
+      },
+    }),
+    getPlanningEquipe(user.uniteId, {
+      weeks: planWeeks,
+      weekOffset: planOffset,
+      filters: {
+        collaborateurId: sp.pcollab || undefined,
+        kinds: planKinds,
+      },
+    }),
     prisma.unite.findUnique({
       where: { id: user.uniteId },
       select: { nom: true, code: true },
@@ -312,24 +371,86 @@ export default async function DashboardResponsablePage({
         <div className="resp-block">
           <h3>Objectifs annuels</h3>
           <HBarChart
-            items={objectifsModule.slice(0, 6).map((o) => ({
+            items={objectifsAnnuels.slice(0, 6).map((o) => ({
               key: o.id,
-              label: o.libelle,
+              label: o.intitule,
               value: o.progression ?? 0,
-              href: "/unite#objectifs",
+              href: `/objectifs/${o.id}`,
               tone: (o.progression ?? 0) < 40 ? "warn" : "default",
+              subtitle: o.cible ? `Cible : ${o.cible}` : undefined,
             }))}
             max={100}
           />
-          {objectifsModule.length === 0 ? (
-            <p className="muted">Aucun objectif module défini.</p>
+          {objectifsAnnuels.length === 0 ? (
+            <p className="muted">Aucun objectif annuel défini.</p>
           ) : (
             <p className="muted" style={{ marginTop: "0.5rem" }}>
-              Progression en % de la cible (cliquable).
+              Progression en % (cliquable).
             </p>
           )}
         </div>
       </section>
+
+      <CollapsibleSection title="Planification équipe" defaultOpen>
+        <p className="muted" style={{ marginTop: 0, marginBottom: "0.65rem" }}>
+          {unite?.nom ?? "Unité"} — replanification visuelle · charge en jours ·
+          échéance distincte
+        </p>
+        <div className="planning-desktop-only">
+          <PlanningEquipeGantt
+            columns={planningEquipe.window.columns}
+            rows={planningEquipe.rows.map((r) => ({
+              user: r.user,
+              chargeDays: r.chargeDays,
+              bands: r.bands.map((b) => ({
+                id: b.id,
+                kind: b.kind,
+                title: b.title,
+                href: b.href,
+                source: b.source,
+                entityType: b.entityType,
+                entityId: b.entityId,
+                editable: b.editable,
+                echeanceIso: b.echeanceIso,
+                chargeJours: b.chargeJours,
+                planStartIso: b.planStartIso,
+                planEndIso: b.planEndIso,
+                durationDays: b.durationDays,
+                startIso: b.start.toISOString(),
+                endIso: b.end.toISOString(),
+              })),
+            }))}
+            winStartIso={planningEquipe.window.start.toISOString()}
+            weeks={planningEquipe.window.weeks}
+            weekOffset={planOffset}
+            horizon={planHorizon}
+            step={planStep}
+            collaborateurs={users.map((u) => ({
+              id: u.id,
+              nom: formatUtilisateurNom(u),
+            }))}
+            filterCollaborateur={sp.pcollab}
+            filterKinds={[...planKinds]}
+          />
+        </div>
+        <div className="planning-mobile-only">
+          <p className="muted">
+            Vue téléphone — liste chronologique (tap pour ouvrir).
+          </p>
+          <ul className="planning-mobile-list">
+            {planningEquipe.rows.flatMap((r) =>
+              r.bands.slice(0, 4).map((b) => (
+                <li key={`${r.user.id}-${b.id}`}>
+                  <Link href={b.href}>
+                    <strong>{r.user.nom}</strong>
+                    <span className="muted"> · {b.title}</span>
+                  </Link>
+                </li>
+              )),
+            )}
+          </ul>
+        </div>
+      </CollapsibleSection>
 
       <CollapsibleSection
         title="Que fait actuellement l'unité ?"
@@ -448,7 +569,7 @@ export default async function DashboardResponsablePage({
 
       <CollapsibleSection
         title={`Objectifs modules ${data.meta.annee} — vision consolidée`}
-        defaultOpen
+        defaultOpen={false}
       >
           <p className="muted" style={{ marginBottom: "0.75rem" }}>
             Chaque module définit ses cibles ; ce tableau de bord les agrège
@@ -460,27 +581,39 @@ export default async function DashboardResponsablePage({
               Administration.
             </p>
           ) : (
-            <ul className="objectifs-module-list">
-              {objectifsModule.map((o) => (
-                <li key={o.id}>
-                  <span className="module-tag">{o.moduleLabel}</span>
-                  <div>
-                    <strong>{o.libelle}</strong>
-                    <span className="muted" style={{ display: "block", fontSize: "0.82rem" }}>
-                      {o.source === "calcule" ? "Calculé" : "Saisi"}
-                      {o.uniteMesure ? ` · ${o.uniteMesure}` : ""}
+            <>
+              <HBarChart
+                items={objectifsModule.slice(0, 8).map((o) => ({
+                  key: o.id,
+                  label: o.libelle,
+                  value: o.progression ?? 0,
+                  href: "/unite#objectifs",
+                  tone: (o.progression ?? 0) < 40 ? "warn" : "default",
+                }))}
+                max={100}
+              />
+              <ul className="objectifs-module-list" style={{ marginTop: "1rem" }}>
+                {objectifsModule.map((o) => (
+                  <li key={o.id}>
+                    <span className="module-tag">{o.moduleLabel}</span>
+                    <div>
+                      <strong>{o.libelle}</strong>
+                      <span className="muted" style={{ display: "block", fontSize: "0.82rem" }}>
+                        {o.source === "calcule" ? "Calculé" : "Saisi"}
+                        {o.uniteMesure ? ` · ${o.uniteMesure}` : ""}
+                      </span>
+                    </div>
+                    <span>
+                      {o.realise ?? "—"}
+                      {o.cible != null ? ` / ${o.cible}` : ""}
+                      {o.cible != null && o.cible > 0 ? (
+                        <span className="muted"> · {o.progression}%</span>
+                      ) : null}
                     </span>
-                  </div>
-                  <span>
-                    {o.realise ?? "—"}
-                    {o.cible != null ? ` / ${o.cible}` : ""}
-                    {o.cible != null && o.cible > 0 ? (
-                      <span className="muted"> · {o.progression}%</span>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
       </CollapsibleSection>
 
