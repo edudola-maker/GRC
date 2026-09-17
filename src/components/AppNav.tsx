@@ -41,6 +41,8 @@ const NAV_GROUPS: NavGroup[] = [
         responsableOnly: true,
       },
       { href: "/taches", label: "Tâches", icon: "check" },
+      { href: "/strategie", label: "Stratégie", icon: "dashboard" },
+      { href: "/objectifs", label: "Objectifs", icon: "list" },
       { href: "/recherche", label: "Recherche", icon: "search" },
       { href: "/decouvrir", label: "Découvrir l’outil", icon: "guide" },
     ],

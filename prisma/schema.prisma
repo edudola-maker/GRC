@@ -389,7 +389,9 @@ model Organisation {
   nom            String
   nomCourt       String?
   description    String?
-  /// Vision narrative légère (stratégie — PR suivante enrichira).
+  /// Raison d’être / mission stratégique permanente (≠ mission d’assurance).
+  mission        String?
+  /// Vision narrative légère (3–5 ans).
   vision         String?
   profilInitial  ProfilOrganisation?
   statut         String              @default("ACTIF")
@@ -399,6 +401,7 @@ model Organisation {
   unites      Unite[]
   memberships OrganisationMembership[]
   modules     OrganisationModule[]
+  axes        AxeStrategique[]
 }
 
 /// Appartenance User ↔ Organisation (rôle par org, pas global).
@@ -433,6 +436,29 @@ model OrganisationModule {
 
   @@unique([organisationId, module])
   @@index([organisationId, actif])
+}
+
+/// Axe stratégique structuré (Mission / Vision → Axe → Objectifs).
+model AxeStrategique {
+  id             String   @id @default(cuid())
+  organisationId String
+  code           String
+  titre          String
+  description    String?
+  /// Période libre (ex. « 2026–2028 »).
+  periode        String?
+  responsableId  String?
+  statut         String   @default("ACTIF")
+  ordre          Int      @default(0)
+  creeLe         DateTime @default(now())
+  modifieLe      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  responsable  Utilisateur? @relation("AxeResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  objectifs    Objectif[]
+
+  @@unique([organisationId, code])
+  @@index([organisationId, ordre])
 }
 
 // ─── Unité (périmètre + fiche métier de pilotage) ───────────
@@ -549,6 +575,7 @@ model Utilisateur {
   objectifsResponsable    Objectif[]         @relation("ObjectifResponsable")
   objectifsCrees          Objectif[]         @relation("ObjectifCreePar")
   objectifsModifies       Objectif[]         @relation("ObjectifModifiePar")
+  axesResponsable         AxeStrategique[]   @relation("AxeResponsable")
   actifsITResponsable     ActifIT[]          @relation("ActifITResponsable")
   macroprocessusResponsable Macroprocessus[] @relation("MacroprocessusResponsable")
 
@@ -1326,6 +1353,12 @@ model Objectif {
   description   String?
   /// Cible éventuelle (texte libre : « 8 audits », « 95 % », …).
   cible         String?
+  /// Indicateur de suivi (ex. « Nombre d’audits réalisés »).
+  indicateur    String?
+  /// Unité de mesure (ex. « audits », « % »).
+  uniteMesure   String?
+  /// Lien optionnel vers un axe stratégique.
+  axeStrategiqueId String?
   /// Progression 0–100.
   progression   Int            @default(0)
   /// MANUELLE = saisie ; AUTOMATIQUE = dérivée des liens (missions / tâches) quand possible.
@@ -1350,11 +1383,13 @@ model Objectif {
   responsable Utilisateur @relation("ObjectifResponsable", fields: [responsableId], references: [id])
   creePar     Utilisateur @relation("ObjectifCreePar", fields: [creeParId], references: [id])
   modifiePar  Utilisateur @relation("ObjectifModifiePar", fields: [modifieParId], references: [id])
+  axeStrategique AxeStrategique? @relation(fields: [axeStrategiqueId], references: [id], onDelete: SetNull)
   attributions ObjectifAttribution[]
 
   @@unique([uniteId, code])
   @@index([uniteId, annee, statut])
   @@index([uniteId, intitule])
+  @@index([axeStrategiqueId])
 }
 
 /// Lien Objectif ↔ Mission institutionnelle (UniteAttribution).

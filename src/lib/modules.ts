@@ -104,6 +104,7 @@ export const PROFIL_LABELS: Record<ProfilOrganisation, string> = {
 export const NAV_MODULE_BY_HREF: Record<string, CleModule> = {
   "/": "TACHES",
   "/taches": "TACHES",
+  "/strategie": "STRATEGIE",
   "/responsable": "PLANNING",
   "/unite": "EQUIPE",
   "/projets": "PROJETS",
