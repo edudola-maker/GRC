@@ -123,6 +123,7 @@ export const NAV_MODULE_BY_HREF: Record<string, CleModule> = {
   "/decisions": "DECISIONS",
   "/rapports": "RAPPORTS",
   "/decouvrir": "GUIDE",
+  "/guide": "GUIDE",
   "/recherche": "TACHES",
   "/objectifs": "OBJECTIFS",
   "/administration": "ADMINISTRATION",

@@ -44,7 +44,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/strategie", label: "Stratégie", icon: "dashboard" },
       { href: "/objectifs", label: "Objectifs", icon: "list" },
       { href: "/recherche", label: "Recherche", icon: "search" },
-      { href: "/decouvrir", label: "Découvrir l’outil", icon: "guide" },
+      { href: "/guide", label: "Guide", icon: "guide" },
     ],
   },
   {
