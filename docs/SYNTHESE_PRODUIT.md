@@ -76,13 +76,15 @@ OrganisationModule (activation)
 
 ## F. Démo
 
-1. Lancer l’app (`npm run dev` ou build + start)
-2. Connexion démo : **Dominique Admin** ou **Alice Martin** (memberships multi-org)
-3. Sélecteur **Organisation** (sidebar) :
-   - Petite PME
-   - PME structurée
-   - UCAE
-   - Finance
-4. Vérifier : nav modules, données, `/strategie`, `/taches` (vues), `/guide`
+**Lien (tunnel Cloudflare, session courante)** :
+https://radios-charlie-houses-completely.trycloudflare.com
 
-*Ne jamais mélanger les données entre Organisations — isolation serveur.*
+1. Ouvrir le lien (Alice Martin ou Dominique Admin via sélecteur Utilisateur)
+2. Sélecteur **Organisation** (bas de la sidebar) :
+   - Petite PME → nav allégée, 3 tâches, cockpit PME
+   - PME structurée
+   - UCAE → Missions, Conseils, GRC complète
+   - Finance
+3. Parcours utiles : `/taches` (vues Liste/Tableau/Calendrier), `/strategie`, `/guide`
+
+*Isolation serveur : pas de mélange de données entre Organisations.*
