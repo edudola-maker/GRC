@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:filters": "tsx src/lib/inventory-filters.test.ts",
     "test:tenant": "tsx src/lib/tenant-isolation.test.ts",
+    "test:taches": "tsx src/lib/taches-temporalite.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

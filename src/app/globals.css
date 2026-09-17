@@ -5471,3 +5471,242 @@ body.is-resizing {
   color: var(--ink-muted);
   font-size: 0.88rem;
 }
+
+/* ─── Tâches multi-vues ───────────────────────────────────── */
+.taches-workspace__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.taches-workspace__modes {
+  display: inline-flex;
+  border: 1px solid var(--border, #d5ddd8);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-elevated, #fff);
+}
+
+.taches-workspace__mode {
+  border: 0;
+  background: transparent;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+  color: var(--ink-muted, #5a6b60);
+}
+
+.taches-workspace__mode.is-active {
+  background: var(--brand-soft, #e7f2ec);
+  color: var(--brand-deep, #1f4d3a);
+  font-weight: 600;
+}
+
+.taches-workspace__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.taches-workspace__note {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+}
+
+.tache-board__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.tache-board__hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.tache-board__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.tache-board__col {
+  background: var(--bg-muted, #f3f6f4);
+  border-radius: 12px;
+  padding: 0.65rem;
+  min-height: 180px;
+}
+
+.tache-board__col-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.tache-board__col-head h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.tache-board__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.tache-board__card {
+  background: var(--bg-elevated, #fff);
+  border: 1px solid var(--border, #d8e0da);
+  border-radius: 10px;
+  padding: 0.65rem 0.7rem;
+  cursor: grab;
+}
+
+.tache-board__card.is-retard {
+  border-color: color-mix(in srgb, var(--danger, #b42318) 45%, var(--border));
+}
+
+.tache-board__card.is-pending {
+  opacity: 0.55;
+}
+
+.tache-board__title {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tache-board__title:hover {
+  text-decoration: underline;
+}
+
+.tache-board__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted, #5a6b60);
+}
+
+.tache-board__source {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+}
+
+.tache-cal__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.tache-cal__nav {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.tache-cal__hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.tache-cal__grid {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tache-cal__grid--semaine {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tache-cal__grid--4sem,
+.tache-cal__grid--mois {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tache-cal__day {
+  min-height: 110px;
+  border: 1px solid var(--border, #d8e0da);
+  border-radius: 10px;
+  padding: 0.4rem;
+  background: var(--bg-elevated, #fff);
+}
+
+.tache-cal__day.is-today {
+  outline: 2px solid var(--brand, #2f6b4f);
+  outline-offset: -2px;
+}
+
+.tache-cal__day-head {
+  font-size: 0.78rem;
+  margin-bottom: 0.35rem;
+}
+
+.tache-cal__events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tache-cal__event {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 6px;
+  background: var(--brand-soft, #e7f2ec);
+}
+
+.tache-cal__event.is-echeance {
+  background: var(--bg-muted, #f3f6f4);
+  border-left: 3px solid var(--warn, #b54708);
+}
+
+.tache-cal__event a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tache-cal__event a:hover {
+  text-decoration: underline;
+}
+
+.field--inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.field--inline .field__label {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .tache-cal__grid--semaine,
+  .tache-cal__grid--4sem,
+  .tache-cal__grid--mois {
+    grid-template-columns: 1fr;
+  }
+
+  .tache-board__columns {
+    grid-template-columns: 1fr;
+  }
+}

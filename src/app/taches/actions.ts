@@ -714,3 +714,121 @@ export async function ajouterTacheAuJournalBord(formData: FormData) {
   ]);
   redirectWithOk(retour, "journal");
 }
+
+export type TacheBoardSnapshot = {
+  id: string;
+  statut: string;
+  responsableId: string;
+};
+
+/**
+ * Patch rapide pour le board (drag statut / responsable).
+ * Retourne un snapshot pour toast « Annuler » — pas de redirect.
+ */
+export async function patchTacheBoard(input: {
+  id: string;
+  statut?: string;
+  responsableId?: string;
+}): Promise<
+  | { ok: true; previous: TacheBoardSnapshot; message: string }
+  | { ok: false; error: string }
+> {
+  const current = await getCurrentUser();
+  const existing = await prisma.tache.findFirst({
+    where: { id: input.id, uniteId: current.uniteId },
+  });
+  if (!existing) return { ok: false, error: "Tâche introuvable." };
+
+  const previous: TacheBoardSnapshot = {
+    id: existing.id,
+    statut: existing.statut,
+    responsableId: existing.responsableId,
+  };
+
+  const data: {
+    statut?: "A_FAIRE";
+    responsableId?: string;
+    modifieParId: string;
+  } = { modifieParId: current.id };
+
+  const history: Array<{
+    champ: string;
+    avant: string | null;
+    apres: string | null;
+  }> = [];
+  let message = "Tâche mise à jour";
+
+  if (input.statut && input.statut !== existing.statut) {
+    if (!STATUTS.has(input.statut)) {
+      return { ok: false, error: "Statut invalide." };
+    }
+    data.statut = input.statut as "A_FAIRE";
+    Object.assign(
+      data,
+      validationPatchForStatut(current.id, existing.statut, input.statut),
+    );
+    history.push({
+      champ: "statut",
+      avant: existing.statut,
+      apres: input.statut,
+    });
+    message = "Statut modifié";
+  }
+
+  if (input.responsableId && input.responsableId !== existing.responsableId) {
+    const resp = await prisma.utilisateur.findFirst({
+      where: { id: input.responsableId, actif: true },
+    });
+    if (!resp) return { ok: false, error: "Responsable introuvable." };
+    data.responsableId = input.responsableId;
+    history.push({
+      champ: "responsable",
+      avant: existing.responsableId,
+      apres: input.responsableId,
+    });
+    message = "Responsable modifié";
+  }
+
+  if (history.length === 0) {
+    return { ok: true, previous, message: "Aucun changement" };
+  }
+
+  await prisma.tache.update({ where: { id: existing.id }, data });
+  await recordHistory(existing.id, current.id, history);
+  revalidateTacheViews(existing.id, existing);
+  return { ok: true, previous, message };
+}
+
+export async function undoTacheBoardPatch(
+  previous: TacheBoardSnapshot,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const current = await getCurrentUser();
+  const existing = await prisma.tache.findFirst({
+    where: { id: previous.id, uniteId: current.uniteId },
+  });
+  if (!existing) return { ok: false, error: "Tâche introuvable." };
+
+  await prisma.tache.update({
+    where: { id: existing.id },
+    data: {
+      statut: previous.statut as "A_FAIRE",
+      responsableId: previous.responsableId,
+      modifieParId: current.id,
+      ...validationPatchForStatut(
+        current.id,
+        existing.statut,
+        previous.statut,
+      ),
+    },
+  });
+  await recordHistory(existing.id, current.id, [
+    { champ: "statut", avant: existing.statut, apres: previous.statut },
+    {
+      champ: "responsable",
+      avant: existing.responsableId,
+      apres: previous.responsableId,
+    },
+  ]);
+  revalidateTacheViews(existing.id, existing);
+  return { ok: true };
+}
