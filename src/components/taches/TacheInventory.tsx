@@ -30,6 +30,9 @@ export type TacheInventoryItem = {
   uniteId: string;
   uniteNom: string;
   dateEcheance: string | null;
+  /** Planification (≠ échéance). */
+  dateDebut?: string | null;
+  dateFinPlanifiee?: string | null;
   urgence: "retard" | "bientot" | "a_venir" | "neutre";
   estOuverte: boolean;
   estTerminee: boolean;

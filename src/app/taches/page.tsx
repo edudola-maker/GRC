@@ -2,10 +2,8 @@ import { PageHeader } from "@/components/ui";
 import { FlashBanner } from "@/components/Flash";
 import { ModuleHelp } from "@/components/ModuleHelp";
 import { KpiZone } from "@/components/module/KpiZone";
-import {
-  TacheInventory,
-  type TacheInventoryItem,
-} from "@/components/taches/TacheInventory";
+import { TachesWorkspace } from "@/components/taches/TachesWorkspace";
+import type { TacheCalItem } from "@/components/taches/TacheCalendar";
 import { MODULE_HELP, TACHE_STATUTS_CLOS } from "@/lib/catalog";
 import {
   CATEGORIE_TACHE_LABELS,
@@ -90,14 +88,12 @@ export default async function TachesInventoryPage({
     ok?: string;
     erreur?: string;
     filtre?: string;
-    /** Inclure les tâches Projet encore en attente de prérequis */
     planifiees?: string;
   }>;
 }) {
   const sp = await searchParams;
   const ctx = await getOrgContext();
   const inclurePlanifiees = sp.planifiees === "1";
-  // Inventaire transversal dans l’Organisation courante uniquement.
   const [taches, unites] = await Promise.all([
     prisma.tache.findMany({
       where: whereOrgUnites(ctx),
@@ -125,7 +121,7 @@ export default async function TachesInventoryPage({
     ? taches
     : taches.filter((t) => activation.get(t.id)?.active !== false);
 
-  const items: TacheInventoryItem[] = tachesVisibles.map((t) => {
+  const items: TacheCalItem[] = tachesVisibles.map((t) => {
     const clos = (TACHE_STATUTS_CLOS as readonly string[]).includes(t.statut);
     const estOuverte = !clos;
     const estTerminee = t.statut === "TERMINE";
@@ -146,6 +142,8 @@ export default async function TachesInventoryPage({
       uniteId: t.uniteId,
       uniteNom: `${t.unite.code} — ${t.unite.nom}`,
       dateEcheance: t.dateEcheance?.toISOString() ?? null,
+      dateDebut: t.dateDebut?.toISOString() ?? null,
+      dateFinPlanifiee: t.dateFinPlanifiee?.toISOString() ?? null,
       urgence,
       estOuverte,
       estTerminee,
@@ -213,13 +211,15 @@ export default async function TachesInventoryPage({
         ]}
       />
 
-      <TacheInventory
+      <TachesWorkspace
         items={items}
         responsables={responsables}
         unites={unites.map((u) => ({
           id: u.id,
           nom: `${u.code} — ${u.nom}`,
         }))}
+        organisationId={ctx.organisationId}
+        utilisateurId={ctx.user.id}
         initialQuick={initialQuick}
         createHref="/taches/nouvelle"
         createLabel="Nouvelle tâche"
