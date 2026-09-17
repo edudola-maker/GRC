@@ -16,6 +16,9 @@ export type ObjectifValues = {
   intitule?: string;
   description?: string | null;
   cible?: string | null;
+  indicateur?: string | null;
+  uniteMesure?: string | null;
+  axeStrategiqueId?: string | null;
   progression?: number | null;
   progressionMode?: string | null;
   annee?: number;
@@ -55,6 +58,7 @@ export function ObjectifForm({
   action,
   users,
   attributions = [],
+  axes = [],
   values,
   cancelHref,
   submitLabel,
@@ -64,6 +68,7 @@ export function ObjectifForm({
   action: (formData: FormData) => void | Promise<void>;
   users: UserOpt[];
   attributions?: AttributionOpt[];
+  axes?: { id: string; code: string; titre: string }[];
   values?: ObjectifValues;
   cancelHref: string;
   submitLabel: string;
@@ -99,17 +104,53 @@ export function ObjectifForm({
           />
         </Field>
         <Field
+          label="Indicateur"
+          htmlFor="indicateur"
+          hint="Ce qui est mesuré (ex. Nombre d’audits réalisés)."
+        >
+          <input
+            id="indicateur"
+            name="indicateur"
+            defaultValue={values?.indicateur ?? ""}
+            placeholder="Ex. Audits réalisés"
+          />
+        </Field>
+        <Field
           label="Cible"
           htmlFor="cible"
-          hint="Résultat attendu sur la période (ex. 8 audits en 2027)."
+          hint="Résultat attendu sur la période (ex. 8)."
         >
           <input
             id="cible"
             name="cible"
             defaultValue={values?.cible ?? ""}
-            placeholder="Ex. 8 audits réalisés"
+            placeholder="Ex. 8"
           />
         </Field>
+        <Field label="Unité de mesure" htmlFor="uniteMesure">
+          <input
+            id="uniteMesure"
+            name="uniteMesure"
+            defaultValue={values?.uniteMesure ?? ""}
+            placeholder="Ex. audits, %"
+          />
+        </Field>
+        {axes.length > 0 ? (
+          <Field label="Axe stratégique" htmlFor="axeStrategiqueId">
+            <select
+              id="axeStrategiqueId"
+              name="axeStrategiqueId"
+              defaultValue={values?.axeStrategiqueId ?? ""}
+            >
+              <option value="">— Aucun —</option>
+              {axes.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.code} — {a.titre}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
         <div className="form-grid">
           <Field label="Année / période *" htmlFor="annee">
             <input

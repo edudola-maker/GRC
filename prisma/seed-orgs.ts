@@ -37,6 +37,7 @@ export async function createOrganisationWithModules(
     nom: string;
     nomCourt: string;
     description: string;
+    mission?: string;
     vision: string;
     profil: ProfilOrganisation;
   },
@@ -48,6 +49,7 @@ export async function createOrganisationWithModules(
       nom: data.nom,
       nomCourt: data.nomCourt,
       description: data.description,
+      mission: data.mission ?? null,
       vision: data.vision,
       profilInitial: data.profil,
       statut: "ACTIF",
@@ -94,6 +96,7 @@ export async function seedPetitePme(
     nom: "Dupont Atelier — Petite PME",
     nomCourt: "Petite PME",
     description: "Microentreprise / petite PME (~6 personnes).",
+    mission: "Fabriquer et livrer des ouvrages sur mesure de qualité pour les clients locaux.",
     vision: "Rester une référence locale de qualité artisanale d’ici 3 ans.",
     profil: "PME_SIMPLE",
   });
@@ -282,6 +285,36 @@ export async function seedPetitePme(
   await addMembership(prisma, org.id, sofia.id, "COLLABORATEUR", unite.id);
   await addMembership(prisma, org.id, bridgeUserIds.adminId, "ADMINISTRATEUR", unite.id);
   await addMembership(prisma, org.id, bridgeUserIds.aliceId, "ADMINISTRATEUR", unite.id);
+
+  const axeDev = await prisma.axeStrategique.create({
+    data: {
+      organisationId: org.id,
+      code: "AXE-0001",
+      titre: "Développer l’activité",
+      description: "Croissance organique et visibilité.",
+      periode: "2026–2028",
+      responsableId: julie.id,
+      ordre: 0,
+    },
+  });
+  await prisma.axeStrategique.create({
+    data: {
+      organisationId: org.id,
+      code: "AXE-0002",
+      titre: "Fiabiliser les opérations",
+      periode: "2026–2028",
+      responsableId: marc.id,
+      ordre: 1,
+    },
+  });
+  await prisma.objectif.updateMany({
+    where: { uniteId: unite.id, code: "OBJ-0001" },
+    data: {
+      axeStrategiqueId: axeDev.id,
+      indicateur: "CA annuel",
+      uniteMesure: "% base N-1",
+    },
+  });
 
   return { org, unite };
 }

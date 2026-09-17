@@ -112,6 +112,7 @@ async function main() {
   });
   await prisma.organisationMembership.deleteMany().catch(() => undefined);
   await prisma.organisationModule.deleteMany().catch(() => undefined);
+  await prisma.axeStrategique.deleteMany().catch(() => undefined);
   await prisma.utilisateur.deleteMany();
   await prisma.unite.deleteMany();
   await prisma.organisation.deleteMany().catch(() => undefined);
@@ -122,6 +123,7 @@ async function main() {
     nom: "UCAE — Unité Contrôle & Assurance (démo)",
     nomCourt: "UCAE",
     description: "Organisation démo transverse GRC — dataset riche.",
+    mission: "Sécuriser le pilotage de l’organisation par une maîtrise structurée des risques, des contrôles et des missions d’assurance.",
     vision: "Être la référence interne en matière de maîtrise des risques et de gouvernance.",
     profil: "GRC_TRANSVERSE",
   });
@@ -1652,6 +1654,40 @@ async function main() {
     );
   }
   // Utilisateur inactif éventuel : membership si actif ailleurs — skip.
+
+  const axeGouv = await prisma.axeStrategique.create({
+    data: {
+      organisationId: orgUcae.id,
+      code: "AXE-0001",
+      titre: "Renforcer la gouvernance",
+      description: "Structurer processus, risques et SCI.",
+      periode: "2026–2028",
+      responsableId: alice.id,
+      ordre: 0,
+    },
+  });
+  await prisma.axeStrategique.create({
+    data: {
+      organisationId: orgUcae.id,
+      code: "AXE-0002",
+      titre: "Développer les collaborateurs",
+      periode: "2026–2028",
+      responsableId: bernard.id,
+      ordre: 1,
+    },
+  });
+  await prisma.objectif.updateMany({
+    where: { uniteId, code: { in: ["OBJ-0001", "OBJ-0002"] } },
+    data: { axeStrategiqueId: axeGouv.id },
+  });
+  await prisma.objectif.updateMany({
+    where: { uniteId, code: "OBJ-0001" },
+    data: {
+      indicateur: "Contrôles réalisés",
+      uniteMesure: "%",
+      cible: "95",
+    },
+  });
 
   const bridge = { adminId: admin.id, aliceId: alice.id };
   await seedPetitePme(prisma, bridge);

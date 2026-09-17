@@ -38,7 +38,7 @@ function formIds(formData: FormData, key: string): string[] {
 }
 
 function revalidateObjectif(id: string) {
-  revalidateApp([`/objectifs/${id}`, `/objectifs/${id}/modifier`, "/unite"]);
+  revalidateApp([`/objectifs/${id}`, `/objectifs/${id}/modifier`, "/unite", "/strategie", "/objectifs"]);
 }
 
 async function syncAttributions(
@@ -114,6 +114,9 @@ export async function createObjectif(formData: FormData) {
       intitule,
       description: optStr(formData, "description"),
       cible: optStr(formData, "cible"),
+      indicateur: optStr(formData, "indicateur"),
+      uniteMesure: optStr(formData, "uniteMesure"),
+      axeStrategiqueId: optStr(formData, "axeStrategiqueId"),
       progression: Math.min(100, Math.max(0, optInt(formData, "progression") ?? 0)),
       progressionMode: progressionMode as "MANUELLE",
       annee,
@@ -199,6 +202,9 @@ export async function updateObjectif(formData: FormData) {
         intitule,
         description: optStr(formData, "description"),
         cible: optStr(formData, "cible"),
+        indicateur: optStr(formData, "indicateur"),
+        uniteMesure: optStr(formData, "uniteMesure"),
+        axeStrategiqueId: optStr(formData, "axeStrategiqueId"),
         progression: Math.min(
           100,
           Math.max(0, optInt(formData, "progression") ?? existing.progression),
