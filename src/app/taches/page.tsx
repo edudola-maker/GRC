@@ -13,8 +13,9 @@ import {
   STATUT_TACHE_LABELS,
   urgenceEcheance,
 } from "@/lib/labels";
+import { whereOrgUnites, getOrgContext } from "@/lib/organisation";
 import { prisma } from "@/lib/prisma";
-import { formatUtilisateurNom, getCurrentUser } from "@/lib/session";
+import { formatUtilisateurNom } from "@/lib/session";
 import { getActivationByTacheIds } from "@/lib/tache-dependances";
 
 export const dynamic = "force-dynamic";
@@ -94,12 +95,12 @@ export default async function TachesInventoryPage({
   }>;
 }) {
   const sp = await searchParams;
-  await getCurrentUser();
+  const ctx = await getOrgContext();
   const inclurePlanifiees = sp.planifiees === "1";
-  // Inventaire transversal : toutes les tâches, indépendamment de l’objet
-  // d’origine. Le Dashboard reste la vue personnelle ; ici on filtre.
+  // Inventaire transversal dans l’Organisation courante uniquement.
   const [taches, unites] = await Promise.all([
     prisma.tache.findMany({
+      where: whereOrgUnites(ctx),
       include: {
         responsable: { select: { id: true, nom: true, prenom: true } },
         unite: { select: { id: true, nom: true, code: true } },
@@ -113,7 +114,7 @@ export default async function TachesInventoryPage({
       orderBy: [{ dateEcheance: "asc" }, { titre: "asc" }],
     }),
     prisma.unite.findMany({
-      where: { actif: true },
+      where: { actif: true, organisationId: ctx.organisationId },
       orderBy: { code: "asc" },
       select: { id: true, nom: true, code: true },
     }),

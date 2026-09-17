@@ -4,6 +4,13 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { addBusinessDays } from "../src/lib/dates";
 import { deriveInitiales } from "../src/lib/initiales";
+import {
+  addMembership,
+  createOrganisationWithModules,
+  seedFinanceControle,
+  seedPetitePme,
+  seedPmeStructuree,
+} from "./seed-orgs";
 
 const databaseUrl = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
 const filePath = databaseUrl.startsWith("file:")
@@ -103,12 +110,26 @@ async function main() {
   await prisma.unite.updateMany({
     data: { responsableId: null, adjointId: null },
   });
+  await prisma.organisationMembership.deleteMany().catch(() => undefined);
+  await prisma.organisationModule.deleteMany().catch(() => undefined);
   await prisma.utilisateur.deleteMany();
   await prisma.unite.deleteMany();
+  await prisma.organisation.deleteMany().catch(() => undefined);
+
+  const orgUcae = await createOrganisationWithModules(prisma, {
+    id: "org_default_ucae",
+    code: "ORG-UCAE",
+    nom: "UCAE — Unité Contrôle & Assurance (démo)",
+    nomCourt: "UCAE",
+    description: "Organisation démo transverse GRC — dataset riche.",
+    vision: "Être la référence interne en matière de maîtrise des risques et de gouvernance.",
+    profil: "GRC_TRANSVERSE",
+  });
 
   const unite = await prisma.unite.create({
     data: {
       id: "unite_grc_demo",
+      organisationId: orgUcae.id,
       code: "UNT-0001",
       nom: "Unité GRC",
       description:
@@ -119,15 +140,6 @@ async function main() {
     },
   });
   const uniteId = unite.id;
-
-  const uniteFinance = await prisma.unite.create({
-    data: {
-      code: "UNT-0002",
-      nom: "Unité Finance (témoin)",
-      description: "Unité témoin pour le basculement multi-unités (démo).",
-      actif: true,
-    },
-  });
 
   await prisma.referentielValeur.createMany({
     data: [
@@ -145,12 +157,6 @@ async function main() {
     data: [
       {
         uniteId,
-        cle: "CONSEIL_DELAI_CIBLE_JOURS",
-        valeur: "5",
-        description: "Délai cible des conseils (jours ouvrés)",
-      },
-      {
-        uniteId: uniteFinance.id,
         cle: "CONSEIL_DELAI_CIBLE_JOURS",
         valeur: "5",
         description: "Délai cible des conseils (jours ouvrés)",
@@ -230,6 +236,7 @@ async function main() {
 
   const alice = await prisma.utilisateur.create({
     data: {
+      id: "user_alice_demo",
       uniteId,
       prenom: "Alice",
       nom: "Martin",
@@ -264,8 +271,9 @@ async function main() {
       role: "COLLABORATEUR",
     },
   });
-  await prisma.utilisateur.create({
+  const admin = await prisma.utilisateur.create({
     data: {
+      id: "user_admin_demo",
       uniteId,
       prenom: "Dominique",
       nom: "Admin",
@@ -1633,59 +1641,25 @@ async function main() {
     ],
   });
 
-  // Deuxième unité (témoin multi-unités — bascule via le sélecteur démo)
-  const denis = await prisma.utilisateur.create({
-    data: {
-      uniteId: uniteFinance.id,
-      prenom: "Denis",
-      nom: "Leroy",
-      initiales: deriveInitiales("Denis Leroy"),
-      email: "denis.leroy@exemple.fr",
-      motDePasse: "demo-hash-denis",
-      role: "RESPONSABLE",
-    },
-  });
-  await prisma.sequenceCode.createMany({
-    data: [
-      { uniteId: uniteFinance.id, prefixe: "PRO", dernier: 1 },
-      { uniteId: uniteFinance.id, prefixe: "CNS", dernier: 0 },
-      { uniteId: uniteFinance.id, prefixe: "RSK", dernier: 0 },
-      { uniteId: uniteFinance.id, prefixe: "CTL", dernier: 0 },
-      { uniteId: uniteFinance.id, prefixe: "DOC", dernier: 0 },
-      { uniteId: uniteFinance.id, prefixe: "MIS", dernier: 0 },
-      { uniteId: uniteFinance.id, prefixe: "REC", dernier: 0 },
-    ],
-  });
-  await prisma.projet.create({
-    data: {
-      uniteId: uniteFinance.id,
-      code: "PRO-0001",
-      nom: "Migration reporting financier",
-      description: "Projet témoin de l'unité Finance.",
-      taxinomie: "FINANCES",
-      responsableId: denis.id,
-      dateDebut: daysFromNow(-14),
-      dateEcheance: daysFromNow(70),
-      statut: "EN_COURS",
-      priorite: "HAUTE",
-      avancement: 20,
-      creeParId: denis.id,
-      modifieParId: denis.id,
-    },
-  });
-  await prisma.objectifModule.create({
-    data: {
-      uniteId: uniteFinance.id,
-      module: "PROJET",
-      annee,
-      libelle: "Projets clôturés",
-      indicateurCle: "projets_clotures",
-      cibleNumerique: 1,
-      uniteMesure: "projets",
-    },
-  });
+  // Memberships UCAE (données historiques)
+  for (const u of [alice, bernard, claire, admin]) {
+    await addMembership(
+      prisma,
+      orgUcae.id,
+      u.id,
+      u.role as "ADMINISTRATEUR" | "RESPONSABLE" | "COLLABORATEUR",
+      uniteId,
+    );
+  }
+  // Utilisateur inactif éventuel : membership si actif ailleurs — skip.
 
-  console.log("✅ Seed Vague C terminé.");
+  const bridge = { adminId: admin.id, aliceId: alice.id };
+  await seedPetitePme(prisma, bridge);
+  await seedPmeStructuree(prisma, bridge);
+  await seedFinanceControle(prisma, bridge);
+
+  console.log("✅ Seed multi-organisations terminé (UCAE + Petite PME + PME structurée + Finance).");
+
 }
 
 main()

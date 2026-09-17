@@ -41,11 +41,18 @@ export async function createUnite(formData: FormData) {
   const nomErr = await assertNomUnique("UNITE", nom, current.uniteId);
   if (nomErr) redirectWithError(fallback, nomErr);
 
+  const home = await prisma.unite.findUnique({
+    where: { id: current.uniteId },
+    select: { organisationId: true },
+  });
+  if (!home) redirectWithError(fallback, "Organisation introuvable.");
+
   // Code séquentiel global porté par l’unité courante (compteur UNT).
   const code = await nextCode("UNITE", current.uniteId);
 
   const unite = await prisma.unite.create({
     data: {
+      organisationId: home.organisationId,
       code,
       nom,
       description: optStr(formData, "description"),
