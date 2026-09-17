@@ -11,6 +11,7 @@ import {
   NavIcon,
   type NavIconName,
 } from "@/components/icons/NavIcons";
+import { moduleForHref } from "@/lib/modules";
 
 type NavItem = {
   href: string;
@@ -87,6 +88,12 @@ const NAV_GROUPS: NavGroup[] = [
         adminOnly: true,
       },
       {
+        href: "/administration/modules",
+        label: "Modules",
+        icon: "list",
+        adminOnly: true,
+      },
+      {
         href: "/administration/roles",
         label: "Rôles",
         icon: "roles",
@@ -103,14 +110,23 @@ export function AppNav({
   isAdministrateur = false,
   userName,
   uniteName,
+  orgName,
+  activeModules,
   demoSwitcher,
 }: {
   isResponsable?: boolean;
   isAdministrateur?: boolean;
   userName?: string;
   uniteName?: string;
+  orgName?: string;
+  /** Modules activés (clés CleModule). Absent = tout afficher (fallback). */
+  activeModules?: string[];
   demoSwitcher?: React.ReactNode;
 }) {
+  const moduleSet =
+    activeModules && activeModules.length > 0
+      ? new Set(activeModules)
+      : null;
   const pathname = usePathname();
   const [compact, setCompact] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -158,6 +174,10 @@ export function AppNav({
       const items = group.items.filter((i) => {
         if (i.adminOnly) return isAdministrateur;
         if (i.responsableOnly) return isResponsable;
+        if (moduleSet) {
+          const mod = moduleForHref(i.href);
+          if (mod && !moduleSet.has(mod)) return false;
+        }
         return true;
       });
 
@@ -249,7 +269,13 @@ export function AppNav({
             <span className="app-nav__mark">GRC</span>
             <div className="app-nav__brand-text">
               <strong>Pilotage</strong>
-              <span>{uniteName || "Unité"}</span>
+              <span>
+                {orgName
+                  ? uniteName
+                    ? `${orgName} · ${uniteName}`
+                    : orgName
+                  : uniteName || "Organisation"}
+              </span>
             </div>
           </Link>
           <button

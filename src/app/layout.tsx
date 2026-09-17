@@ -2,17 +2,21 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Fraunces, Source_Sans_3 } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
+import { DemoOrgSwitcher } from "@/components/DemoOrgSwitcher";
 import { DemoUserSwitcher } from "@/components/DemoUserSwitcher";
 import { RechercheHotkey } from "@/components/RechercheHotkey";
 import { ScrollToHash } from "@/components/module/ScrollToHash";
 import {
+  getOrgContext,
+  listOrganisationsForUser,
+} from "@/lib/organisation";
+import { prisma } from "@/lib/prisma";
+import {
   formatUtilisateurNom,
-  getCurrentUser,
   isAdministrateur,
   isResponsable,
-  listUtilisateursActifs,
+  listUtilisateursActifsForCurrentOrg,
 } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
 import "./globals.css";
 
 const display = Fraunces({
@@ -28,9 +32,9 @@ const body = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "GRC — Pilotage",
+  title: "Pilotage — Organisation",
   description:
-    "Application interne de pilotage : projets, conseils, audits, risques et contrôles SCI.",
+    "Système de pilotage et de gouvernance : stratégie, travail, risques et amélioration.",
 };
 
 export default async function RootLayout({
@@ -40,35 +44,49 @@ export default async function RootLayout({
 }>) {
   let userName = "";
   let uniteName = "";
+  let orgName = "";
   let responsable = false;
   let administrateur = false;
+  let activeModules: string[] | undefined;
   let switcher: React.ReactNode = null;
 
   try {
-    const [user, users] = await Promise.all([
-      getCurrentUser(),
-      // Démo : tous les utilisateurs (toutes unités) pour basculer le contexte
-      listUtilisateursActifs(),
+    const ctx = await getOrgContext();
+    const [users, orgs] = await Promise.all([
+      listUtilisateursActifsForCurrentOrg(),
+      listOrganisationsForUser(ctx.user.id),
     ]);
-    userName = formatUtilisateurNom(user);
-    responsable = isResponsable(user);
-    administrateur = isAdministrateur(user);
+    userName = formatUtilisateurNom(ctx.user);
+    responsable = isResponsable({ role: ctx.role });
+    administrateur = isAdministrateur({ role: ctx.role });
+    orgName = ctx.organisation.nomCourt || ctx.organisation.nom;
+    activeModules = [...ctx.modules];
+
     const unite = await prisma.unite.findUnique({
-      where: { id: user.uniteId },
-      select: { nom: true, code: true },
+      where: { id: ctx.uniteId },
+      select: { nom: true },
     });
-    uniteName = unite ? `${unite.nom}` : "";
+    uniteName = unite?.nom ?? "";
+
     switcher = (
-      <Suspense fallback={null}>
-        <DemoUserSwitcher
-          users={users.map((u) => ({
-            id: u.id,
-            nom: formatUtilisateurNom(u),
-            role: u.role,
-          }))}
-          currentId={user.id}
-        />
-      </Suspense>
+      <div className="demo-switchers">
+        <Suspense fallback={null}>
+          <DemoOrgSwitcher
+            organisations={orgs}
+            currentId={ctx.organisationId}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DemoUserSwitcher
+            users={users.map((u) => ({
+              id: u.id,
+              nom: formatUtilisateurNom(u),
+              role: u.role,
+            }))}
+            currentId={ctx.user.id}
+          />
+        </Suspense>
+      </div>
     );
   } catch {
     // DB non initialisée : navigation minimale
@@ -84,6 +102,8 @@ export default async function RootLayout({
             isAdministrateur={administrateur}
             userName={userName}
             uniteName={uniteName}
+            orgName={orgName}
+            activeModules={activeModules}
             demoSwitcher={switcher}
           />
           <main className="app-main">

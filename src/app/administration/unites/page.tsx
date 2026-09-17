@@ -5,6 +5,7 @@ import {
   InventoryRow,
 } from "@/components/inventory/InventoryRow";
 import { PageHeader, BtnLink } from "@/components/ui";
+import { getOrgContext } from "@/lib/organisation";
 import { prisma } from "@/lib/prisma";
 import { formatUtilisateurNom } from "@/lib/session";
 
@@ -16,7 +17,9 @@ export default async function AdminUnitesPage({
   searchParams: Promise<{ ok?: string; erreur?: string }>;
 }) {
   const sp = await searchParams;
+  const ctx = await getOrgContext();
   const unites = await prisma.unite.findMany({
+    where: { organisationId: ctx.organisationId },
     include: {
       responsable: true,
       adjoint: true,
@@ -34,6 +37,10 @@ export default async function AdminUnitesPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+      <p className="muted" style={{ marginBottom: "1rem" }}>
+        Organisation :{" "}
+        <strong>{ctx.organisation.nomCourt || ctx.organisation.nom}</strong>
+      </p>
 
       {unites.length === 0 ? (
         <InventoryEmpty>Aucune unité.</InventoryEmpty>

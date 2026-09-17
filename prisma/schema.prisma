@@ -347,14 +347,103 @@ enum TypeReferentiel {
   TAXINOMIE
 }
 
+enum CleModule {
+  TACHES
+  PLANNING
+  PROJETS
+  STRATEGIE
+  OBJECTIFS
+  PROCESSUS
+  RISQUES
+  CONTROLES
+  CONFORMITE
+  QUALITE
+  CONTINUITE
+  ACTIFS
+  DECISIONS
+  ARBITRAGES
+  MISSIONS
+  CONSEILS
+  DOCUMENTS
+  FONCTIONS
+  RAPPORTS
+  GUIDE
+  EQUIPE
+  ADMINISTRATION
+}
+
+enum ProfilOrganisation {
+  PME_SIMPLE
+  PME_STRUCTUREE
+  GRC_TRANSVERSE
+  FINANCE_CONTROLE
+}
+
+// ─── Organisation (tenant / workspace) ───────────────────────
+/// Frontière de données, configuration et modules.
+/// Isolation serveur : objets métier via Unité ∈ Organisation.
+
+model Organisation {
+  id             String              @id @default(cuid())
+  code           String              @unique
+  nom            String
+  nomCourt       String?
+  description    String?
+  /// Vision narrative légère (stratégie — PR suivante enrichira).
+  vision         String?
+  profilInitial  ProfilOrganisation?
+  statut         String              @default("ACTIF")
+  creeLe         DateTime            @default(now())
+  modifieLe      DateTime            @updatedAt
+
+  unites      Unite[]
+  memberships OrganisationMembership[]
+  modules     OrganisationModule[]
+}
+
+/// Appartenance User ↔ Organisation (rôle par org, pas global).
+model OrganisationMembership {
+  id                String          @id @default(cuid())
+  organisationId    String
+  utilisateurId     String
+  role              RoleUtilisateur @default(COLLABORATEUR)
+  unitePrincipaleId String?
+  actif             Boolean         @default(true)
+  creeLe            DateTime        @default(now())
+  modifieLe         DateTime        @updatedAt
+
+  organisation    Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  utilisateur     Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  unitePrincipale Unite?       @relation("MembershipUnitePrincipale", fields: [unitePrincipaleId], references: [id], onDelete: SetNull)
+
+  @@unique([organisationId, utilisateurId])
+  @@index([utilisateurId])
+  @@index([organisationId, actif])
+}
+
+/// Modules activés pour une Organisation (masque nav, ne supprime pas les données).
+model OrganisationModule {
+  id             String    @id @default(cuid())
+  organisationId String
+  module         CleModule
+  actif          Boolean   @default(true)
+  creeLe         DateTime  @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, module])
+  @@index([organisationId, actif])
+}
+
 // ─── Unité (périmètre + fiche métier de pilotage) ───────────
 /// Socle multi-unités ; fiche /unite = agrégateur + objectifs.
 /// Admin technique des unités / droits = roadmap séparée.
 
 model Unite {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  nom           String
+  id              String   @id @default(cuid())
+  organisationId  String
+  code            String
+  nom             String
   /// Mission / description synthétique de l’unité (Admin / court).
   description   String?
   /// Présentation narratif libre (carte d’identité) — rôle, finalité, organisation.
@@ -365,9 +454,11 @@ model Unite {
   creeLe        DateTime @default(now())
   modifieLe     DateTime @updatedAt
 
+  organisation     Organisation          @relation(fields: [organisationId], references: [id])
   responsable      Utilisateur?          @relation("UniteResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   adjoint          Utilisateur?          @relation("UniteAdjoint", fields: [adjointId], references: [id], onDelete: SetNull)
   utilisateurs     Utilisateur[]         @relation("UtilisateurUnite")
+  membershipsPrincipales OrganisationMembership[] @relation("MembershipUnitePrincipale")
   projets          Projet[]
   conseils         Conseil[]
   taches           Tache[]
@@ -402,6 +493,9 @@ model Unite {
   decisions                 Decision[]
   qualiteRevues             QualiteRevue[]
   ecartsQualite             EcartQualite[]
+
+  @@unique([organisationId, code])
+  @@index([organisationId, actif])
 }
 
 /// Attribution / mission institutionnelle d’une Unité (référentiel gouvernance).
@@ -513,6 +607,7 @@ model Utilisateur {
   decisionsDecideur       Decision[]            @relation("DecisionDecideur")
   qualiteRevuesResponsable QualiteRevue[]       @relation("QualiteRevueResponsable")
   qualiteProcessusResponsable ProcessusQualite[] @relation("QualiteProcessusResponsable")
+  organisationMemberships OrganisationMembership[]
 }
 
 // ─── Projet ─────────────────────────────────────────────────

@@ -1667,11 +1667,25 @@ a {
   color: #fff;
 }
 
+.demo-switchers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+}
+
 .demo-switcher {
   display: flex;
   align-items: flex-end;
   gap: 0.35rem;
   padding: 0 0.35rem;
+}
+
+.demo-switcher--org {
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.15rem;
+  padding-bottom: 0.55rem;
 }
 
 .demo-switcher label {
@@ -1698,6 +1712,30 @@ a {
   border-color: rgba(255, 255, 255, 0.25);
   padding: 0.35rem 0.55rem;
   font-size: 0.75rem;
+}
+
+.module-toggle-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.module-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border, #d8e0da);
+  border-radius: 10px;
+  background: var(--bg-elevated, #fff);
+}
+
+.module-toggle-row form {
+  flex-shrink: 0;
 }
 
 .bucket-count {
