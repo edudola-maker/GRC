@@ -344,20 +344,190 @@ export const DECOUVRIR_PARCOURS: DecouvrirParcours[] = [
   },
   {
     slug: "objectifs",
-    titre: "Objectifs",
-    resume: "Objectifs d’unité / collaborateurs, critères SMART, attributions.",
+    titre: "Fixer mes objectifs",
+    resume: "Objectifs mesurables reliés à la mission / un axe — SMART léger.",
     etapes: [
       {
-        titre: "Mon unité",
-        detail: "Objectifs annuels et attributions.",
-        href: "/unite",
-        cta: "Mon unité",
+        titre: "Voir la stratégie",
+        detail: "Mission, vision et axes avant de fixer des objectifs.",
+        href: "/strategie",
+        cta: "Stratégie",
+      },
+      {
+        titre: "Inventaire Objectifs",
+        detail: "Suivre progression et échéances.",
+        href: "/objectifs",
+        cta: "Objectifs",
       },
       {
         titre: "Créer un objectif",
         href: "/objectifs/nouveau",
         cta: "Nouvel objectif",
-        detail: "SMART, mode de progression, liens attributions.",
+        detail: "Indicateur, cible, échéance, axe — pas de gros champs S/M/A/R/T.",
+      },
+    ],
+  },
+  {
+    slug: "definir-strategie",
+    titre: "Définir ma stratégie",
+    resume: "Mission → Vision → Axes → Objectifs — sans jargon inutile.",
+    etapes: [
+      {
+        titre: "Formaliser Mission et Vision",
+        detail: "Raison d’être permanente + horizon 3–5 ans.",
+        href: "/strategie?edit=1",
+        cta: "Modifier Stratégie",
+      },
+      {
+        titre: "Créer 3–5 axes",
+        detail: "Priorités structurantes (développement, opérations, gouvernance…).",
+        href: "/strategie",
+        cta: "Axes",
+      },
+      {
+        titre: "Relier des objectifs",
+        detail: "Chaque objectif peut porter un axe et un indicateur.",
+        href: "/objectifs/nouveau",
+        cta: "Nouvel objectif",
+      },
+    ],
+    questionnaire: [
+      {
+        id: "mission_vs_assurance",
+        prompt: "Une « Mission » stratégique, c’est…",
+        options: [
+          {
+            value: "raison",
+            label: "La raison d’être permanente de l’organisation",
+            hint: "Correct.",
+          },
+          {
+            value: "audit",
+            label: "Une mission d’assurance / audit",
+            hint: "Non — celle-ci est dans le module Métier.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "cartographie-risques",
+    titre: "Construire ma cartographie des risques",
+    resume:
+      "Proposer des risques à partir de questions simples — vous confirmez avant création.",
+    etapes: [
+      {
+        titre: "Lister les processus critiques",
+        detail: "Sans processus, la cartographie reste abstraite.",
+        href: "/processus",
+        cta: "Processus",
+      },
+      {
+        titre: "Identifier un risque",
+        detail: "Qu’est-ce qui pourrait empêcher d’atteindre un objectif ?",
+        href: "/risques/nouveau",
+        cta: "Nouveau risque",
+      },
+      {
+        titre: "Évaluer (RiskQuant)",
+        detail: "Suggestion → valeur retenue → justification. L’humain décide.",
+        href: "/decouvrir/evaluer-risque",
+        cta: "Évaluer un risque",
+      },
+    ],
+    questionnaire: [
+      {
+        id: "dep",
+        prompt: "Dépendez-vous d’un fournisseur essentiel ?",
+        options: [
+          {
+            value: "oui",
+            label: "Oui — à examiner comme risque opérationnel",
+            hint: "Proposition typique : dépendance fournisseur clé.",
+          },
+          { value: "non", label: "Non" },
+        ],
+      },
+      {
+        id: "personne",
+        prompt: "Une activité dépend-elle d’une seule personne ?",
+        options: [
+          {
+            value: "oui",
+            label: "Oui — risque de concentration de compétences",
+            hint: "À confirmer dans Risques, pas créé automatiquement.",
+          },
+          { value: "non", label: "Non" },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "point-lpd",
+    titre: "Faire le point sur la protection des données",
+    resume:
+      "Points examinés / à compléter / à valider — jamais « vous êtes conforme LPD ».",
+    etapes: [
+      {
+        titre: "Personnes et données",
+        detail: "Qui est concerné ? Quelles données ? Quelles finalités ?",
+        href: "/guide/bonnes-pratiques",
+        cta: "Bonnes pratiques",
+      },
+      {
+        titre: "Prestataires et accès",
+        detail: "Destinataires, prestataires, transferts, droits d’accès.",
+        href: "/processus",
+        cta: "Processus (données perso)",
+      },
+      {
+        titre: "Conservation et incidents",
+        detail: "Durées, sécurité, demandes des personnes, violations.",
+        href: "/decouvrir/documenter-decision",
+        cta: "Documenter une décision",
+      },
+    ],
+    questionnaire: [
+      {
+        id: "conclusion",
+        prompt: "À la fin d’un point LPD, l’outil doit…",
+        options: [
+          {
+            value: "points",
+            label: "Lister points examinés / à compléter / à valider",
+            hint: "Correct — jamais de conclusion automatique de conformité.",
+          },
+          {
+            value: "conforme",
+            label: "Déclarer « vous êtes conforme LPD »",
+            hint: "Incorrect — l’humain valide.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "gouvernance-fondamentaux",
+    titre: "Structurer ma gouvernance",
+    resume: "Fondamentaux accessibles : décisions, documents, responsabilités.",
+    etapes: [
+      {
+        titre: "Qui fait quoi",
+        detail: "Fonctions et responsabilités opérationnelles.",
+        href: "/fonctions",
+        cta: "Fonctions",
+      },
+      {
+        titre: "Décisions",
+        detail: "Mémoire institutionnelle (DEC).",
+        href: "/decisions",
+        cta: "Décisions",
+      },
+      {
+        titre: "Bonnes pratiques",
+        detail: "Bibliothèque — distinguer obligation et bonne pratique.",
+        href: "/guide/bonnes-pratiques",
+        cta: "Bibliothèque",
       },
     ],
   },
