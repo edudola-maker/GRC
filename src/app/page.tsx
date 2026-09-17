@@ -8,6 +8,7 @@ import {
   ReprendreTravail,
 } from "@/components/dashboard/ReprendreTravail";
 import { AFaireMaintenant } from "@/components/dashboard/AFaireMaintenant";
+import { CockpitAttention } from "@/components/dashboard/CockpitAttention";
 import {
   SemaineCompacte,
   buildSemaineDays,
@@ -141,6 +142,8 @@ export default async function DashboardCollaborateurPage({
         }
       />
       <FlashBanner ok={sp.ok} erreur={sp.erreur} />
+
+      <CockpitAttention />
 
       <AFaireMaintenant items={aFaire} />
 
